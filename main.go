@@ -24,7 +24,10 @@ const (
 )
 
 var (
-	byond_server_addr string = "ss13.ru:2506"
+	byond_server_addr string = "placeholder"
+	byond_pass_key    string = "placeholder"
+
+	discord_bot_token string = "placeholder"
 )
 
 type Byond_response struct {
@@ -45,7 +48,7 @@ func EncodeWindows1251(s string) string {
 	return out
 }
 
-func read_float32(data []byte) (ret float32) {
+func Read_float32(data []byte) (ret float32) {
 	buf := bytes.NewBuffer(data)
 	binary.Read(buf, binary.LittleEndian, &ret)
 	return
@@ -97,13 +100,16 @@ func Escape_and_encode(s string) string {
 }
 
 func main() {
+	rainbowcolors := []string{"ff0000", "ff7f00", "ffff00", "00ff00", "0000ff", "4B0082", "9400D3"}
 	reader := bufio.NewReader(os.Stdin)
+	i := 0
 	for {
 		message, err := reader.ReadString('\n')
 		message = strings.TrimRight(message, "\n")
 		if err != nil {
 			log.Fatal(err)
 		}
-		Byond_query("announce=" + Escape_and_encode(message) + "&i=ff6600&g=Jammer312")
+		Byond_query("announce=" + Escape_and_encode(message) + "&i=" + rainbowcolors[i] + "&g=Jammer312")
+		i = (i + 1) % 7
 	}
 }
