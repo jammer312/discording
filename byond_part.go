@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bufio"
+	// "bufio"
 	"bytes"
 	"encoding/binary"
 	"fmt"
@@ -10,7 +10,7 @@ import (
 	"net"
 	"net/url"
 	"os"
-	"strings"
+	// "strings"
 	"time"
 )
 
@@ -24,10 +24,8 @@ const (
 )
 
 var (
-	byond_server_addr string = "placeholder"
-	byond_pass_key    string = "placeholder"
-
-	discord_bot_token string = "placeholder"
+	byond_server_addr string
+	byond_pass_key    string
 )
 
 type Byond_response struct {
@@ -70,7 +68,7 @@ func Byond_query(request string) Byond_response {
 		log.Fatal(err)
 	}
 	defer conn.Close()
-
+	request += "&key=" + byond_pass_key
 	//sending
 	conn.SetWriteDeadline(time.Now().Add(time.Duration(byond_request_timeout) * time.Second))
 
@@ -95,21 +93,45 @@ func Byond_query(request string) Byond_response {
 	return ret
 }
 
+func (Br *Byond_response) String() string {
+	var ret string
+	switch Br.btype {
+	case ByondTypeNULL:
+		ret = "NULL"
+	case ByondTypeFLOAT:
+		ret = fmt.Sprintf("%.f", Read_float32(Br.data))
+	case ByondTypeSTRING:
+		ret = string(Br.data)
+		ret = ret[:len(ret)-1]
+	}
+	return ret
+}
+
+func (Br *Byond_response) Float() float32 {
+	var ret float32
+	if Br.btype == ByondTypeFLOAT {
+		ret = Read_float32(Br.data)
+	}
+	return ret
+}
+
 func Escape_and_encode(s string) string {
 	return url.QueryEscape(EncodeWindows1251(s))
 }
 
-func main() {
-	rainbowcolors := []string{"ff0000", "ff7f00", "ffff00", "00ff00", "0000ff", "4B0082", "9400D3"}
+func init() {
+	byond_server_addr = os.Getenv("byond_server_addr")
+	byond_pass_key = os.Getenv("byond_pass_key")
+}
+
+/*func main() {
 	reader := bufio.NewReader(os.Stdin)
-	i := 0
 	for {
 		message, err := reader.ReadString('\n')
 		message = strings.TrimRight(message, "\n")
 		if err != nil {
 			log.Fatal(err)
 		}
-		Byond_query("announce=" + Escape_and_encode(message) + "&i=" + rainbowcolors[i] + "&g=Jammer312")
-		i = (i + 1) % 7
+		Byond_query(message).Printout()
 	}
-}
+}*/
