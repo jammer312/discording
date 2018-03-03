@@ -38,14 +38,14 @@ func init() {
 	if http_webhook_key == "" {
 		log.Fatalln("Failed to retrieve $http_webhook_key")
 	}
-	port = os.Getenv("port")
+	port = os.Getenv("PORT")
 	if port == "" {
-		log.Fatalln("Failed to retrieve $port")
+		log.Fatalln("Failed to retrieve $PORT")
 	}
 }
 
 func main() {
 	http.HandleFunc("/", index_handler)
 	http.HandleFunc("/command", webhook_handler)
-	log.Fatal(http.ListenAndServe(port, nil))
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
