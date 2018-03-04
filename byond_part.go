@@ -133,15 +133,3 @@ func init() {
 	byond_server_addr = os.Getenv("byond_server_addr")
 	byond_pass_key = os.Getenv("byond_pass_key")
 }
-
-/*func main() {
-	reader := bufio.NewReader(os.Stdin)
-	for {
-		message, err := reader.ReadString('\n')
-		message = strings.TrimRight(message, "\n")
-		if err != nil {
-			log.Fatal(err)
-		}
-		Byond_query(message).Printout()
-	}
-}*/

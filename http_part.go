@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 )
@@ -26,16 +27,29 @@ func index_handler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, out)
 }
 
+func safe_param(m *url.Values, param string) string {
+	if len((*m)[param]) < 1 {
+		return ""
+	}
+	return (*m)[param][0]
+}
+
 func webhook_handler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "" && r.Method != "GET" {
 		return
 	} //no POST and other shit
 	r.ParseForm()
-	if len(r.Form["key"]) < 1 || r.Form["key"][0] != http_webhook_key {
+	form := &r.Form
+	if safe_param(form, "key") != http_webhook_key {
 		fmt.Fprint(w, "No command handling without password")
 		return
 	}
-	fmt.Fprint(w, r.Form)
+	switch safe_param(form, "method") {
+	case "message":
+		OOC_message_send(safe_param(form, "content"))
+	default:
+		fmt.Fprint(w, form)
+	}
 }
 
 func init() {
