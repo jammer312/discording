@@ -62,13 +62,15 @@ func construct_byond_request(s string) string {
 	return ret
 }
 
-func Byond_query(request string) Byond_response {
+func Byond_query(request string, authed bool) Byond_response {
 	conn, err := net.Dial("tcp", byond_server_addr)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer conn.Close()
-	request += "&key=" + byond_pass_key
+	if authed {
+		request += "&key=" + byond_pass_key
+	}
 	//sending
 	conn.SetWriteDeadline(time.Now().Add(time.Duration(byond_request_timeout) * time.Second))
 
@@ -115,8 +117,16 @@ func (Br *Byond_response) Float() float32 {
 	return ret
 }
 
-func Escape_and_encode(s string) string {
+func Bquery_convert(s string) string {
 	return url.QueryEscape(EncodeWindows1251(s))
+}
+
+func Bquery_deconvert(s string) string {
+	ret, err := url.QueryUnescape(DecodeWindows1251(s))
+	if err != nil {
+		log.Fatal("Query unescape error: ", err)
+	}
+	return ret
 }
 
 func init() {

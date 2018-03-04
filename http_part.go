@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
 var (
@@ -17,8 +18,11 @@ func index_handler(w http.ResponseWriter, r *http.Request) {
 		return
 	} //no POST and other shit
 	//no input params, simply prints out various info
-	br := Byond_query("who")
+	br := Byond_query("status", false)
 	out := br.String()
+	out = strings.Replace(out, "&", "\n", -1)
+	out = strings.Replace(out, "=", ": ", -1)
+	out = Bquery_deconvert(out)
 	fmt.Fprintln(w, out)
 }
 
@@ -27,8 +31,9 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 		return
 	} //no POST and other shit
 	r.ParseForm()
-	if r.Form["key"][0] != http_webhook_key {
+	if len(r.Form["key"]) < 1 || r.Form["key"][0] != http_webhook_key {
 		fmt.Fprint(w, "No command handling without password")
+		return
 	}
 	fmt.Fprint(w, r.Form)
 }
@@ -44,8 +49,15 @@ func init() {
 	}
 }
 
-func main() {
+func Http_server() *http.Server {
+	srv := &http.Server{Addr: ":" + port}
 	http.HandleFunc("/", index_handler)
 	http.HandleFunc("/command", webhook_handler)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	go func() {
+		err := srv.ListenAndServe()
+		if err != nil {
+			log.Print("Http server error: ", err)
+		}
+	}()
+	return srv
 }
