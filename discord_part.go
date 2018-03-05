@@ -159,6 +159,9 @@ func populate_known_channels() {
 		log.Println("DB ERROR: failed to retrieve known channels: ", err)
 		return
 	}
+	for k := range known_channels_id_t {
+		delete(known_channels_id_t, k)
+	} //clear id->type pairs
 	for rows.Next() {
 		var ch, id string
 		if terr := rows.Scan(&ch, &id); terr != nil {
