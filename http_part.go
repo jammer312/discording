@@ -63,7 +63,7 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 			log.Println("Origin string: '", safe_param(form, "data"), "'")
 			log.Println("Deconvertd string: '", Bquery_deconvert(safe_param(form, "data")), "'")
 		}
-		OOC_message_send("**" + parsed.Ckey + "**: " + Dsanitize(html.UnescapeString(parsed.Message)))
+		Discord_message_send("ooc", "OOC:", parsed.Ckey, html.UnescapeString(parsed.Message))
 	default:
 		log.Print(form)
 	}

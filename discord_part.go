@@ -112,17 +112,19 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 	switch known_channels_id_t[message.ChannelID] {
 	case "ooc":
 		Byond_query("admin="+Bquery_convert(message.Author.Username)+"&ooc="+Bquery_convert(mcontent), true)
+	case "admin":
+		Byond_query("admin="+Bquery_convert(message.Author.Username)+"&asay="+Bquery_convert(mcontent), true)
 	default:
 	}
 }
 
-func OOC_message_send(m string) {
-	if known_channels_t_id["ooc"] == "" {
+func Discord_message_send(channel, prefix, ckey, message string) {
+	if known_channels_t_id[channel] == "" {
 		return //idk where to send it
 	}
-	_, err := dsession.ChannelMessageSend(known_channels_t_id["ooc"], "**OOC:** "+m)
+	_, err := dsession.ChannelMessageSend(known_channels_t_id[channel], "**"+Dsanitize(prefix+" "+ckey)+"** "+Dsanitize(message))
 	if err != nil {
-		log.Println("NON-PANIC ERROR: failed to send OOC message to discord: ", err)
+		log.Println("DISCORD ERROR: failed to send OOC message to discord: ", err)
 	}
 }
 
