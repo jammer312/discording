@@ -60,7 +60,7 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 		var parsed OOCmessage
 		err := json.Unmarshal(json_bytedata, &parsed)
 		if err != nil {
-			log.Println("json error: ", err)
+			log.Fatal("json error: ", err)
 		}
 		OOC_message_send(predeconvert + " - " + json_data + " - " + string(json_bytedata) + " - " + parsed.message)
 	default:
