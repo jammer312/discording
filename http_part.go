@@ -48,7 +48,7 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 	}
 	switch safe_param(form, "method") {
 	case "oocmessage":
-		OOC_message_send(Bquery_deconvert(safe_param(form, "data")))
+		OOC_message_send(safe_param(form, "data"))
 	default:
 		fmt.Fprint(w, form)
 	}
