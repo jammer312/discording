@@ -117,7 +117,10 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 }
 
 func OOC_message_send(m string) {
-	_, err := dsession.ChannelMessageSend(discord_ooc_channel, "**OOC:** "+m)
+	if known_channels_t_id["ooc"] == "" {
+		return //idk where to send it
+	}
+	_, err := dsession.ChannelMessageSend(known_channels_t_id["ooc"], "**OOC:** "+m)
 	if err != nil {
 		log.Println("NON-PANIC ERROR: failed to send OOC message to discord: ", err)
 	}
