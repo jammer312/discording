@@ -54,7 +54,7 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 	}
 	switch safe_param(form, "method") {
 	case "oocmessage":
-		json_data := safe_param(form, "data")
+		json_data := Bquery_deconvert(safe_param(form, "data"))
 		var parsed OOCmessage
 		err := json.Unmarshal([]byte(json_data), &parsed)
 		if err != nil {
