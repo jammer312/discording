@@ -52,7 +52,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		return
 	}
 	mcontent := message.ContentWithMentionsReplaced()
-	if len(mcontent) < 1 {
+	if len(mcontent) < 2 { //one for command char and at least one for command
 		return
 	}
 	if mcontent[:1] == discord_command_character {
@@ -67,6 +67,9 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		switch command {
 		case "ping":
 			reply(session, message, "pong!")
+			delcommand(session, message)
+		case "count":
+			reply(session, message, string(len(args))+" args detected")
 			delcommand(session, message)
 		default:
 			reply(session, message, "unknown command: `"+Dsanitize(command)+"`")
