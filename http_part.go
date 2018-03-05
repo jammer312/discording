@@ -25,6 +25,8 @@ func index_handler(w http.ResponseWriter, r *http.Request) {
 	out = strings.Replace(out, "=", ": ", -1)
 	out = Bquery_deconvert(out)
 	fmt.Fprintln(w, out)
+	br = Byond_query("who", false)
+	fmt.Fprintln(w, br.String())
 }
 
 func safe_param(m *url.Values, param string) string {
@@ -45,8 +47,8 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	switch safe_param(form, "method") {
-	case "message":
-		OOC_message_send(safe_param(form, "content"))
+	case "oocmessage":
+		OOC_message_send(Bquery_deconvert(safe_param(form, "data")))
 	default:
 		fmt.Fprint(w, form)
 	}

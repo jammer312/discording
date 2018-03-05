@@ -36,7 +36,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 }
 
 func OOC_message_send(m string) {
-	_, err := dsession.ChannelMessageSend(discord_ooc_channel, "[DEBUG]: remote message: "+m)
+	_, err := dsession.ChannelMessageSend(discord_ooc_channel, "OOC: "+m)
 	if err != nil {
 		log.Println("NON-PANIC ERROR: failed to send OOC message to discord: ", err)
 	}
