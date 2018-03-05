@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -36,6 +37,11 @@ func safe_param(m *url.Values, param string) string {
 	return (*m)[param][0]
 }
 
+type OOCmessage struct {
+	ckey    string
+	message string
+}
+
 func webhook_handler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "" && r.Method != "GET" {
 		return
@@ -48,7 +54,13 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 	}
 	switch safe_param(form, "method") {
 	case "oocmessage":
-		OOC_message_send(safe_param(form, "data"))
+		json_data := safe_param(form, "data")
+		var parsed OOCmessage
+		err := json.Unmarshal(json_data, &parsed)
+		if err != nil {
+			log.Println("json error: ", err)
+		}
+		OOCmessage(parsed.ckey + ": " + parsed.message)
 	default:
 		fmt.Fprint(w, form)
 	}
