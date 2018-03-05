@@ -34,7 +34,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		if err != nil {
 			log.Fatal("Message send error: ", err)
 		}*/
-	Byond_query("admin="+Bquery_convert(message.Author.Username)+"&ooc="+Bquery_convert(message.Content), true)
+	Byond_query("admin="+Bquery_convert(message.Author.Username)+"&ooc="+Bquery_convert(message.ContentWithMentionsReplaced()), true)
 }
 
 func OOC_message_send(m string) {
