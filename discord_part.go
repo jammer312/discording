@@ -75,7 +75,9 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		return
 
 	}
-	Byond_query("admin="+Bquery_convert(message.Author.Username)+"&ooc="+Bquery_convert(mcontent), true)
+	if message.ChannelID == discord_ooc_channel {
+		Byond_query("admin="+Bquery_convert(message.Author.Username)+"&ooc="+Bquery_convert(mcontent), true)
+	}
 }
 
 func OOC_message_send(m string) {
