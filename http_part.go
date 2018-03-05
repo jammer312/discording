@@ -38,8 +38,8 @@ func safe_param(m *url.Values, param string) string {
 }
 
 type OOCmessage struct {
-	ckey    string
-	message string
+	Ckey    string
+	Message string
 }
 
 func webhook_handler(w http.ResponseWriter, r *http.Request) {
@@ -58,9 +58,9 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 		var parsed OOCmessage
 		err := json.Unmarshal(json_data, &parsed)
 		if err != nil {
-			log.Fatal("json error: ", err)
+			log.Println("json error: ", err)
 		}
-		log.Print(parsed)
+		log.Println(parsed)
 		//		OOC_message_send(parsed.message)
 	default:
 		log.Print(form)
