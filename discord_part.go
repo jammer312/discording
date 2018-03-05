@@ -45,10 +45,10 @@ func OOC_message_send(m string) {
 
 func Dsanitize(m string) string {
 	out := strings.Replace(m, "\\", "\\\\", -1)
-	out = strings.Replace(m, "*", "\\*", -1)
-	out = strings.Replace(m, "`", "\\`", -1)
-	out = strings.Replace(m, "_", "\\_", -1)
-	out = strings.Replace(m, "~", "\\~", -1)
+	out = strings.Replace(out, "*", "\\*", -1)
+	out = strings.Replace(out, "`", "\\`", -1)
+	out = strings.Replace(out, "_", "\\_", -1)
+	out = strings.Replace(out, "~", "\\~", -1)
 	return out
 }
 
