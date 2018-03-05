@@ -13,6 +13,7 @@ var (
 	discord_ooc_channel       string
 	discord_command_character string
 	known_channels            map[string]string
+	discord_superuser_id      string
 )
 
 var dsession, _ = discordgo.New()
@@ -31,6 +32,10 @@ func init() {
 	if discord_command_character == "" {
 		log.Fatalln("Failed to retrieve $discord_command_character")
 	}
+	discord_superuser_id = os.Getenv("discord_superuser_id")
+	if discord_superuser_id == "" {
+		log.Fatalln("Failed to retrieve $discord_superuser_id")
+	}
 	known_channels = make(map[string]string)
 }
 
@@ -46,6 +51,10 @@ func delcommand(session *discordgo.Session, message *discordgo.MessageCreate) {
 	if err != nil {
 		log.Println("NON-PANIC ERROR: failed to delete command message in discord: ", err)
 	}
+}
+
+func permissions_check(user *discordgo.User) bool {
+	return user.ID == discord_superuser_id //maybe it's only placeholder
 }
 
 func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate) {
@@ -69,9 +78,28 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		case "ping":
 			reply(session, message, "pong!")
 			delcommand(session, message)
+			return
 		case "count":
 			reply(session, message, fmt.Sprint(len(args))+" args detected")
 			delcommand(session, message)
+			return
+		case "here":
+			delcommand(session, message)
+			if len(args) < 1 {
+				reply(session, message, "usage: !here [channel_type]")
+				return
+			}
+			if !permissions_check(message.Author) {
+				reply(session, message, "permission check failed")
+				return
+			}
+			if update_known_channels(args[0], message.ChannelID) {
+				reply(session, message, "changed `"+Dsanitize(args[0])+"` channel type to <#"+message.ChannelID+">")
+			} else {
+				reply(session, message, "failed to change `"+Dsanitize(args[0])+"` channel type to <#"+message.ChannelID+">")
+			}
+			return
+
 		default:
 			reply(session, message, "unknown command: `"+Dsanitize(command)+"`")
 			delcommand(session, message)
@@ -103,6 +131,10 @@ func Dsanitize(m string) string {
 
 func populate_known_channels() {
 
+}
+
+func update_known_channels(t, id string) bool {
+	return true
 }
 
 func Dopen() {
