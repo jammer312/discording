@@ -101,7 +101,22 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 				reply(session, message, "failed to change `"+Dsanitize(args[0])+"` channel type to <#"+message.ChannelID+">")
 			}
 			return
-
+		case "unbind":
+			delcommand(session, message)
+			if len(args) < 1 {
+				reply(session, message, "usage: !unbind [channel_type]")
+				return
+			}
+			if !permissions_check(message.Author) {
+				reply(session, message, "permission check failed")
+				return
+			}
+			if update_known_channels(args[0], "") {
+				reply(session, message, "unbound `"+Dsanitize(args[0])+"`"
+			} else {
+				reply(session, message, "failed to unbind `"+Dsanitize(args[0])+"`"
+			}
+			return
 		default:
 			reply(session, message, "unknown command: `"+Dsanitize(command)+"`")
 			delcommand(session, message)
