@@ -60,7 +60,7 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Println("json error: ", err)
 		}
-		OOC_message_send(parsed.Ckey + ": " + parsed.Message)
+		OOC_message_send("**" + parsed.Ckey + "**: " + Dsanitize(parsed.Message))
 	default:
 		log.Print(form)
 	}

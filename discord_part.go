@@ -4,6 +4,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"log"
 	"os"
+	"strings"
 )
 
 var (
@@ -36,10 +37,19 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 }
 
 func OOC_message_send(m string) {
-	_, err := dsession.ChannelMessageSend(discord_ooc_channel, "OOC: "+m)
+	_, err := dsession.ChannelMessageSend(discord_ooc_channel, "**OOC:** "+m)
 	if err != nil {
 		log.Println("NON-PANIC ERROR: failed to send OOC message to discord: ", err)
 	}
+}
+
+func Dsanitize(m string) string {
+	out := strings.Replace(m, "\\", "\\\\", -1)
+	out = strings.Replace(m, "*", "\\*", -1)
+	out = strings.Replace(m, "`", "\\`", -1)
+	out = strings.Replace(m, "_", "\\_", -1)
+	out = strings.Replace(m, "~", "\\~", -1)
+
 }
 
 func Dopen() {
