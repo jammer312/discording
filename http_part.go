@@ -38,7 +38,7 @@ func safe_param(m *url.Values, param string) string {
 	return (*m)[param][0]
 }
 
-type OOCmessage struct {
+type message struct {
 	Ckey    string
 	Message string
 }
@@ -56,7 +56,7 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 	switch safe_param(form, "method") {
 	case "oocmessage":
 		json_data := []byte(Bquery_deconvert(safe_param(form, "data")))
-		var parsed OOCmessage
+		var parsed message
 		err := json.Unmarshal(json_data, &parsed)
 		if err != nil {
 			log.Println("json error: ", err)
@@ -64,6 +64,16 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 			log.Println("Deconvertd string: '", Bquery_deconvert(safe_param(form, "data")), "'")
 		}
 		Discord_message_send("ooc", "OOC:", parsed.Ckey, html.UnescapeString(parsed.Message))
+	case "asaymessage":
+		json_data := []byte(Bquery_deconvert(safe_param(form, "data")))
+		var parsed message
+		err := json.Unmarshal(json_data, &parsed)
+		if err != nil {
+			log.Println("json error: ", err)
+			log.Println("Origin string: '", safe_param(form, "data"), "'")
+			log.Println("Deconvertd string: '", Bquery_deconvert(safe_param(form, "data")), "'")
+		}
+		Discord_message_send("admin", "ASAY:", parsed.Ckey, html.UnescapeString(parsed.Message))
 	default:
 		log.Print(form)
 	}
