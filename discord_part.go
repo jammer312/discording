@@ -104,8 +104,12 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		case "unbind":
 			defer delcommand(session, message)
 			if len(args) < 1 {
-				reply(session, message, "usage: !unbind [channel_type]")
-				return
+				tch := known_channels_id_t[message.ChannelID]
+				if tch == "" {
+					reply(session, message, "no channel bound here")
+					return
+				}
+				args = append(args, tch)
 			}
 			if !permissions_check(message.Author) {
 				reply(session, message, "permission check failed")
