@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"log"
 	"os"
@@ -69,7 +70,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			reply(session, message, "pong!")
 			delcommand(session, message)
 		case "count":
-			reply(session, message, string(len(args))+" args detected")
+			reply(session, message, fmt.Sprint(len(args))+" args detected")
 			delcommand(session, message)
 		default:
 			reply(session, message, "unknown command: `"+Dsanitize(command)+"`")
