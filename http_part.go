@@ -60,8 +60,6 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 		err := json.Unmarshal(json_data, &parsed)
 		if err != nil {
 			log.Println("json error: ", err)
-			log.Println("Origin string: '", safe_param(form, "data"), "'")
-			log.Println("Deconvertd string: '", Bquery_deconvert(safe_param(form, "data")), "'")
 		}
 		Discord_message_send("ooc", "OOC:", parsed.Ckey, html.UnescapeString(parsed.Message))
 	case "asaymessage":
@@ -70,10 +68,24 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 		err := json.Unmarshal(json_data, &parsed)
 		if err != nil {
 			log.Println("json error: ", err)
-			log.Println("Origin string: '", safe_param(form, "data"), "'")
-			log.Println("Deconvertd string: '", Bquery_deconvert(safe_param(form, "data")), "'")
 		}
 		Discord_message_send("admin", "ASAY:", parsed.Ckey, html.UnescapeString(parsed.Message))
+	case "asaymessage":
+		json_data := []byte(Bquery_deconvert(safe_param(form, "data")))
+		var parsed message
+		err := json.Unmarshal(json_data, &parsed)
+		if err != nil {
+			log.Println("json error: ", err)
+		}
+		Discord_message_send("admin", "AHELP:", parsed.Ckey, html.UnescapeString(parsed.Message))
+	case "memessage":
+		json_data := []byte(Bquery_deconvert(safe_param(form, "data")))
+		var parsed message
+		err := json.Unmarshal(json_data, &parsed)
+		if err != nil {
+			log.Println("json error: ", err)
+		}
+		Discord_message_send("me", "EMOTE:", parsed.Ckey, html.UnescapeString(parsed.Message))
 	default:
 		log.Print(form)
 	}
