@@ -50,6 +50,7 @@ func Dsanitize(m string) string {
 	out = strings.Replace(out, "`", "\\`", -1)
 	out = strings.Replace(out, "_", "\\_", -1)
 	out = strings.Replace(out, "~", "\\~", -1)
+	out = strings.Replace(out, "@", "\\@", -1)
 	return out
 }
 
