@@ -147,6 +147,8 @@ func populate_known_channels() {
 		if terr := rows.Scan(&ch, &id); terr != nil {
 			log.Println("DB ERROR: ", terr)
 		}
+		ch = strings.Trim(ch, " ")
+		id = strings.Trim(id, " ")
 		known_channels_id_t[id] = ch
 		known_channels_t_id[ch] = id
 		log.Println("DB: setting `" + id + "` to '" + ch + "';")
