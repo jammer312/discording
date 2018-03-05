@@ -12,7 +12,8 @@ var (
 	discord_bot_token         string
 	discord_ooc_channel       string
 	discord_command_character string
-	known_channels            map[string]string
+	known_channels_id_t       map[string]string
+	known_channels_t_id       map[string]string
 	discord_superuser_id      string
 )
 
@@ -36,7 +37,8 @@ func init() {
 	if discord_superuser_id == "" {
 		log.Fatalln("Failed to retrieve $discord_superuser_id")
 	}
-	known_channels = make(map[string]string)
+	known_channels_id_t = make(map[string]string)
+	known_channels_t_id = make(map[string]string)
 }
 
 func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg string) {
@@ -107,8 +109,10 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		return
 
 	}
-	if message.ChannelID == discord_ooc_channel {
+	switch known_channels_id_t[message.ChannelID] {
+	case "ooc":
 		Byond_query("admin="+Bquery_convert(message.Author.Username)+"&ooc="+Bquery_convert(mcontent), true)
+	default:
 	}
 }
 
@@ -130,11 +134,38 @@ func Dsanitize(m string) string {
 }
 
 func populate_known_channels() {
-
+	rows, err := Database.Query("select CHANTYPE, CHANID from DISCORD_CHANNELS")
+	if err != nil {
+		log.Println("DB ERROR: failed to retrieve known channels: ", err)
+		return
+	}
+	for rows.Next() {
+		var ch, id string
+		if terr := rows.Scan(&ch, &id); terr != nil {
+			log.Println("DB ERROR: ", terr)
+		}
+		known_channels_id_t[id] = ch
+		known_channels_t_id[ch] = id
+		log.Println("DB: setting `" + id + "` to '" + ch + "';")
+	}
 }
 
 func update_known_channels(t, id string) bool {
-	return true
+	result, err := Database.Exec("update DISCORD_CHANNELS set CHANID = '$2' where CHANTYPE = '$1';", t, id)
+	if err != nil {
+		log.Println("DB ERROR: failed to update: ", err)
+		return false
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		log.Println("DB ERROR: failed to retrieve amount of rows affected: ", err)
+		return false
+	}
+	if affected > 0 {
+		populate_known_channels() //update everything
+		return true
+	}
+	return false
 }
 
 func Dopen() {
