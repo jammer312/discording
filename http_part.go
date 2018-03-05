@@ -56,7 +56,7 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 	case "oocmessage":
 		json_data := safe_param(form, "data")
 		var parsed OOCmessage
-		err := json.Unmarshal(json_data, &parsed)
+		err := json.Unmarshal([]byte(json_data), &parsed)
 		if err != nil {
 			log.Println("json error: ", err)
 		}
