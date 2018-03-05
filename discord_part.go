@@ -96,9 +96,9 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 				return
 			}
 			if update_known_channels(args[0], message.ChannelID) {
-				reply(session, message, "changed `"+Dsanitize(args[0])+"` channel type to <#"+message.ChannelID+">")
+				reply(session, message, "changed `"+Dsanitize(args[0])+"` channel to <#"+message.ChannelID+">")
 			} else {
-				reply(session, message, "failed to change `"+Dsanitize(args[0])+"` channel type to <#"+message.ChannelID+">")
+				reply(session, message, "failed to change `"+Dsanitize(args[0])+"` channel to <#"+message.ChannelID+">")
 			}
 			return
 		case "unbind":
