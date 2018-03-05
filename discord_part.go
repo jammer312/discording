@@ -156,7 +156,7 @@ func populate_known_channels() {
 }
 
 func update_known_channels(t, id string) bool {
-	result, err := Database.Exec("update DISCORD_CHANNELS set CHANID = '$2' where CHANTYPE = '$1';", t, id)
+	result, err := Database.Exec("update DISCORD_CHANNELS set CHANID = $2 where CHANTYPE = $1;", t, id)
 	if err != nil {
 		log.Println("DB ERROR: failed to update: ", err)
 		return false
