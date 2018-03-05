@@ -70,7 +70,7 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 			log.Println("json error: ", err)
 		}
 		Discord_message_send("admin", "ASAY:", parsed.Ckey, html.UnescapeString(parsed.Message))
-	case "asaymessage":
+	case "ahelpmessage":
 		json_data := []byte(Bquery_deconvert(safe_param(form, "data")))
 		var parsed message
 		err := json.Unmarshal(json_data, &parsed)
