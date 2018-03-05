@@ -56,12 +56,13 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 	case "oocmessage":
 		predeconvert := safe_param(form, "data")
 		json_data := Bquery_deconvert(predeconvert)
+		json_bytedata := []byte(json_data)
 		var parsed OOCmessage
-		err := json.Unmarshal([]byte(json_data), &parsed)
+		err := json.Unmarshal(json_bytedata, &parsed)
 		if err != nil {
 			log.Println("json error: ", err)
 		}
-		OOC_message_send(predeconvert + " - " + json_data + " - " + parsed.message)
+		OOC_message_send(predeconvert + " - " + json_data + " - " + string(json_bytedata) + " - " + parsed.message)
 	default:
 		fmt.Fprint(w, form)
 	}
