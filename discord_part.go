@@ -49,7 +49,7 @@ func Dsanitize(m string) string {
 	out = strings.Replace(m, "`", "\\`", -1)
 	out = strings.Replace(m, "_", "\\_", -1)
 	out = strings.Replace(m, "~", "\\~", -1)
-
+	return out
 }
 
 func Dopen() {
