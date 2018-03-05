@@ -59,7 +59,8 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 		err := json.Unmarshal(json_data, &parsed)
 		if err != nil {
 			log.Println("json error: ", err)
-			log.Println("Origin string: '", string(json_data), "'")
+			log.Println("Origin string: '", safe_param(form, "data"), "'")
+			log.Println("Deconvertd string: '", Bquery_deconvert(safe_param(form, "data")), "'")
 		}
 		OOC_message_send("**" + parsed.Ckey + "**: " + Dsanitize(parsed.Message))
 	default:
