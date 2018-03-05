@@ -112,9 +112,9 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 				return
 			}
 			if update_known_channels(args[0], "") {
-				reply(session, message, "unbound `"+Dsanitize(args[0])+"`"
+				reply(session, message, "unbound `"+Dsanitize(args[0])+"`")
 			} else {
-				reply(session, message, "failed to unbind `"+Dsanitize(args[0])+"`"
+				reply(session, message, "failed to unbind `"+Dsanitize(args[0])+"`")
 			}
 			return
 		default:
