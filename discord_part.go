@@ -86,7 +86,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			delcommand(session, message)
 			return
 		case "here":
-			delcommand(session, message)
+			defer delcommand(session, message)
 			if len(args) < 1 {
 				reply(session, message, "usage: !here [channel_type]")
 				return
@@ -102,7 +102,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			}
 			return
 		case "unbind":
-			delcommand(session, message)
+			defer delcommand(session, message)
 			if len(args) < 1 {
 				reply(session, message, "usage: !unbind [channel_type]")
 				return
