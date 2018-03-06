@@ -81,26 +81,37 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		case "who":
 			br := Byond_query("who", false)
 			reply(session, message, br.String())
-			return
+
 		case "count":
 			reply(session, message, fmt.Sprint(len(args))+" args detected")
-			return
-		case "here":
+
+		case "channel_here":
 			if len(args) < 1 {
-				reply(session, message, "usage: !here [channel_type]")
+				reply(session, message, "usage: !channel_here [channel_type]")
 				return
 			}
 			if !permissions_check(message.Author) {
 				reply(session, message, "permission check failed")
 				return
 			}
-			if update_known_channels(args[0], message.ChannelID) {
+			if update_known_channel(args[0], message.ChannelID) {
 				reply(session, message, "changed `"+Dweaksanitize(args[0])+"` channel to <#"+message.ChannelID+">")
 			} else {
 				reply(session, message, "failed to change `"+Dweaksanitize(args[0])+"` channel to <#"+message.ChannelID+">")
 			}
-			return
-		case "unbind":
+
+		case "channel_list":
+			if !permissions_check(message.Author) {
+				reply(session, message, "permission check failed")
+				return
+			}
+			reply(session, message, list_known_channels())
+
+		case "channel_remove":
+			if !permissions_check(message.Author) {
+				reply(session, message, "permission check failed")
+				return
+			}
 			if len(args) < 1 {
 				tch := known_channels_id_t[message.ChannelID]
 				if tch == "" {
@@ -109,16 +120,12 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 				}
 				args = append(args, tch)
 			}
-			if !permissions_check(message.Author) {
-				reply(session, message, "permission check failed")
-				return
-			}
-			if update_known_channels(args[0], "") {
-				reply(session, message, "unbound `"+Dweaksanitize(args[0])+"`")
+			if remove_known_channel(args[0]) {
+				reply(session, message, "removed `"+Dweaksanitize(args[0])+"`")
 			} else {
-				reply(session, message, "failed to unbind `"+Dweaksanitize(args[0])+"`")
+				reply(session, message, "failed to remove `"+Dweaksanitize(args[0])+"`")
 			}
-			return
+
 		default:
 			reply(session, message, "unknown command: `"+Dweaksanitize(command)+"`")
 		}
@@ -168,6 +175,9 @@ func populate_known_channels() {
 	for k := range known_channels_id_t {
 		delete(known_channels_id_t, k)
 	} //clear id->type pairs
+	for k := range known_channels_t_id {
+		delete(known_channels_t_id, k)
+	} //clear type->id pairs too because now channeltypes can be added/removed
 	for rows.Next() {
 		var ch, id string
 		if terr := rows.Scan(&ch, &id); terr != nil {
@@ -181,7 +191,55 @@ func populate_known_channels() {
 	}
 }
 
-func update_known_channels(t, id string) bool {
+func add_known_channel(t, id string) bool {
+	result, err := Database.Exec("insert into DISCORD_CHANNELS values ($1, $2);", t)
+	if err != nil {
+		log.Println("DB ERROR: failed to insert: ", err)
+		return false
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		log.Println("DB ERROR: failed to retrieve amount of rows affected: ", err)
+		return false
+	}
+	if affected > 0 {
+		populate_known_channels() //update everything
+		return true
+	}
+	return false
+}
+
+func remove_known_channel(t string) bool {
+	result, err := Database.Exec("delete from DISCORD_CHANNELS where CHANTYPE = $1 ;", t)
+	if err != nil {
+		log.Println("DB ERROR: failed to delete: ", err)
+		return false
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		log.Println("DB ERROR: failed to retrieve amount of rows affected: ", err)
+		return false
+	}
+	if affected > 0 {
+		populate_known_channels() //update everything
+		return true
+	}
+	return false
+}
+
+func list_known_channels() string {
+	ret := "known channels:\n"
+	for t, id := range known_channels_t_id {
+		if id == "" {
+			ret += fmt.Sprintf("`%s`\n", t)
+		} else {
+			ret += fmt.Sprintf("`%s` <-> <#%s>\n", t, id)
+		}
+	}
+	return ret
+}
+
+func update_known_channel(t, id string) bool {
 	result, err := Database.Exec("update DISCORD_CHANNELS set CHANID = $2 where CHANTYPE = $1;", t, id)
 	if err != nil {
 		log.Println("DB ERROR: failed to update: ", err)
@@ -195,6 +253,8 @@ func update_known_channels(t, id string) bool {
 	if affected > 0 {
 		populate_known_channels() //update everything
 		return true
+	} else {
+		return add_known_channel(t, id)
 	}
 	return false
 }
