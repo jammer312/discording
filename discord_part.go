@@ -141,7 +141,7 @@ func Discord_message_send(channel, prefix, ckey, message string) {
 	if known_channels_t_id[channel] == "" {
 		return //idk where to send it
 	}
-	_, err := dsession.ChannelMessageSend(known_channels_t_id[channel], "**"+Dsanitize(prefix+" "+ckey)+"** "+Dsanitize(message))
+	_, err := dsession.ChannelMessageSend(known_channels_t_id[channel], "**"+Dsanitize(prefix+" "+ckey)+":** "+Dsanitize(message))
 	if err != nil {
 		log.Println("DISCORD ERROR: failed to send OOC message to discord: ", err)
 	}
@@ -210,9 +210,11 @@ func Dopen() {
 	log.Print("Successfully connected to discord, now running as ", dsession.State.User)
 	populate_known_channels()
 	dsession.AddHandler(messageCreate)
+	Discord_message_send("bot_status", "BOT", "STATUS UPDATE", "now running.")
 }
 
 func Dclose() {
+	Discord_message_send("bot_status", "BOT", "STATUS UPDATE", "shutting down due to host request.")
 	err := dsession.Close()
 	if err != nil {
 		log.Fatal("Failed to close dsession: ", err)
