@@ -76,17 +76,16 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		} else {
 			args = make([]string, 0) //empty slice
 		}
+		defer delcommand(session, message)
 		switch command {
-		case "ping":
-			reply(session, message, "pong!")
-			delcommand(session, message)
+		case "who":
+			br := Byond_query("who", false)
+			reply(session, message, br.String())
 			return
 		case "count":
 			reply(session, message, fmt.Sprint(len(args))+" args detected")
-			delcommand(session, message)
 			return
 		case "here":
-			defer delcommand(session, message)
 			if len(args) < 1 {
 				reply(session, message, "usage: !here [channel_type]")
 				return
@@ -102,7 +101,6 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			}
 			return
 		case "unbind":
-			defer delcommand(session, message)
 			if len(args) < 1 {
 				tch := known_channels_id_t[message.ChannelID]
 				if tch == "" {
@@ -123,7 +121,6 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			return
 		default:
 			reply(session, message, "unknown command: `"+Dweaksanitize(command)+"`")
-			delcommand(session, message)
 		}
 		return
 
