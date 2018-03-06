@@ -96,9 +96,9 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 				return
 			}
 			if update_known_channels(args[0], message.ChannelID) {
-				reply(session, message, "changed `"+Dsanitize(args[0])+"` channel to <#"+message.ChannelID+">")
+				reply(session, message, "changed `"+Dweaksanitize(args[0])+"` channel to <#"+message.ChannelID+">")
 			} else {
-				reply(session, message, "failed to change `"+Dsanitize(args[0])+"` channel to <#"+message.ChannelID+">")
+				reply(session, message, "failed to change `"+Dweaksanitize(args[0])+"` channel to <#"+message.ChannelID+">")
 			}
 			return
 		case "unbind":
@@ -116,13 +116,13 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 				return
 			}
 			if update_known_channels(args[0], "") {
-				reply(session, message, "unbound `"+Dsanitize(args[0])+"`")
+				reply(session, message, "unbound `"+Dweaksanitize(args[0])+"`")
 			} else {
-				reply(session, message, "failed to unbind `"+Dsanitize(args[0])+"`")
+				reply(session, message, "failed to unbind `"+Dweaksanitize(args[0])+"`")
 			}
 			return
 		default:
-			reply(session, message, "unknown command: `"+Dsanitize(command)+"`")
+			reply(session, message, "unknown command: `"+Dweaksanitize(command)+"`")
 			delcommand(session, message)
 		}
 		return
@@ -154,6 +154,11 @@ func Dsanitize(m string) string {
 	out = strings.Replace(out, "_", "\\_", -1)
 	out = strings.Replace(out, "~", "\\~", -1)
 	out = strings.Replace(out, "@", "\\@", -1)
+	return out
+}
+
+func Dweaksanitize(m string) string {
+	out := strings.Replace(m, "`", "\\`", -1)
 	return out
 }
 
