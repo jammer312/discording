@@ -192,7 +192,7 @@ func populate_known_channels() {
 }
 
 func add_known_channel(t, id string) bool {
-	result, err := Database.Exec("insert into DISCORD_CHANNELS values ($1, $2);", t)
+	result, err := Database.Exec("insert into DISCORD_CHANNELS values ($1, $2);", t, id)
 	if err != nil {
 		log.Println("DB ERROR: failed to insert: ", err)
 		return false
