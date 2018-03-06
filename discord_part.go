@@ -84,7 +84,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 
 		case "manifest":
 			br := Byond_query("manifest", false)
-			reply(session, message, br.String())
+			reply(session, message, Bquery_deconvert(br.String()))
 
 		case "count":
 			reply(session, message, fmt.Sprint(len(args))+" args detected")
