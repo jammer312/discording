@@ -129,6 +129,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			return
 		}
 		reply(session, message, ret)
+		return
 	}
 
 	if known_channels_id_t[message.ChannelID] != "ooc" && known_channels_id_t[message.ChannelID] != "admin" {
