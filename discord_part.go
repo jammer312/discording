@@ -78,6 +78,8 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		}
 		defer delcommand(session, message)
 		switch command {
+		case "pmme":
+			Discord_private_message_send(message.Author, "tryam")
 		case "who":
 			br := Byond_query("who", false)
 			reply(session, message, br.String())
@@ -164,8 +166,21 @@ func Discord_message_send(channel, prefix, ckey, message string) {
 	}
 	_, err := dsession.ChannelMessageSend(known_channels_t_id[channel], "**"+Dsanitize(prefix+delim+ckey)+":** "+Dsanitize(message))
 	if err != nil {
-		log.Println("DISCORD ERROR: failed to send OOC message to discord: ", err)
+		log.Println("DISCORD ERROR: failed to send message to discord: ", err)
 	}
+}
+
+func Discord_private_message_send(user *discordgo.User, message string) bool {
+	channel, err := dsession.UserChannelCreate(user.ID)
+	if err != nil {
+		log.Println("Failed to create private channel: ", err)
+		return false
+	}
+	_, err = dsession.ChannelMessageSend(channel.ID, message)
+	if err != nil {
+		log.Println("DISCORD ERROR: failed to send message to discord: ", err)
+	}
+	return true
 }
 
 func Dsanitize(m string) string {
