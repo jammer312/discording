@@ -7,6 +7,7 @@ import (
 	"html"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -104,6 +105,40 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		}
 		defer delcommand(session, message)
 		switch command {
+		case "check_permission":
+			if len(args) < 2 {
+				reply(session, message, "usage: !"+command+" ckey permlevel")
+				return
+			}
+			ckey := args[0]
+			permlevel, err := strconv.Atoi(args[1])
+			if err != nil {
+				reply(session, message, "error parsing permlevel argument: "+fmt.Sprint(err))
+				return
+			}
+			userid := ""
+			for id, ck := range local_users {
+				if strings.ToLower(ckey) == strings.ToLower(ck) {
+					userid = id
+					break
+				}
+			}
+			if userid == "" {
+				reply(session, message, "no user bound to that ckey: `"+ckey+"`")
+				return
+			}
+			user, err := session.User(userid)
+			if err != nil {
+				log.Println(err)
+				reply(session, message, "failed to retrieve userid")
+				return
+			}
+			if permissions_check(user, permlevel) {
+				reply(session, message, "permission check for `"+ckey+"` at permlevel "+fmt.Sprint(permlevel)+" OK")
+			} else {
+				reply(session, message, "permission check for `"+ckey+"` at permlevel "+fmt.Sprint(permlevel)+" FAIL")
+			}
+
 		case "list_admins":
 			ret := "known admins:\n"
 			for _, admin := range known_admins {
