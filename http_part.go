@@ -86,6 +86,14 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 			log.Println("json error: ", err)
 		}
 		Discord_message_send("me", "EMOTE:", parsed.Ckey, html.UnescapeString(parsed.Message))
+	case "garbage":
+		json_data := []byte(Bquery_deconvert(safe_param(form, "data")))
+		var parsed message
+		err := json.Unmarshal(json_data, &parsed)
+		if err != nil {
+			log.Println("json error: ", err)
+		}
+		Discord_message_send("garbage", "G:", parsed.Ckey, html.UnescapeString(parsed.Message))
 	default:
 		log.Print(form)
 	}
