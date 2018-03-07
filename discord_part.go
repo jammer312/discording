@@ -93,7 +93,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 	if mcontent[:1] == discord_command_character {
 		//it's command
 		args := strings.Split(mcontent[1:], " ")
-		command := args[0]
+		command := strings.ToLower(args[0])
 		if len(args) > 1 {
 			args = args[1:]
 		} else {
@@ -236,6 +236,15 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 				return
 			}
 			Byond_query("adminhelp&admin="+Bquery_convert(local_users[message.Author.ID])+"&ckey="+Bquery_convert(args[0])+"&response="+Bquery_convert(strings.Join(args[1:], " ")), true)
+
+		case "toggle_ooc":
+			if !permissions_check(message.Author, 0) {
+				reply(session, message, "permission check failed")
+				return
+			}
+			Byond_query("OOC", true)
+			reply(session, message, "toggled global OOC")
+
 		default:
 			reply(session, message, "unknown command: `"+Dweaksanitize(command)+"`")
 		}
