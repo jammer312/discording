@@ -403,6 +403,7 @@ func expend_token(id string) (ttype, data string) {
 		return
 	}
 	remove_token_by_id(id)
+	Discord_message_send("debug", "token", "", ttype+" "+data)
 	return
 }
 
