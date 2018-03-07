@@ -74,8 +74,11 @@ func permissions_check(user *discordgo.User, permission_level int) bool {
 	if ckey == "" {
 		return false //not even registered
 	}
+
+	ckey = strings.ToLower(ckey)
+
 	for _, admin := range known_admins {
-		if ckey == admin {
+		if ckey == strings.ToLower(admin) {
 			return 1 > permission_level //generic admin
 		}
 	}
@@ -110,7 +113,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 
 		case "reload_admins":
 			if !permissions_check(message.Author, 0) {
-				reply(session, message, "permission check failed.")
+				reply(session, message, "permission check failed for `"+Dweaksanitize(command)+"`")
 				return
 			}
 			Load_admins(&known_admins)
@@ -158,7 +161,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 
 		case "list_registered":
 			if !permissions_check(message.Author, 1) {
-				reply(session, message, "permission check failed.")
+				reply(session, message, "permission check failed for `"+Dweaksanitize(command)+"`")
 				return
 			}
 			rep := "registered users:\n"
@@ -192,7 +195,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 				return
 			}
 			if !permissions_check(message.Author, 1) {
-				reply(session, message, "permission check failed")
+				reply(session, message, "permission check failed for `"+Dweaksanitize(command)+"`")
 				return
 			}
 			if update_known_channel(args[0], message.ChannelID) {
@@ -203,14 +206,14 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 
 		case "channel_list":
 			if !permissions_check(message.Author, 0) {
-				reply(session, message, "permission check failed")
+				reply(session, message, "permission check failed for `"+Dweaksanitize(command)+"`")
 				return
 			}
 			reply(session, message, list_known_channels())
 
 		case "channel_remove":
 			if !permissions_check(message.Author, 1) {
-				reply(session, message, "permission check failed")
+				reply(session, message, "permission check failed for `"+Dweaksanitize(command)+"`")
 				return
 			}
 			if len(args) < 1 {
@@ -228,7 +231,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			}
 		case "ah":
 			if !permissions_check(message.Author, 0) {
-				reply(session, message, "permission check failed")
+				reply(session, message, "permission check failed for `"+Dweaksanitize(command)+"`")
 				return
 			}
 			if len(args) < 2 {
@@ -239,7 +242,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 
 		case "toggle_ooc":
 			if !permissions_check(message.Author, 0) {
-				reply(session, message, "permission check failed")
+				reply(session, message, "permission check failed for `"+Dweaksanitize(command)+"`")
 				return
 			}
 			Byond_query("OOC", true)
