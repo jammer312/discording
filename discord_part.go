@@ -158,7 +158,11 @@ func Discord_message_send(channel, prefix, ckey, message string) {
 	if known_channels_t_id[channel] == "" {
 		return //idk where to send it
 	}
-	_, err := dsession.ChannelMessageSend(known_channels_t_id[channel], "**"+Dsanitize(prefix+" "+ckey)+":** "+Dsanitize(message))
+	var delim string
+	if prefix != "" && ckey != "" {
+		delim = " "
+	}
+	_, err := dsession.ChannelMessageSend(known_channels_t_id[channel], "**"+Dsanitize(prefix+delim+ckey)+":** "+Dsanitize(message))
 	if err != nil {
 		log.Println("DISCORD ERROR: failed to send OOC message to discord: ", err)
 	}
