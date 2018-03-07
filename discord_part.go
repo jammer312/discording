@@ -92,6 +92,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 				return
 			}
 			reply(session, message, "login failed. Did you forget to `!register`?")
+
 		case "logoff":
 			channel, err := session.Channel(message.ChannelID)
 			if err != nil {
@@ -103,6 +104,15 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 				return
 			}
 			reply(session, message, "logoff failed.")
+
+		case "whoami":
+			ckey := local_users[message.Author.ID]
+			if ckey == "" {
+				reply(session, message, "you're not logged in")
+				return
+			}
+			reply(session, message, "you're logged in as "+ckey)
+
 		case "register":
 			remove_token("register", message.Author.ID)
 			id := create_token("register", message.Author.ID)
@@ -111,6 +121,18 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 				return
 			}
 			Discord_private_message_send(message.Author, "Use `Bot token` in `OOC` tab on server with following token: `"+id+"` to complete registration. Afterwards you can use `!login` to gain ooc permissions in discord guild.")
+
+		case "list_registered":
+			if !permissions_check(message.Author) {
+				reply(session, message, "permission check failed.")
+				return
+			}
+			rep := "registered users:\n"
+			for login, ckey := range local_users {
+				rep += fmt.Sprintf("%s -> %s\n", login, ckey)
+			}
+			reply(session, message, rep)
+
 		case "who":
 			br := Byond_query("who", false)
 			reply(session, message, br.String())
@@ -484,6 +506,7 @@ func Dopen() {
 	}
 	log.Print("Successfully connected to discord, now running as ", dsession.State.User)
 	populate_known_channels()
+	update_local_users()
 	dsession.AddHandler(messageCreate)
 	Discord_message_send("bot_status", "BOT", "STATUS UPDATE", "now running.")
 }
