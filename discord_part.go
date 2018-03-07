@@ -88,7 +88,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 				reply(session, message, "failed to retrieve channel")
 			}
 			if login_user(channel.GuildID, message.Author.ID) {
-				reply(session, message, "OK")
+				reply(session, message, "successfully logged in as "+local_users[message.Author.ID])
 				return
 			}
 			reply(session, message, "login failed. Did you forget to `!register`?")
@@ -100,7 +100,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 				reply(session, message, "failed to retrieve channel")
 			}
 			if logoff_user(channel.GuildID, message.Author.ID) {
-				reply(session, message, "OK")
+				reply(session, message, "successfully logged off")
 				return
 			}
 			reply(session, message, "logoff failed.")
@@ -210,8 +210,17 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 	}
 	shown_nick := local_users[message.Author.ID]
 	if shown_nick == "" {
-		shown_nick = message.Author.Username + " (NONREGISTERED)"
+		channel, err := session.Channel(message.ChannelID)
+		if err != nil {
+			log.Println("Shiet: ", err)
+			reply(session, message, "failed to retrieve channel")
+		}
+		if logoff_user(channel.GuildID, message.Author.ID) {
+			reply(session, message, "you were logged off because of missing registration entry (try !register)")
+			return
+		}
 	}
+
 	switch known_channels_id_t[message.ChannelID] {
 	case "ooc":
 		Byond_query("admin="+Bquery_convert(shown_nick)+"&ooc="+Bquery_convert(mcontent), true)
