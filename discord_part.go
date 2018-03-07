@@ -541,19 +541,35 @@ func update_local_user(login string) (ckey string) {
 }
 
 func login_user(guildid, userid string) bool {
-	if update_local_user(userid) == "" {
+	ckey := update_local_user(userid)
+	if ckey == "" {
 		return false
 	}
-	err := dsession.GuildMemberRoleAdd(guildid, userid, discord_pedal_role)
-	if err != nil {
-		log.Println("Login error: ", err)
-		return false
-	}
+
 	err = dsession.GuildMemberRoleAdd(guildid, userid, discord_ooc_role)
 	if err != nil {
 		log.Println("Login error: ", err)
 		return false
 	}
+
+	isadmin := false
+	for _, admin := range known_admins {
+		if ckey == admin {
+			isadmin = true
+			break
+		}
+	}
+
+	if !isadmin {
+		return true
+	}
+
+	err := dsession.GuildMemberRoleAdd(guildid, userid, discord_pedal_role)
+	if err != nil {
+		log.Println("Login error: ", err)
+		return false
+	}
+
 	return true
 }
 
