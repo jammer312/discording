@@ -130,7 +130,8 @@ func init() {
 	}
 }
 
-func Load_admins() *[]string {
+func Load_admins(str *[]string) {
+	str = nil //clearing
 	response, err := http.Get(admin_retrieval_page)
 	if err != nil {
 		log.Println("FUCK: ", err)
@@ -138,10 +139,19 @@ func Load_admins() *[]string {
 	defer response.Body.Close()
 	body, err := ioutil.ReadAll(response.Body)
 	bodyraw := string(body)
-	bodyraw = strip.StripTags(bodyraw)
-	log.Print(bodyraw)
-	str := make([]string, 1)
-	return &str
+	ind1 := strings.Index(bodyraw, "Architect")
+	ind2 := strings.Index(bodyraw, "Removed")
+	if ind1 == -1 || ind2 == -1 || ind2 < ind1 {
+		log.Fatal("Fuck")
+		return
+	}
+	bodyraw = bodyraw[ind1+10 : ind2-1]
+	for ind3 := strings.Index(bodyraw, "<tr>"); ind3 != -1; ind3 = strings.Index(bodyraw, "<tr>") {
+		ind4 := strings.Index(bodyraw, "</tr>")
+		*str = append(*str, fmt.Sprint(bodyraw[ind3+4:ind4]))
+		bodyraw = bodyraw[ind4+5:]
+	}
+	log.Println(*str)
 }
 
 func Http_server() *http.Server {

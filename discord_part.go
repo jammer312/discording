@@ -16,6 +16,7 @@ var (
 	known_channels_id_t       map[string]string
 	known_channels_t_id       map[string]string
 	local_users               map[string]string
+	known_admins              []string
 	discord_superuser_id      string
 )
 
@@ -42,6 +43,7 @@ func init() {
 	known_channels_id_t = make(map[string]string)
 	known_channels_t_id = make(map[string]string)
 	local_users = make(map[string]string)
+	known_admins = make([]string, 0)
 }
 
 func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg string) {
@@ -86,7 +88,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 				reply(session, message, "permission check failed.")
 				return
 			}
-			Load_admins()
+			Load_admins(&known_admins)
 		case "login":
 			channel, err := session.Channel(message.ChannelID)
 			if err != nil {
