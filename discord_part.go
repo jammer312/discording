@@ -129,7 +129,16 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			} else {
 				reply(session, message, "failed to remove `"+Dweaksanitize(args[0])+"`")
 			}
-
+		case "ah":
+			if message.ChannelID != known_channels_t_id["admin"] {
+				reply(session, message, " `"+Dweaksanitize(command)+"` is only available in <#"+known_channels_t_id["admin"]+">")
+				return
+			}
+			if len(args) < 2 {
+				reply(session, message, "usage: !ah [!ckey] [!message]")
+				return
+			}
+			Byond_query("admin="+Bquery_convert(message.Author.Username)+"&ckey="+Bquery_convert(args[0])+"&response="+Bquery_convert(strings.Join(args[1:], " ")), true)
 		default:
 			reply(session, message, "unknown command: `"+Dweaksanitize(command)+"`")
 		}
