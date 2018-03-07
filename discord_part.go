@@ -251,6 +251,10 @@ func Dweaksanitize(m string) string {
 	return out
 }
 
+func trim(str string) string {
+	return strings.Trim(str, " ")
+}
+
 func populate_known_channels() {
 	rows, err := Database.Query("select CHANTYPE, CHANID from DISCORD_CHANNELS")
 	if err != nil {
@@ -403,8 +407,8 @@ func expend_token(id string) (ttype, data string) {
 		return
 	}
 	remove_token_by_id(id)
-	ttype = strings.Trim(ttype, " ")
-	data = strings.Trim(data, " ")
+	ttype = trim(ttype)
+	data = trim(data)
 	return
 }
 
@@ -453,8 +457,8 @@ func update_local_users() {
 		if terr := rows.Scan(&login, &ckey); terr != nil {
 			log.Println("DB ERROR: ", terr)
 		}
-		login = strings.Trim(login, " ")
-		ckey = strings.Trim(ckey, " ")
+		login = trim(login)
+		ckey = trim(ckey)
 		local_users[login] = ckey
 	}
 }
@@ -466,11 +470,13 @@ func update_local_user(login string) (ckey string) {
 		log.Println("DB ERROR: failed to retrieve token data: ", err)
 		return
 	}
+	ckey = trim(ckey)
 	for l, c := range local_users {
 		if l == login || c == ckey {
 			delete(local_users, l)
 		}
 	}
+	local_users[login] = ckey
 	return
 }
 
