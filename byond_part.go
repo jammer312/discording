@@ -19,8 +19,8 @@ const (
 	ByondTypeFLOAT  byte = 0x2a
 	ByondTypeSTRING byte = 0x06
 
-	byond_request_timeout  int = 5 //in seconds
-	byond_response_timeout int = 6 //in seconds
+	byond_request_timeout  int = 60 //in seconds
+	byond_response_timeout int = 60 //in seconds
 )
 
 var (
