@@ -208,11 +208,15 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		return
 
 	}
+	shown_nick := local_users[message.Author.ID]
+	if shown_nick == "" {
+		shown_nick = message.Author.Username + " (NONREGISTERED)"
+	}
 	switch known_channels_id_t[message.ChannelID] {
 	case "ooc":
-		Byond_query("admin="+Bquery_convert(message.Author.Username)+"&ooc="+Bquery_convert(mcontent), true)
+		Byond_query("admin="+Bquery_convert(shown_nick)+"&ooc="+Bquery_convert(mcontent), true)
 	case "admin":
-		Byond_query("admin="+Bquery_convert(message.Author.Username)+"&asay="+Bquery_convert(mcontent), true)
+		Byond_query("admin="+Bquery_convert(shown_nick)+"&asay="+Bquery_convert(mcontent), true)
 	default:
 	}
 }
