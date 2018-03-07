@@ -15,6 +15,12 @@
 			"revisionTime": "2018-02-26T03:30:15Z"
 		},
 		{
+			"checksumSHA1": "heuZ3xL9U54A1QaK0msw4xgWHy0=",
+			"path": "github.com/grokify/html-strip-tags-go",
+			"revision": "fda376fed04166f97c4d8a367ad6f44f4136787e",
+			"revisionTime": "2017-12-15T08:11:31Z"
+		},
+		{
 			"checksumSHA1": "V1a5/Ra9HXKNuArt5WKUqu+Jxt8=",
 			"path": "github.com/lib/pq",
 			"revision": "88edab0803230a3898347e77b474f8c1820a1f20",
