@@ -546,7 +546,7 @@ func login_user(guildid, userid string) bool {
 		return false
 	}
 
-	err = dsession.GuildMemberRoleAdd(guildid, userid, discord_ooc_role)
+	err := dsession.GuildMemberRoleAdd(guildid, userid, discord_ooc_role)
 	if err != nil {
 		log.Println("Login error: ", err)
 		return false
@@ -564,7 +564,7 @@ func login_user(guildid, userid string) bool {
 		return true
 	}
 
-	err := dsession.GuildMemberRoleAdd(guildid, userid, discord_pedal_role)
+	err = dsession.GuildMemberRoleAdd(guildid, userid, discord_pedal_role)
 	if err != nil {
 		log.Println("Login error: ", err)
 		return false
