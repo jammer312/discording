@@ -60,8 +60,20 @@ func delcommand(session *discordgo.Session, message *discordgo.MessageCreate) {
 	}
 }
 
-func permissions_check(user *discordgo.User) bool {
-	return user.ID == discord_superuser_id //maybe it's only placeholder
+func permissions_check(user *discordgo.User, permission_level int) bool {
+	if user.ID == discord_superuser_id {
+		return 2 > permission_level //bot admin
+	}
+	ckey := local_users[user.ID]
+	if ckey == "" {
+		return false //not even registered
+	}
+	for _, admin := range known_admins {
+		if ckey == admin {
+			return 1 > permission_level //generic admin
+		}
+	}
+	return false
 }
 
 func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate) {
@@ -83,12 +95,20 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		}
 		defer delcommand(session, message)
 		switch command {
-		case "debug":
-			if !permissions_check(message.Author) {
+		case "list_admins":
+			ret := "known admins:\n"
+			for _, admin := range known_admins {
+				ret += admin + "\n"
+			}
+			reply(session, message, ret)
+
+		case "reload_admins":
+			if !permissions_check(message.Author, 0) {
 				reply(session, message, "permission check failed.")
 				return
 			}
 			Load_admins(&known_admins)
+
 		case "login":
 			channel, err := session.Channel(message.ChannelID)
 			if err != nil {
@@ -131,7 +151,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			Discord_private_message_send(message.Author, "Use `Bot token` in `OOC` tab on game server with following token: `"+id+"` to complete registration. Afterwards you can use `!login` to gain ooc permissions in discord guild.")
 
 		case "list_registered":
-			if !permissions_check(message.Author) {
+			if !permissions_check(message.Author, 1) {
 				reply(session, message, "permission check failed.")
 				return
 			}
@@ -165,7 +185,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 				reply(session, message, "usage: !channel_here [channel_type]")
 				return
 			}
-			if !permissions_check(message.Author) {
+			if !permissions_check(message.Author, 1) {
 				reply(session, message, "permission check failed")
 				return
 			}
@@ -176,14 +196,14 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			}
 
 		case "channel_list":
-			if !permissions_check(message.Author) {
+			if !permissions_check(message.Author, 0) {
 				reply(session, message, "permission check failed")
 				return
 			}
 			reply(session, message, list_known_channels())
 
 		case "channel_remove":
-			if !permissions_check(message.Author) {
+			if !permissions_check(message.Author, 1) {
 				reply(session, message, "permission check failed")
 				return
 			}
@@ -201,8 +221,8 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 				reply(session, message, "failed to remove `"+Dweaksanitize(args[0])+"`")
 			}
 		case "ah":
-			if message.ChannelID != known_channels_t_id["admin"] {
-				reply(session, message, " `"+Dweaksanitize(command)+"` is only available in <#"+known_channels_t_id["admin"]+">")
+			if !permissions_check(message.Author, 0) {
+				reply(session, message, "permission check failed")
 				return
 			}
 			if len(args) < 2 {
@@ -550,6 +570,7 @@ func Dopen() {
 	log.Print("Successfully connected to discord, now running as ", dsession.State.User)
 	populate_known_channels()
 	update_local_users()
+	Load_admins(&known_admins)
 	dsession.AddHandler(messageCreate)
 	Discord_message_send("bot_status", "BOT", "STATUS UPDATE", "now running.")
 }
