@@ -264,7 +264,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 	if !permissions_check(message.Author, 0) {
 		mcontent = html.EscapeString(mcontent)
 	} else {
-		mcontent = "<font color='#9b42f4'>" + mcontent + "</font>"
+		mcontent = "<font color='#39034f'>" + mcontent + "</font>"
 	}
 
 	switch known_channels_id_t[message.ChannelID] {
