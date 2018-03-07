@@ -208,6 +208,11 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		return
 
 	}
+
+	if known_channels_id_t[message.ChannelID] != "ooc" && known_channels_id_t[message.ChannelID] != "admin" {
+		return
+	}
+
 	shown_nick := local_users[message.Author.ID]
 	if shown_nick == "" {
 		channel, err := session.Channel(message.ChannelID)
