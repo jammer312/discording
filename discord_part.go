@@ -12,6 +12,7 @@ import (
 var (
 	discord_bot_token         string
 	discord_ooc_role          string
+	discord_pedal_role        string
 	discord_command_character string
 	known_channels_id_t       map[string]string
 	known_channels_t_id       map[string]string
@@ -31,6 +32,10 @@ func init() {
 	discord_ooc_role = os.Getenv("discord_ooc_role")
 	if discord_ooc_role == "" {
 		log.Fatalln("Failed to retrieve $discord_ooc_role")
+	}
+	discord_pedal_role = os.Getenv("discord_pedal_role")
+	if discord_pedal_role == "" {
+		log.Fatalln("Failed to retrieve $discord_pedal_role")
 	}
 	discord_command_character = os.Getenv("discord_command_character")
 	if discord_command_character == "" {
@@ -539,7 +544,12 @@ func login_user(guildid, userid string) bool {
 	if update_local_user(userid) == "" {
 		return false
 	}
-	err := dsession.GuildMemberRoleAdd(guildid, userid, discord_ooc_role)
+	err := dsession.GuildMemberRoleAdd(guildid, userid, discord_pedal_role)
+	if err != nil {
+		log.Println("Login error: ", err)
+		return false
+	}
+	err = dsession.GuildMemberRoleAdd(guildid, userid, discord_ooc_role)
 	if err != nil {
 		log.Println("Login error: ", err)
 		return false
@@ -548,7 +558,12 @@ func login_user(guildid, userid string) bool {
 }
 
 func logoff_user(guildid, userid string) bool {
-	err := dsession.GuildMemberRoleRemove(guildid, userid, discord_ooc_role)
+	err := dsession.GuildMemberRoleRemove(guildid, userid, discord_pedal_role)
+	if err != nil {
+		log.Println("Logoff error: ", err)
+		return false
+	}
+	err = dsession.GuildMemberRoleRemove(guildid, userid, discord_ooc_role)
 	if err != nil {
 		log.Println("Logoff error: ", err)
 		return false
