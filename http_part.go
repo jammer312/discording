@@ -107,7 +107,7 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Println("json error: ", err)
 		}
-		Discord_process_token(parsed.Token, parsed.Ckey)
+		Discord_process_token(parsed.Token, html.UnescapeString(parsed.Ckey))
 	default:
 		log.Print(form)
 	}
