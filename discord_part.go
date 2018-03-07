@@ -81,6 +81,12 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		}
 		defer delcommand(session, message)
 		switch command {
+		case "debug":
+			if !permissions_check(message.Author) {
+				reply(session, message, "permission check failed.")
+				return
+			}
+			Load_admins()
 		case "login":
 			channel, err := session.Channel(message.ChannelID)
 			if err != nil {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/grokify/html-strip-tags-go"
 	"html"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -13,8 +14,9 @@ import (
 )
 
 var (
-	http_webhook_key string
-	port             string
+	http_webhook_key     string
+	port                 string
+	admin_retrieval_page string
 )
 
 func index_handler(w http.ResponseWriter, r *http.Request) {
@@ -118,10 +120,28 @@ func init() {
 	if http_webhook_key == "" {
 		log.Fatalln("Failed to retrieve $http_webhook_key")
 	}
+	admin_retrieval_page = os.Getenv("admin_retrieval_page")
+	if admin_retrieval_page == "" {
+		log.Fatalln("Failed to retrieve $admin_retrieval_page")
+	}
 	port = os.Getenv("PORT")
 	if port == "" {
 		log.Fatalln("Failed to retrieve $PORT")
 	}
+}
+
+func Load_admins() *[]string {
+	response, err := http.Get(admin_retrieval_page)
+	if err != nil {
+		log.Println("FUCK: ", err)
+	}
+	defer response.Body.Close()
+	body, err := ioutil.ReadAll(response.Body)
+	bodyraw := string(body)
+	bodyraw = strip.StripTags(bodyraw)
+	log.Print(bodyraw)
+	str := make([]string, 1)
+	return &str
 }
 
 func Http_server() *http.Server {
