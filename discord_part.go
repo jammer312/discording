@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/google/uuid"
+	"html"
 	"log"
 	"os"
 	"strings"
@@ -258,6 +259,12 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			reply(session, message, "you were logged off because of missing registration entry (try !register)")
 			return
 		}
+	}
+
+	if !permissions_check(message.Author, 0) {
+		mcontent = html.EscapeString(mcontent)
+	} else {
+		mcontent = "<font color='##9b42f4'>" + mcontent + "</font>"
 	}
 
 	switch known_channels_id_t[message.ChannelID] {
