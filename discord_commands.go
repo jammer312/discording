@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"log"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -314,32 +315,37 @@ func init() {
 		Usage:     "",
 		Desc:      "print list of commands available to you",
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
-			var call, creg, cadm, csup string
+			call, creg, cadm, csup := make([]string, 0), make([]string, 0), make([]string, 0), make([]string, 0)
 			ret := ""
 			user := message.Author
 			for comm, dcomm := range Known_commands {
 				switch dcomm.Permlevel {
 				case PERMISSIONS_NONE:
-					call += comm + "\n"
+					call = append(call, comm)
 				case PERMISSIONS_REGISTERED:
-					creg += comm + "\n"
+					creg = append(creg, comm)
 				case PERMISSIONS_ADMIN:
-					cadm += comm + "\n"
+					cadm = append(cadm, comm)
 				case PERMISSIONS_SUPERUSER:
-					csup += comm + "\n"
+					csup = append(csup, comm)
 				}
 			}
+			//sort it in alphabetical, because otherwise order is random which is no good
+			sort.Strings(call)
+			sort.Strings(creg)
+			sort.Strings(cadm)
+			sort.Strings(csup)
 			if Permissions_check(user, PERMISSIONS_NONE) {
-				ret += "\n**Generic commands:**\n" + call
+				ret += "\n**Generic commands:**\n" + strings.Join(call, "\n")
 			}
 			if Permissions_check(user, PERMISSIONS_REGISTERED) {
-				ret += "\n**Commands, available to registered users:**\n" + creg
+				ret += "\n**Commands, available to registered users:**\n" + strings.Join(creg, "\n")
 			}
 			if Permissions_check(user, PERMISSIONS_ADMIN) {
-				ret += "\n**Admin commands:**\n" + cadm
+				ret += "\n**Admin commands:**\n" + strings.Join(cadm, "\n")
 			}
 			if Permissions_check(user, PERMISSIONS_SUPERUSER) {
-				ret += "\n**Superuser commands:**\n" + csup
+				ret += "\n**Superuser commands:**\n" + strings.Join(csup, "\n")
 			}
 			return ret
 		},
