@@ -129,7 +129,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			}
 			rep := "registered users:\n"
 			for login, ckey := range local_users {
-				rep += fmt.Sprintf("%s -> %s\n", login, ckey)
+				rep += fmt.Sprintf("<@!%s> -> %s\n", login, ckey)
 			}
 			reply(session, message, rep)
 
