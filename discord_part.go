@@ -138,7 +138,8 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 				reply(session, message, "usage: !ah [!ckey] [!message]")
 				return
 			}
-			Byond_query("admin="+Bquery_convert(message.Author.Username)+"&ckey="+Bquery_convert(args[0])+"&response="+Bquery_convert(strings.Join(args[1:], " ")), true)
+			br := Byond_query("admin="+Bquery_convert(message.Author.Username)+"&ckey="+Bquery_convert(args[0])+"&response="+Bquery_convert(strings.Join(args[1:], " ")), true)
+			reply(session, message, br.String())
 		default:
 			reply(session, message, "unknown command: `"+Dweaksanitize(command)+"`")
 		}
