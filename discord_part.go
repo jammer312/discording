@@ -269,7 +269,11 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 
 	switch known_channels_id_t[message.ChannelID] {
 	case "ooc":
-		Byond_query("admin="+Bquery_convert(shown_nick)+"&ooc="+Bquery_convert(mcontent), true)
+		br := Byond_query("admin="+Bquery_convert(shown_nick)+"&ooc="+Bquery_convert(mcontent), true)
+		if br.String() == "muted" {
+			defer delcommand(session, message)
+			reply(session, message, "your ckey is muted from OOC")
+		}
 	case "admin":
 		Byond_query("admin="+Bquery_convert(shown_nick)+"&asay="+Bquery_convert(mcontent), true)
 	default:
