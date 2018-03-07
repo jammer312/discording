@@ -120,7 +120,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 				reply(session, message, "failed for some reason, ask maintainer to investigate")
 				return
 			}
-			Discord_private_message_send(message.Author, "Use `Bot token` in `OOC` tab on server with following token: `"+id+"` to complete registration. Afterwards you can use `!login` to gain ooc permissions in discord guild.")
+			Discord_private_message_send(message.Author, "Use `Bot token` in `OOC` tab on game server with following token: `"+id+"` to complete registration. Afterwards you can use `!login` to gain ooc permissions in discord guild.")
 
 		case "list_registered":
 			if !permissions_check(message.Author) {
