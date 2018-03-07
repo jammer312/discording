@@ -215,6 +215,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 
 	shown_nick := local_users[message.Author.ID]
 	if shown_nick == "" {
+		defer delcommand(session, message)
 		channel, err := session.Channel(message.ChannelID)
 		if err != nil {
 			log.Println("Shiet: ", err)
