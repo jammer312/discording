@@ -108,10 +108,10 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		case "whoami":
 			ckey := local_users[message.Author.ID]
 			if ckey == "" {
-				reply(session, message, "you're not logged in")
+				reply(session, message, "you're not registered")
 				return
 			}
-			reply(session, message, "you're logged in as "+ckey)
+			reply(session, message, "you're registered as "+ckey)
 
 		case "register":
 			remove_token("register", message.Author.ID)
