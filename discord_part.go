@@ -545,7 +545,7 @@ func login_user(guildid, userid string) bool {
 	if ckey == "" {
 		return false
 	}
-
+	ckey = strings.ToLower(ckey)
 	err := dsession.GuildMemberRoleAdd(guildid, userid, discord_ooc_role)
 	if err != nil {
 		log.Println("Login error: ", err)
