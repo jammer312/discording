@@ -142,10 +142,22 @@ func Load_admins(str *[]string) {
 	ind1 := strings.Index(bodyraw, "Architect")
 	ind2 := strings.Index(bodyraw, "Removed")
 	if ind1 == -1 || ind2 == -1 || ind2 < ind1 {
-		log.Fatal("Fuck")
+		log.Println("Fuck")
 		return
 	}
 	bodyraw = bodyraw[ind1+10 : ind2-1]
+	for ind3 := strings.Index(bodyraw, "<td>"); ind3 != -1; ind3 = strings.Index(bodyraw, "<td>") {
+		ind4 := strings.Index(bodyraw, "</td>")
+		*str = append(*str, fmt.Sprint(bodyraw[ind3+4:ind4]))
+		bodyraw = bodyraw[ind4+5:]
+	}
+	bodyraw = string(body)
+	ind1 = strings.Index(bodyraw, "Siphon")
+	if ind1 == -1 {
+		log.Println("Fuck")
+		return
+	}
+	bodyraw = bodyraw[ind1+7:]
 	for ind3 := strings.Index(bodyraw, "<td>"); ind3 != -1; ind3 = strings.Index(bodyraw, "<td>") {
 		ind4 := strings.Index(bodyraw, "</td>")
 		*str = append(*str, fmt.Sprint(bodyraw[ind3+4:ind4]))
