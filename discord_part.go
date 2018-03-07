@@ -7,7 +7,6 @@ import (
 	"html"
 	"log"
 	"os"
-	"strconv"
 	"strings"
 )
 
@@ -15,12 +14,19 @@ var (
 	discord_bot_token         string
 	discord_ooc_role          string
 	discord_pedal_role        string
-	discord_command_character string
+	Discord_command_character string
 	known_channels_id_t       map[string]string
 	known_channels_t_id       map[string]string
 	local_users               map[string]string
-	known_admins              []string
+	Known_admins              []string
 	discord_superuser_id      string
+)
+
+const (
+	PERMISSIONS_NONE = iota - 1
+	PERMISSIONS_REGISTERED
+	PERMISSIONS_ADMIN
+	PERMISSIONS_SUPERUSER
 )
 
 var dsession, _ = discordgo.New()
@@ -39,9 +45,9 @@ func init() {
 	if discord_pedal_role == "" {
 		log.Fatalln("Failed to retrieve $discord_pedal_role")
 	}
-	discord_command_character = os.Getenv("discord_command_character")
-	if discord_command_character == "" {
-		log.Fatalln("Failed to retrieve $discord_command_character")
+	Discord_command_character = os.Getenv("Discord_command_character")
+	if Discord_command_character == "" {
+		log.Fatalln("Failed to retrieve $Discord_command_character")
 	}
 	discord_superuser_id = os.Getenv("discord_superuser_id")
 	if discord_superuser_id == "" {
@@ -50,7 +56,7 @@ func init() {
 	known_channels_id_t = make(map[string]string)
 	known_channels_t_id = make(map[string]string)
 	local_users = make(map[string]string)
-	known_admins = make([]string, 0)
+	Known_admins = make([]string, 0)
 }
 
 func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg string) {
@@ -67,23 +73,23 @@ func delcommand(session *discordgo.Session, message *discordgo.MessageCreate) {
 	}
 }
 
-func permissions_check(user *discordgo.User, permission_level int) bool {
+func Permissions_check(user *discordgo.User, permission_level int) bool {
 	if user.ID == discord_superuser_id {
-		return 2 > permission_level //bot admin
+		return PERMISSIONS_SUPERUSER >= permission_level //bot admin
 	}
 	ckey := local_users[user.ID]
 	if ckey == "" {
-		return false //not even registered
+		return PERMISSIONS_NONE >= permission_level //not registered
 	}
 
 	ckey = strings.ToLower(ckey)
 
-	for _, admin := range known_admins {
+	for _, admin := range Known_admins {
 		if ckey == strings.ToLower(admin) {
-			return 1 > permission_level //generic admin
+			return PERMISSIONS_ADMIN > permission_level //generic admin
 		}
 	}
-	return false
+	return PERMISSIONS_REGISTERED > permission_level
 }
 
 func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate) {
@@ -94,7 +100,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 	if len(mcontent) < 2 { //one for command char and at least one for command
 		return
 	}
-	if mcontent[:1] == discord_command_character {
+	if mcontent[:1] == Discord_command_character {
 		//it's command
 		args := strings.Split(mcontent[1:], " ")
 		command := strings.ToLower(args[0])
@@ -104,190 +110,25 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			args = make([]string, 0) //empty slice
 		}
 		defer delcommand(session, message)
-		switch command {
-		case "check_permission":
-			if len(args) < 2 {
-				reply(session, message, "usage: !"+command+" ckey permlevel")
-				return
-			}
-			ckey := args[0]
-			permlevel, err := strconv.Atoi(args[1])
-			if err != nil {
-				reply(session, message, "error parsing permlevel argument: "+fmt.Sprint(err))
-				return
-			}
-			userid := ""
-			for id, ck := range local_users {
-				if strings.ToLower(ckey) == strings.ToLower(ck) {
-					userid = id
-					break
-				}
-			}
-			if userid == "" {
-				reply(session, message, "no user bound to that ckey: `"+ckey+"`")
-				return
-			}
-			user, err := session.User(userid)
-			if err != nil {
-				log.Println(err)
-				reply(session, message, "failed to retrieve userid")
-				return
-			}
-			if permissions_check(user, permlevel) {
-				reply(session, message, "permission check for `"+ckey+"` at permlevel "+fmt.Sprint(permlevel)+" OK")
-			} else {
-				reply(session, message, "permission check for `"+ckey+"` at permlevel "+fmt.Sprint(permlevel)+" FAIL")
-			}
 
-		case "list_admins":
-			ret := "known admins:\n"
-			for _, admin := range known_admins {
-				ret += admin + "\n"
-			}
-			reply(session, message, ret)
-
-		case "reload_admins":
-			if !permissions_check(message.Author, 0) {
-				reply(session, message, "permission check failed for `"+Dweaksanitize(command)+"`")
-				return
-			}
-			Load_admins(&known_admins)
-
-		case "login":
-			channel, err := session.Channel(message.ChannelID)
-			if err != nil {
-				log.Println("Shiet: ", err)
-				reply(session, message, "failed to retrieve channel")
-			}
-			if login_user(channel.GuildID, message.Author.ID) {
-				reply(session, message, "successfully logged in as "+local_users[message.Author.ID])
-				return
-			}
-			reply(session, message, "login failed. Did you forget to `!register`?")
-
-		case "logoff":
-			channel, err := session.Channel(message.ChannelID)
-			if err != nil {
-				log.Println("Shiet: ", err)
-				reply(session, message, "failed to retrieve channel")
-			}
-			if logoff_user(channel.GuildID, message.Author.ID) {
-				reply(session, message, "successfully logged off")
-				return
-			}
-			reply(session, message, "logoff failed.")
-
-		case "whoami":
-			ckey := local_users[message.Author.ID]
-			if ckey == "" {
-				reply(session, message, "you're not registered")
-				return
-			}
-			reply(session, message, "you're registered as "+ckey)
-
-		case "register":
-			remove_token("register", message.Author.ID)
-			id := create_token("register", message.Author.ID)
-			if id == "" {
-				reply(session, message, "failed for some reason, ask maintainer to investigate")
-				return
-			}
-			Discord_private_message_send(message.Author, "Use `Bot token` in `OOC` tab on game server with following token: `"+id+"` to complete registration. Afterwards you can use `!login` to gain ooc permissions in discord guild.")
-
-		case "list_registered":
-			if !permissions_check(message.Author, 1) {
-				reply(session, message, "permission check failed for `"+Dweaksanitize(command)+"`")
-				return
-			}
-			rep := "registered users:\n"
-			for login, ckey := range local_users {
-				var nl string
-				usr, err := session.User(login)
-				if err != nil {
-					Discord_message_send("debug", "ERR:", "", fmt.Sprint(err))
-					nl = ""
-				} else {
-					nl = usr.String()
-				}
-				rep += fmt.Sprintf("%s -> %s\n", nl, ckey)
-			}
-			reply(session, message, rep)
-
-		case "who":
-			br := Byond_query("who", false)
-			reply(session, message, br.String())
-
-		case "manifest":
-			br := Byond_query("manifest", false)
-			reply(session, message, Bquery_deconvert(br.String()))
-
-		case "count":
-			reply(session, message, fmt.Sprint(len(args))+" args detected")
-
-		case "channel_here":
-			if len(args) < 1 {
-				reply(session, message, "usage: !channel_here [channel_type]")
-				return
-			}
-			if !permissions_check(message.Author, 1) {
-				reply(session, message, "permission check failed for `"+Dweaksanitize(command)+"`")
-				return
-			}
-			if update_known_channel(args[0], message.ChannelID) {
-				reply(session, message, "changed `"+Dweaksanitize(args[0])+"` channel to <#"+message.ChannelID+">")
-			} else {
-				reply(session, message, "failed to change `"+Dweaksanitize(args[0])+"` channel to <#"+message.ChannelID+">")
-			}
-
-		case "channel_list":
-			if !permissions_check(message.Author, 0) {
-				reply(session, message, "permission check failed for `"+Dweaksanitize(command)+"`")
-				return
-			}
-			reply(session, message, list_known_channels())
-
-		case "channel_remove":
-			if !permissions_check(message.Author, 1) {
-				reply(session, message, "permission check failed for `"+Dweaksanitize(command)+"`")
-				return
-			}
-			if len(args) < 1 {
-				tch := known_channels_id_t[message.ChannelID]
-				if tch == "" {
-					reply(session, message, "no channel bound here")
-					return
-				}
-				args = append(args, tch)
-			}
-			if remove_known_channel(args[0]) {
-				reply(session, message, "removed `"+Dweaksanitize(args[0])+"`")
-			} else {
-				reply(session, message, "failed to remove `"+Dweaksanitize(args[0])+"`")
-			}
-		case "ah":
-			if !permissions_check(message.Author, 0) {
-				reply(session, message, "permission check failed for `"+Dweaksanitize(command)+"`")
-				return
-			}
-			if len(args) < 2 {
-				reply(session, message, "usage: !ah [!ckey] [!message]")
-				return
-			}
-			Byond_query("adminhelp&admin="+Bquery_convert(local_users[message.Author.ID])+"&ckey="+Bquery_convert(args[0])+"&response="+Bquery_convert(strings.Join(args[1:], " ")), true)
-
-		case "toggle_ooc":
-			if !permissions_check(message.Author, 0) {
-				reply(session, message, "permission check failed for `"+Dweaksanitize(command)+"`")
-				return
-			}
-			Byond_query("OOC", true)
-			reply(session, message, "toggled global OOC")
-
-		default:
+		dcomm, ok := Known_commands[command]
+		if !ok {
 			reply(session, message, "unknown command: `"+Dweaksanitize(command)+"`")
+			return
 		}
-		return
-
+		if !Permissions_check(message.Author, dcomm.Permlevel) {
+			reply(session, message, "missing permissions required to run this command: `"+Dweaksanitize(command)+"`")
+			return
+		}
+		if len(args) < dcomm.Minargs {
+			reply(session, message, "usage: "+dcomm.Usagestr())
+			return
+		}
+		ret := dcomm.Exec(session, message, args)
+		if ret == "" {
+			return
+		}
+		reply(session, message, ret)
 	}
 
 	if known_channels_id_t[message.ChannelID] != "ooc" && known_channels_id_t[message.ChannelID] != "admin" {
@@ -308,7 +149,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		}
 	}
 	addstr := ""
-	if !permissions_check(message.Author, 0) {
+	if !Permissions_check(message.Author, 0) {
 		mcontent = html.EscapeString(mcontent)
 	} else {
 		mcontent = "<font color='#39034f'>" + mcontent + "</font>"
@@ -420,7 +261,7 @@ func add_known_channel(t, id string) bool {
 	return false
 }
 
-func remove_known_channel(t string) bool {
+func Remove_known_channel(t string) bool {
 	result, err := Database.Exec("delete from DISCORD_CHANNELS where CHANTYPE = $1 ;", t)
 	if err != nil {
 		log.Println("DB ERROR: failed to delete: ", err)
@@ -438,7 +279,7 @@ func remove_known_channel(t string) bool {
 	return false
 }
 
-func list_known_channels() string {
+func List_known_channels() string {
 	ret := "known channels:\n"
 	for t, id := range known_channels_t_id {
 		if id == "" {
@@ -450,7 +291,7 @@ func list_known_channels() string {
 	return ret
 }
 
-func update_known_channel(t, id string) bool {
+func Update_known_channel(t, id string) bool {
 	result, err := Database.Exec("update DISCORD_CHANNELS set CHANID = $2 where CHANTYPE = $1;", t, id)
 	if err != nil {
 		log.Println("DB ERROR: failed to update: ", err)
@@ -469,7 +310,7 @@ func update_known_channel(t, id string) bool {
 	}
 }
 
-func remove_token(ttype, data string) bool {
+func Remove_token(ttype, data string) bool {
 	result, err := Database.Exec("delete from DISCORD_TOKENS where TYPE = $1 and DATA = $2;", ttype, data)
 	if err != nil {
 		log.Println("DB ERROR: failed to delete: ", err)
@@ -503,7 +344,7 @@ func remove_token_by_id(id string) bool {
 	return false
 }
 
-func create_token(ttype, data string) string {
+func Create_token(ttype, data string) string {
 	id := uuid.New().String()
 	result, err := Database.Exec("insert into DISCORD_TOKENS values ($1, $2, $3);", id, ttype, data)
 	if err != nil {
@@ -615,7 +456,7 @@ func login_user(guildid, userid string) bool {
 	}
 
 	isadmin := false
-	for _, admin := range known_admins {
+	for _, admin := range Known_admins {
 		if ckey == admin {
 			isadmin = true
 			break
@@ -663,7 +504,7 @@ func Dopen() {
 	log.Print("Successfully connected to discord, now running as ", dsession.State.User)
 	populate_known_channels()
 	update_local_users()
-	Load_admins(&known_admins)
+	Load_admins(&Known_admins)
 	dsession.AddHandler(messageCreate)
 	Discord_message_send("bot_status", "BOT", "STATUS UPDATE", "now running.")
 }
