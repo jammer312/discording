@@ -131,7 +131,7 @@ func init() {
 }
 
 func Load_admins(str *[]string) {
-	str = nil //clearing
+	*str = nil //clearing
 	response, err := http.Get(admin_retrieval_page)
 	if err != nil {
 		log.Println("FUCK: ", err)
