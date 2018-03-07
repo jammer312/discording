@@ -146,8 +146,8 @@ func Load_admins(str *[]string) {
 		return
 	}
 	bodyraw = bodyraw[ind1+10 : ind2-1]
-	for ind3 := strings.Index(bodyraw, "<tr>"); ind3 != -1; ind3 = strings.Index(bodyraw, "<tr>") {
-		ind4 := strings.Index(bodyraw, "</tr>")
+	for ind3 := strings.Index(bodyraw, "<td>"); ind3 != -1; ind3 = strings.Index(bodyraw, "<td>") {
+		ind4 := strings.Index(bodyraw, "</td>")
 		*str = append(*str, fmt.Sprint(bodyraw[ind3+4:ind4]))
 		bodyraw = bodyraw[ind4+5:]
 	}
