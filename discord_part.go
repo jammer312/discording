@@ -260,19 +260,23 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			return
 		}
 	}
-
+	addstr := ""
 	if !permissions_check(message.Author, 0) {
 		mcontent = html.EscapeString(mcontent)
 	} else {
 		mcontent = "<font color='#39034f'>" + mcontent + "</font>"
+		addstr = "&isadmin=1"
 	}
 
 	switch known_channels_id_t[message.ChannelID] {
 	case "ooc":
-		br := Byond_query("admin="+Bquery_convert(shown_nick)+"&ooc="+Bquery_convert(mcontent), true)
+		br := Byond_query("admin="+Bquery_convert(shown_nick)+"&ooc="+Bquery_convert(mcontent)+addstr, true)
 		if br.String() == "muted" {
 			defer delcommand(session, message)
 			reply(session, message, "your ckey is muted from OOC")
+		} else if br.String() == "globally muted" {
+			defer delcommand(session, message)
+			reply(session, message, "OOC is globally muted")
 		}
 	case "admin":
 		Byond_query("admin="+Bquery_convert(shown_nick)+"&asay="+Bquery_convert(mcontent), true)
