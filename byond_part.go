@@ -124,7 +124,7 @@ func Bquery_convert(s string) string {
 func Bquery_deconvert(s string) string {
 	ret, err := url.QueryUnescape(DecodeWindows1251(s))
 	if err != nil {
-		log.Fatal("Query unescape error: ", err)
+		log.Println("ERROR: Query unescape error: ", err)
 	}
 	return ret
 }
