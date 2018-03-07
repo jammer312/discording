@@ -45,9 +45,9 @@ func init() {
 	if discord_pedal_role == "" {
 		log.Fatalln("Failed to retrieve $discord_pedal_role")
 	}
-	Discord_command_character = os.Getenv("Discord_command_character")
+	Discord_command_character = os.Getenv("discord_command_character")
 	if Discord_command_character == "" {
-		log.Fatalln("Failed to retrieve $Discord_command_character")
+		log.Fatalln("Failed to retrieve $discord_command_character")
 	}
 	discord_superuser_id = os.Getenv("discord_superuser_id")
 	if discord_superuser_id == "" {
