@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
+	"github.com/google/uuid"
 	"log"
 	"os"
 	"strings"
@@ -10,10 +11,11 @@ import (
 
 var (
 	discord_bot_token         string
-	discord_ooc_channel       string
+	discord_ooc_role          string
 	discord_command_character string
 	known_channels_id_t       map[string]string
 	known_channels_t_id       map[string]string
+	local_users               map[string]string
 	discord_superuser_id      string
 )
 
@@ -25,9 +27,9 @@ func init() {
 		log.Fatalln("Failed to retrieve $discord_bot_token")
 	}
 	dsession.Token = discord_bot_token
-	discord_ooc_channel = os.Getenv("discord_ooc_channel")
-	if discord_ooc_channel == "" {
-		log.Fatalln("Failed to retrieve $discord_ooc_channel")
+	discord_ooc_role = os.Getenv("discord_ooc_role")
+	if discord_ooc_role == "" {
+		log.Fatalln("Failed to retrieve $discord_ooc_role")
 	}
 	discord_command_character = os.Getenv("discord_command_character")
 	if discord_command_character == "" {
@@ -39,6 +41,7 @@ func init() {
 	}
 	known_channels_id_t = make(map[string]string)
 	known_channels_t_id = make(map[string]string)
+	local_users = make(map[string]string)
 }
 
 func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg string) {
@@ -78,8 +81,36 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		}
 		defer delcommand(session, message)
 		switch command {
-		case "pmme":
-			Discord_private_message_send(message.Author, "tryam")
+		case "login":
+			channel, err := session.Channel(message.ChannelID)
+			if err != nil {
+				log.Println("Shiet: ", err)
+				reply(session, message, "failed to retrieve channel")
+			}
+			if login_user(channel.GuildID, message.Author.ID) {
+				reply(session, message, "OK")
+				return
+			}
+			reply(session, message, "login failed. Did you forget to `!register`?")
+		case "logoff":
+			channel, err := session.Channel(message.ChannelID)
+			if err != nil {
+				log.Println("Shiet: ", err)
+				reply(session, message, "failed to retrieve channel")
+			}
+			if logoff_user(channel.GuildID, message.Author.ID) {
+				reply(session, message, "OK")
+				return
+			}
+			reply(session, message, "logoff failed.")
+		case "register":
+			remove_token("register", message.Author.ID)
+			id := create_token("register", message.Author.ID)
+			if id == "" {
+				reply(session, message, "failed for some reason, ask maintainer to investigate")
+				return
+			}
+			Discord_private_message_send(message.Author, "Use `Bot token` in `OOC` tab on server with following token: `"+id+"` to complete registration. Afterwards you can use `!login` to gain ooc permissions in discord guild.")
 		case "who":
 			br := Byond_query("who", false)
 			reply(session, message, br.String())
@@ -288,7 +319,157 @@ func update_known_channel(t, id string) bool {
 	} else {
 		return add_known_channel(t, id)
 	}
+}
+
+func remove_token(ttype, data string) bool {
+	result, err := Database.Exec("delete from DISCORD_TOKENS where TYPE = $1 and DATA = $2;", ttype, data)
+	if err != nil {
+		log.Println("DB ERROR: failed to delete: ", err)
+		return false
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		log.Println("DB ERROR: failed to retrieve amount of rows affected: ", err)
+		return false
+	}
+	if affected > 0 {
+		return true
+	}
 	return false
+}
+
+func remove_token_by_id(id string) bool {
+	result, err := Database.Exec("delete from DISCORD_TOKENS where TOKEN = $1;", id)
+	if err != nil {
+		log.Println("DB ERROR: failed to delete: ", err)
+		return false
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		log.Println("DB ERROR: failed to retrieve amount of rows affected: ", err)
+		return false
+	}
+	if affected > 0 {
+		return true
+	}
+	return false
+}
+
+func create_token(ttype, data string) string {
+	id := uuid.New().String()
+	result, err := Database.Exec("insert into DISCORD_TOKENS values ($1, $2, $3);", id, ttype, data)
+	if err != nil {
+		log.Println("DB ERROR: failed to insert: ", err)
+		return ""
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		log.Println("DB ERROR: failed to retrieve amount of rows affected: ", err)
+		return ""
+	}
+	if affected > 0 {
+		return id
+	}
+	return ""
+}
+
+func expend_token(id string) (ttype, data string) {
+	row := Database.QueryRow("select TYPE, DATA from DISCORD_TOKENS where TOKEN = $1", id)
+	err := row.Scan(&ttype, &data)
+	if err != nil {
+		log.Println("DB ERROR: failed to retrieve token data: ", err)
+		return
+	}
+	remove_token_by_id(id)
+	return
+}
+
+func Discord_process_token(id, ckey string) {
+	ttype, data := expend_token(id)
+	if ttype == "" {
+		return
+	}
+	switch ttype {
+	case "register":
+		register_user(data, ckey)
+	default:
+	}
+}
+
+func register_user(login, ckey string) {
+	_, err := Database.Exec("delete from DISCORD_REGISTERED_USERS where DISCORDID = $1;", login)
+	if err != nil {
+		log.Println("DB ERROR: failed to delete: ", err)
+		return
+	}
+	_, err = Database.Exec("delete from DISCORD_REGISTERED_USERS where CKEY = $1;", ckey)
+	if err != nil {
+		log.Println("DB ERROR: failed to delete: ", err)
+		return
+	}
+	_, err = Database.Exec("insert into DISCORD_REGISTERED_USERS values ($1, $2);", login, ckey)
+	if err != nil {
+		log.Println("DB ERROR: failed to insert: ", err)
+		return
+	}
+	update_local_user(login)
+}
+
+func update_local_users() {
+	rows, err := Database.Query("select DISCORDID, CKEY from DISCORD_REGISTERED_USERS")
+	if err != nil {
+		log.Println("DB ERROR: failed to retrieve known channels: ", err)
+		return
+	}
+	for k := range local_users {
+		delete(local_users, k)
+	}
+	for rows.Next() {
+		var login, ckey string
+		if terr := rows.Scan(&login, &ckey); terr != nil {
+			log.Println("DB ERROR: ", terr)
+		}
+		login = strings.Trim(login, " ")
+		ckey = strings.Trim(ckey, " ")
+		local_users[login] = ckey
+	}
+}
+
+func update_local_user(login string) (ckey string) {
+	row := Database.QueryRow("select CKEY from DISCORD_REGISTERED_USERS where DISCORDID = $1", login)
+	err := row.Scan(&ckey)
+	if err != nil {
+		log.Println("DB ERROR: failed to retrieve token data: ", err)
+		return
+	}
+	for l, c := range local_users {
+		if l == login || c == ckey {
+			delete(local_users, l)
+		}
+	}
+	return
+}
+
+func login_user(guildid, userid string) bool {
+	if update_local_user(userid) == "" {
+		return false
+	}
+	err := dsession.GuildMemberRoleAdd(guildid, userid, discord_ooc_role)
+	if err != nil {
+		log.Println("Login error: ", err)
+		return false
+	}
+	return true
+}
+
+func logoff_user(guildid, userid string) bool {
+	err := dsession.GuildMemberRoleRemove(guildid, userid, discord_ooc_role)
+	if err != nil {
+		log.Println("Logoff error: ", err)
+		return false
+	}
+	return true
+
 }
 
 func Dopen() {

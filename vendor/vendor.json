@@ -9,6 +9,12 @@
 			"revisionTime": "2018-02-01T00:25:41Z"
 		},
 		{
+			"checksumSHA1": "uFNLkTxk8BkHTk0Jcub2lj2BX4M=",
+			"path": "github.com/google/uuid",
+			"revision": "dec09d789f3dba190787f8b4454c7d3c936fed9e",
+			"revisionTime": "2017-11-29T19:10:14Z"
+		},
+		{
 			"checksumSHA1": "7Ri0DQU3uAVE/Ibt7MXV0C7XAeU=",
 			"path": "github.com/gorilla/websocket",
 			"revision": "0647012449a1878977514a346b26637dd022446c",

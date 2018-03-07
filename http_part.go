@@ -44,6 +44,11 @@ type message struct {
 	Message string
 }
 
+type token struct {
+	Ckey  string
+	Token string
+}
+
 func webhook_handler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "" && r.Method != "GET" {
 		return
@@ -95,6 +100,14 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 			log.Println("json error: ", err)
 		}
 		Discord_message_send("garbage", "", parsed.Ckey, strip.StripTags(html.UnescapeString(parsed.Message)))
+	case "token":
+		json_data := []byte(Bquery_deconvert(safe_param(form, "data")))
+		var parsed token
+		err := json.Unmarshal(json_data, &parsed)
+		if err != nil {
+			log.Println("json error: ", err)
+		}
+		Discord_process_token(parsed.Token, parsed.Ckey)
 	default:
 		log.Print(form)
 	}
