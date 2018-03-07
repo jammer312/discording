@@ -330,16 +330,16 @@ func init() {
 				}
 			}
 			if Permissions_check(user, PERMISSIONS_NONE) {
-				ret += "Generic commands:\n" + call
+				ret += "\n**Generic commands:**\n" + call
 			}
 			if Permissions_check(user, PERMISSIONS_REGISTERED) {
-				ret += "Commands, available to registered users:\n" + creg
+				ret += "\n**Commands, available to registered users:**\n" + creg
 			}
 			if Permissions_check(user, PERMISSIONS_ADMIN) {
-				ret += "Admin commands:\n" + cadm
+				ret += "\n**Admin commands:**\n" + cadm
 			}
 			if Permissions_check(user, PERMISSIONS_SUPERUSER) {
-				ret += "Superuser commands:\n" + csup
+				ret += "\n**Superuser commands:**\n" + csup
 			}
 			return ret
 		},
