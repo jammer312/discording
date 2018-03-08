@@ -33,24 +33,6 @@ func (d *Dcommand) Usagestr() string {
 	return Discord_command_character + d.Command + " " + d.Usage
 }
 
-// --------------------------------------------------------------------
-/*
-Dcommand register template below
-	// ------------
-	Register_command(Dcommand{
-		Command:   "",
-		Minargs:   ,
-		Permlevel: ,
-		Usage:     "",
-		Desc:      "",
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
-
-		},
-	})
-	// ------------
-*/
-// --------------------------------------------------------------------
-
 func init() {
 	Known_commands = make(map[string]Dcommand)
 	// ------------
@@ -371,4 +353,36 @@ func init() {
 		},
 	})
 	// ------------
+	// ------------
+	Register_command(Dcommand{
+		Command:   "awho",
+		Minargs:   0,
+		Permlevel: PERMISSIONS_NONE,
+		Usage:     "",
+		Desc:      "prints admins currently on server",
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+			br := Byond_query("adminwho", false)
+			return br.String()
+		},
+	})
+	// ------------
+
 }
+
+// --------------------------------------------------------------------
+/*
+Dcommand register template below
+	// ------------
+	Register_command(Dcommand{
+		Command:   "",
+		Minargs:   ,
+		Permlevel: ,
+		Usage:     "",
+		Desc:      "",
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+
+		},
+	})
+	// ------------
+*/
+// --------------------------------------------------------------------
