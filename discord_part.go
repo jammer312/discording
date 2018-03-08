@@ -640,7 +640,7 @@ func update_ban(ckey, reason string, user *discordgo.User, tp int) bool {
 		return false
 	}
 	admin := local_users[user.ID]
-	result, err := Database.Exec("SELECT * from DISCORD_BANS CKEY = $1 ;", ckey)
+	result, err := Database.Exec("SELECT * from DISCORD_BANS where CKEY = $1 ;", ckey)
 	if err != nil {
 		log.Println("DB ERROR: failed to select: ", err)
 		return false
