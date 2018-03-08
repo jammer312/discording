@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/google/uuid"
+	"github.com/grokify/html-strip-tags-go"
 	"html"
 	"log"
 	"os"
