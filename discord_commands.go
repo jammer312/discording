@@ -355,7 +355,7 @@ func init() {
 	// ------------
 	// ------------
 	Register_command(Dcommand{
-		Command:   "awho",
+		Command:   "adminwho",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_NONE,
 		Usage:     "",
