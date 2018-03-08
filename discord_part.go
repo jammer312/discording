@@ -113,6 +113,9 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 	if message.Author.ID == session.State.User.ID {
 		return
 	}
+	if known_channels_id_t[message.ChannelID] == "" {
+		return //do not answer calls from unknown channels
+	}
 	mcontent := message.ContentWithMentionsReplaced()
 	if len(mcontent) < 2 { //one for command char and at least one for command
 		return
