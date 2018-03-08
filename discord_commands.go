@@ -463,7 +463,106 @@ func init() {
 		},
 	})
 	// ------------
-
+	// ------------
+	Register_command(Dcommand{
+		Command:   "ckey",
+		Minargs:   1,
+		Permlevel: PERMISSIONS_REGISTERED,
+		Usage:     "[!@mention]",
+		Desc:      "returns ckey of mentioned user",
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+			mention := args[0]
+			userid := mention[3 : len(mention)-1]
+			ckey := local_users[userid]
+			if ckey == "" {
+				return "no bound ckey"
+			}
+			return ckey
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(Dcommand{
+		Command:   "baninfo",
+		Minargs:   0,
+		Permlevel: PERMISSIONS_REGISTERED,
+		Usage:     "",
+		Desc:      "prints your discord bans, if any",
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+			ret := check_bans(message.Author, ^0)
+			if ret == "" {
+				return "you have no active bans"
+			}
+			return ret
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(Dcommand{
+		Command:   "ban_apply",
+		Minargs:   3,
+		Permlevel: PERMISSIONS_ADMIN,
+		Usage:     "[!ckey] [!type] [!reason]",
+		Desc:      "update existing ban's type or create new with following reason",
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+			ckey := args[0]
+			bantypestr := args[1]
+			bantype := 0
+			switch bantypestr {
+			case BANSTRING_OOC:
+				bantype = BANTYPE_OOC
+			case BANSTRING_COMMANDS:
+				bantype = BANTYPE_COMMANDS
+			default:
+				return "incorrect type"
+			}
+			reason := strings.Join(args[2:], " ")
+			if update_ban(ckey, reason, message.Author, bantype) {
+				return "OK"
+			}
+			return "FAIL, probably because of existing reason with higher permissions"
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(Dcommand{
+		Command:   "ban_lift",
+		Minargs:   1,
+		Permlevel: PERMISSIONS_ADMIN,
+		Usage:     "[!ckey]",
+		Desc:      "remove existing ban, if any",
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+			ckey := args[0]
+			if remove_ban(ckey, message.Author) {
+				return "OK"
+			}
+			return "FAIL, probably because of low permissions"
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(Dcommand{
+		Command:   "ban_list",
+		Minargs:   0,
+		Permlevel: PERMISSIONS_ADMIN,
+		Usage:     "",
+		Desc:      "prints existing bans",
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+			ret := "\n"
+			for ckey, ban := range known_bans {
+				bansarr := make([]string, 0)
+				if ban.bantype&BANTYPE_OOC != 0 {
+					bansarr = append(bansarr, BANSTRING_OOC)
+				}
+				if ban.bantype&BANTYPE_COMMANDS != 0 {
+					bansarr = append(bansarr, BANSTRING_COMMANDS)
+				}
+				ret += ckey + ": " + strings.Join(bansarr, ", ") + "\n"
+			}
+			return ret
+		},
+	})
+	// ------------
 }
 
 // --------------------------------------------------------------------

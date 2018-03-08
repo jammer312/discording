@@ -38,6 +38,24 @@ const (
 	ROLE_ADMIN  = "admin"
 )
 
+const (
+	BANTYPE_OOC = 1 << iota
+	BANTYPE_COMMANDS
+)
+const (
+	BANSTRING_OOC      = "OOC"
+	BANSTRING_COMMANDS = "COMMANDS"
+)
+
+type dban struct {
+	reason    string
+	admin     string
+	bantype   int
+	permlevel int
+}
+
+var known_bans map[string]dban
+
 var dsession, _ = discordgo.New()
 
 func init() {
@@ -58,6 +76,7 @@ func init() {
 
 	known_channels_id_t = make(map[string]string)
 	known_channels_t_id = make(map[string]string)
+	known_bans = make(map[string]dban)
 	local_users = make(map[string]string)
 	Known_admins = make([]string, 0)
 
@@ -90,23 +109,27 @@ func Get_guild(session *discordgo.Session, message *discordgo.MessageCreate) str
 	return channel.GuildID
 }
 
-func Permissions_check(user *discordgo.User, permission_level int) bool {
+func get_permission_level(user *discordgo.User) int {
 	if user.ID == discord_superuser_id {
-		return PERMISSIONS_SUPERUSER >= permission_level //bot admin
+		return PERMISSIONS_SUPERUSER //bot admin
 	}
 	ckey := local_users[user.ID]
 	if ckey == "" {
-		return PERMISSIONS_NONE >= permission_level //not registered
+		return PERMISSIONS_NONE //not registered
 	}
 
 	ckey = strings.ToLower(ckey)
 
 	for _, admin := range Known_admins {
 		if ckey == strings.ToLower(admin) {
-			return PERMISSIONS_ADMIN >= permission_level //generic admin
+			return PERMISSIONS_ADMIN //generic admin
 		}
 	}
-	return PERMISSIONS_REGISTERED >= permission_level
+	return PERMISSIONS_REGISTERED
+}
+
+func Permissions_check(user *discordgo.User, permission_level int) bool {
+	return get_permission_level(user) >= permission_level
 }
 
 func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate) {
@@ -119,6 +142,11 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 	}
 	if mcontent[:1] == Discord_command_character {
 		//it's command
+		defer delcommand(session, message)
+		if check_bans(message.Author, BANTYPE_COMMANDS) != "" {
+			reply(session, message, "you're banned from this action. Try !baninfo")
+			return
+		}
 		args := strings.Split(mcontent[1:], " ")
 		command := strings.ToLower(args[0])
 		if len(args) > 1 {
@@ -126,7 +154,6 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		} else {
 			args = make([]string, 0) //empty slice
 		}
-		defer delcommand(session, message)
 		log.Println(message.Author.String() + " c-> " + message.ContentWithMentionsReplaced())
 		dcomm, ok := Known_commands[command]
 		if !ok {
@@ -176,6 +203,11 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 
 	switch known_channels_id_t[message.ChannelID] {
 	case "ooc":
+		if check_bans(message.Author, BANTYPE_OOC) != "" {
+			defer delcommand(session, message)
+			reply(session, message, "you're banned from this action. Try !baninfo")
+			return
+		}
 		br := Byond_query("admin="+Bquery_convert(shown_nick)+"&ooc="+Bquery_convert(mcontent)+addstr, true)
 		if br.String() == "muted" {
 			defer delcommand(session, message)
@@ -577,6 +609,129 @@ func remove_known_role(gid, tp string) bool {
 		return true
 	}
 	return false
+}
+
+func populate_bans() {
+	rows, err := Database.Query("select CKEY, REASON, ADMIN, TYPE, PERMISSION from DISCORD_BANS")
+	if err != nil {
+		log.Println("DB ERROR: failed to retrieve known bans: ", err)
+		return
+	}
+	//clean known
+	for k := range known_bans {
+		delete(known_bans, k)
+	}
+	for rows.Next() {
+		var ckey, reason, admin string
+		var bantype, permission int
+		if terr := rows.Scan(&ckey, &reason, &admin, &bantype, &permission); terr != nil {
+			log.Println("DB ERROR: ", terr)
+		}
+		ckey = trim(ckey)
+		reason = trim(reason)
+		admin = trim(admin)
+		known_bans[ckey] = dban{reason, admin, bantype, permission}
+	}
+}
+
+func update_ban(ckey, reason string, user *discordgo.User, tp int) bool {
+	permissions := get_permission_level(user)
+	if permissions < PERMISSIONS_ADMIN {
+		return false
+	}
+	admin := local_users[user.ID]
+	result, err := Database.Exec("SELECT * from DISCORD_BANS CKEY = $1 ;", ckey)
+	if err != nil {
+		log.Println("DB ERROR: failed to select: ", err)
+		return false
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		log.Println("DB ERROR: failed to retrieve amount of rows affected: ", err)
+		return false
+	}
+	if affected > 0 {
+		result, err = Database.Exec("update DISCORD_BANS set TYPE = TYPE | $1 where CKEY = $3 and PERMISSIONS <= $2 ;", tp, permissions, ckey)
+		if err != nil {
+			log.Println("DB ERROR: failed to update: ", err)
+			return false
+		}
+		affected, err := result.RowsAffected()
+		if err != nil {
+			log.Println("DB ERROR: failed to retrieve amount of rows affected: ", err)
+			return false
+		}
+		if affected > 0 {
+			populate_bans()
+			return true
+		}
+	} else {
+		// no such entry, create new
+		result, err = Database.Exec("insert into DISCORD_BANS values($1, $2, $3, $4, $5) ;", ckey, admin, reason, tp, permissions)
+		if err != nil {
+			log.Println("DB ERROR: failed to update: ", err)
+			return false
+		}
+		affected, err = result.RowsAffected()
+		if err != nil {
+			log.Println("DB ERROR: failed to retrieve amount of rows affected: ", err)
+			return false
+		}
+		if affected > 0 {
+			populate_bans()
+			return true
+		}
+	}
+	return false
+}
+
+func remove_ban(ckey string, user *discordgo.User) bool {
+	permissions := get_permission_level(user)
+	if permissions < PERMISSIONS_ADMIN {
+		return false
+	}
+	result, err := Database.Exec("delete from DISCORD_BANS where CKEY = $1 and PERMISSION <= $2 ;", ckey, permissions)
+	if err != nil {
+		log.Println("DB ERROR: failed to update: ", err)
+		return false
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		log.Println("DB ERROR: failed to retrieve amount of rows affected: ", err)
+		return false
+	}
+	if affected > 0 {
+		populate_bans()
+		return true
+	}
+	return false
+}
+
+func check_bans(user *discordgo.User, tp int) string {
+	ckey := local_users[user.ID]
+	if ckey == "" {
+		return ""
+	}
+	ban, ok := known_bans[ckey]
+	if !ok {
+		return ""
+	}
+
+	if (ban.bantype & tp) != 0 {
+		return "" //no matching ban
+	}
+	if Permissions_check(user, ban.permlevel) {
+		return "" //avoid bans from same level
+	}
+	bantype := make([]string, 0)
+	if ban.bantype&BANTYPE_OOC != 0 {
+		bantype = append(bantype, BANSTRING_OOC)
+	}
+	if ban.bantype&BANTYPE_COMMANDS != 0 {
+		bantype = append(bantype, BANSTRING_COMMANDS)
+	}
+	bantypestring := strings.Join(bantype, ", ")
+	return "You were banned from " + bantypestring + " by " + ban.admin + " with following reason:\n" + ban.reason
 }
 
 func login_user(guildid, userid string) bool {
