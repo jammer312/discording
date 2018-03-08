@@ -821,6 +821,7 @@ func Dopen() {
 	populate_known_channels()
 	update_local_users()
 	populate_known_roles()
+	populate_bans()
 	Load_admins(&Known_admins)
 	dsession.AddHandler(messageCreate)
 	Discord_message_send("bot_status", "BOT", "STATUS UPDATE", "now running.")
