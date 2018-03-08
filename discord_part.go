@@ -641,7 +641,7 @@ func login_user(guildid, userid string) bool {
 	if !discord_multiguild_support {
 		player_role = discord_ooc_role
 	} else {
-		player_role, ok = discord_player_roles[ROLE_PLAYER]
+		player_role, ok = discord_player_roles[guildid]
 		if !ok {
 			log.Println("Failed to find player role")
 			return false
@@ -668,7 +668,7 @@ func login_user(guildid, userid string) bool {
 	if !discord_multiguild_support {
 		admin_role = discord_pedal_role
 	} else {
-		admin_role, ok = discord_player_roles[ROLE_ADMIN]
+		admin_role, ok = discord_player_roles[guildid]
 		if !ok {
 			log.Println("Failed to find admin role")
 			return false
@@ -689,7 +689,7 @@ func logoff_user(guildid, userid string) bool {
 	if !discord_multiguild_support {
 		player_role = discord_ooc_role
 	} else {
-		player_role, ok = discord_player_roles[ROLE_PLAYER]
+		player_role, ok = discord_player_roles[guildid]
 		if !ok {
 			log.Println("Failed to find player role")
 			return false
@@ -704,7 +704,7 @@ func logoff_user(guildid, userid string) bool {
 	if !discord_multiguild_support {
 		admin_role = discord_pedal_role
 	} else {
-		admin_role, ok = discord_player_roles[ROLE_ADMIN]
+		admin_role, ok = discord_player_roles[guildid]
 		if !ok {
 			log.Println("Failed to find admin role")
 			return false
