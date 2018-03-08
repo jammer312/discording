@@ -150,7 +150,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		}
 	}
 	addstr := ""
-	if !Permissions_check(message.Author, 0) {
+	if !Permissions_check(message.Author, PERMISSIONS_ADMIN) {
 		mcontent = html.EscapeString(mcontent)
 	} else {
 		mcontent = "<font color='#39034f'>" + mcontent + "</font>"
