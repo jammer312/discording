@@ -196,10 +196,10 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			reply(session, message, "OOC is globally muted")
 			return
 		}
-		Discord_message_propagate("ooc", "DISCORD OOC:", shown_nick, mcontent, message.ChannelID)
+		Discord_message_propagate("ooc", "DISCORD OOC:", shown_nick, strip.StripTags(mcontent), message.ChannelID)
 	case "admin":
 		Byond_query("admin="+Bquery_convert(shown_nick)+"&asay="+Bquery_convert(mcontent), true)
-		Discord_message_propagate("admin", "DISCORD ASAY:", shown_nick, mcontent, message.ChannelID)
+		Discord_message_propagate("admin", "DISCORD ASAY:", shown_nick, strip.StripTags(mcontent), message.ChannelID)
 	default:
 	}
 }
