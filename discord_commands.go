@@ -559,6 +559,9 @@ func init() {
 				}
 				ret += ckey + ": " + strings.Join(bansarr, ", ") + "\n"
 			}
+			if ret == "\n" {
+				ret = "no bans currently active"
+			}
 			return ret
 		},
 	})
