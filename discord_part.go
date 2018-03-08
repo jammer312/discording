@@ -189,12 +189,17 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		if br.String() == "muted" {
 			defer delcommand(session, message)
 			reply(session, message, "your ckey is muted from OOC")
-		} else if br.String() == "globally muted" {
+			return
+		}
+		if br.String() == "globally muted" {
 			defer delcommand(session, message)
 			reply(session, message, "OOC is globally muted")
+			return
 		}
+		Discord_message_propagate("ooc", "DISCORD OOC:", shown_nick, mcontent, message.ChannelID)
 	case "admin":
 		Byond_query("admin="+Bquery_convert(shown_nick)+"&asay="+Bquery_convert(mcontent), true)
+		Discord_message_propagate("admin", "DISCORD ASAY:", shown_nick, mcontent, message.ChannelID)
 	default:
 	}
 }
@@ -222,6 +227,31 @@ func Discord_message_send(channel, prefix, ckey, message string) {
 			delim = " "
 		}
 		for _, id := range channels {
+			_, err := dsession.ChannelMessageSend(id, "**"+Dsanitize(prefix+delim+ckey)+":** "+Dsanitize(message))
+			if err != nil {
+				log.Println("DISCORD ERROR: failed to send message to discord: ", err)
+			}
+		}
+	}
+}
+
+func Discord_message_propagate(channel, prefix, ckey, message, chanid string) {
+	//given channel id and other params sends message to all channels except specified one
+	if !discord_multiguild_support {
+		return
+	} else {
+		channels, ok := known_channels_t_id_m[channel]
+		if !ok || len(channels) < 1 {
+			return //no bound channels
+		}
+		var delim string
+		if prefix != "" && ckey != "" {
+			delim = " "
+		}
+		for _, id := range channels {
+			if id == chanid {
+				continue
+			}
 			_, err := dsession.ChannelMessageSend(id, "**"+Dsanitize(prefix+delim+ckey)+":** "+Dsanitize(message))
 			if err != nil {
 				log.Println("DISCORD ERROR: failed to send message to discord: ", err)
