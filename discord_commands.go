@@ -374,6 +374,95 @@ func init() {
 		},
 	})
 	// ------------
+	// ------------
+	Register_command(Dcommand{
+		Command:   "role_update",
+		Minargs:   2,
+		Permlevel: PERMISSIONS_SUPERUSER,
+		Usage:     "[!type] [!role_slap]",
+		Desc:      "adds/updates [!role_slap] role of [!type] type; correct roles are '" + ROLE_PLAYER + "' and '" + ROLE_ADMIN + "'",
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+			tp, slap := args[0], args[1]
+			if tp == "" || slap == "" {
+				return "incorrect usage"
+			}
+			guild := Get_guild(session, message)
+			if guild == "" {
+				return "failed to retrieve guild"
+			}
+			if update_known_role(guild, tp, slap[3:len(slap)-1]) {
+				return "OK"
+			}
+			return "FAIL"
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(Dcommand{
+		Command:   "role_remove",
+		Minargs:   1,
+		Permlevel: PERMISSIONS_SUPERUSER,
+		Usage:     "[!type]",
+		Desc:      "removes role of [!type] type",
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+			tp := args[0]
+			if tp == "" {
+				return "incorrect usage"
+			}
+			guild := Get_guild(session, message)
+			if guild == "" {
+				return "failed to retrieve guild"
+			}
+			if remove_known_role(guild, tp) {
+				return "OK"
+			}
+			return "FAIL"
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(Dcommand{
+		Command:   "role_list",
+		Minargs:   0,
+		Permlevel: PERMISSIONS_SUPERUSER,
+		Usage:     "",
+		Desc:      "lists known roles for this guild",
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+			guild := Get_guild(session, message)
+			if guild == "" {
+				return "failed to retrieve guild"
+			}
+			groles, err := session.GuildRoles(guild)
+			if err != nil {
+				log.Println("ERROR: ", err)
+				return "failed to retrieve rolelist"
+			}
+			plr, ok := discord_player_roles[guild]
+			if !ok {
+				plr = "NONE"
+			} else {
+				for _, k := range groles {
+					if k.ID == plr {
+						plr = k.Name
+						break
+					}
+				}
+			}
+			adm, ok := discord_admin_roles[guild]
+			if !ok {
+				adm = "NONE"
+			} else {
+				for _, k := range groles {
+					if k.ID == plr {
+						adm = k.Name
+						break
+					}
+				}
+			}
+			return "\nplayer -> " + plr + "\nadmin -> " + adm
+		},
+	})
+	// ------------
 
 }
 

@@ -24,8 +24,8 @@ var (
 	discord_superuser_id      string
 
 	discord_multiguild_support bool                = false // OK or not OK
-	discord_ooc_role_m         map[string]string           //guildid -> role
-	discord_pedal_role_m       map[string]string           //guildid -> role
+	discord_player_roles       map[string]string           //guildid -> role
+	discord_admin_roles        map[string]string           //guildid -> role
 	known_channels_t_id_m      map[string][]string         //type -> arr of ids
 )
 
@@ -34,6 +34,11 @@ const (
 	PERMISSIONS_REGISTERED
 	PERMISSIONS_ADMIN
 	PERMISSIONS_SUPERUSER
+)
+
+const (
+	ROLE_PLAYER = "player"
+	ROLE_ADMIN  = "admin"
 )
 
 var dsession, _ = discordgo.New()
@@ -71,8 +76,8 @@ func init() {
 	Known_admins = make([]string, 0)
 
 	if discord_multiguild_support {
-		discord_ooc_role_m = make(map[string]string)
-		discord_pedal_role_m = make(map[string]string)
+		discord_player_roles = make(map[string]string)
+		discord_admin_roles = make(map[string]string)
 		known_channels_t_id_m = make(map[string][]string)
 	}
 }
@@ -544,13 +549,105 @@ func update_local_user(login string) (ckey string) {
 	return
 }
 
+func populate_known_roles() {
+	rows, err := Database.Query("select GUILDID, ROLEID, ROLETYPE from DISCORD_ROLES")
+	if err != nil {
+		log.Println("DB ERROR: failed to retrieve known roles: ", err)
+		return
+	}
+	//clean known
+	for k := range discord_player_roles {
+		delete(discord_player_roles, k)
+	}
+	for k := range discord_admin_roles {
+		delete(discord_admin_roles, k)
+	}
+	for rows.Next() {
+		var gid, rid, tp string
+		if terr := rows.Scan(&gid, &rid, &tp); terr != nil {
+			log.Println("DB ERROR: ", terr)
+		}
+		gid = trim(gid)
+		rid = trim(rid)
+		tp = trim(tp)
+		switch tp {
+		case ROLE_PLAYER:
+			discord_player_roles[gid] = rid
+		case ROLE_ADMIN:
+			discord_admin_roles[gid] = rid
+		}
+	}
+}
+func update_known_role(gid, tp, rid string) bool {
+	result, err := Database.Exec("update DISCORD_ROLES set ROLEID = $1 where GUILDID = $2 and ROLETYPE = $3 ;", rid, gid, tp)
+	if err != nil {
+		log.Println("DB ERROR: failed to update: ", err)
+		return false
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		log.Println("DB ERROR: failed to retrieve amount of rows affected: ", err)
+		return false
+	}
+	if affected > 0 {
+		populate_known_roles()
+		return true
+	}
+	return create_known_role(gid, tp, rid)
+}
+func create_known_role(gid, tp, rid string) bool {
+	result, err := Database.Exec("insert into DISCORD_ROLES values($1, $2, $3);", gid, rid, tp)
+	if err != nil {
+		log.Println("DB ERROR: failed to insert: ", err)
+		return false
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		log.Println("DB ERROR: failed to retrieve amount of rows affected: ", err)
+		return false
+	}
+	if affected > 0 {
+		populate_known_roles()
+		return true
+	}
+	return false
+}
+func remove_known_role(gid, tp string) bool {
+	result, err := Database.Exec("delete from DISCORD_ROLES where GUILDID = $1 and ROLETYPE = $2;", gid, tp)
+	if err != nil {
+		log.Println("DB ERROR: failed to delete: ", err)
+		return false
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		log.Println("DB ERROR: failed to retrieve amount of rows affected: ", err)
+		return false
+	}
+	if affected > 0 {
+		populate_known_roles()
+		return true
+	}
+	return false
+}
+
 func login_user(guildid, userid string) bool {
 	ckey := update_local_user(userid)
 	if ckey == "" {
 		return false
 	}
 	ckey = strings.ToLower(ckey)
-	err := dsession.GuildMemberRoleAdd(guildid, userid, discord_ooc_role)
+	var player_role string
+	var ok bool
+	if !discord_multiguild_support {
+		player_role = discord_ooc_role
+	} else {
+		player_role, ok = discord_player_roles[ROLE_PLAYER]
+		if !ok {
+			log.Println("Failed to find player role")
+			return false
+		}
+	}
+	err := dsession.GuildMemberRoleAdd(guildid, userid, player_role)
 	if err != nil {
 		log.Println("Login error: ", err)
 		return false
@@ -567,8 +664,17 @@ func login_user(guildid, userid string) bool {
 	if !isadmin {
 		return true
 	}
-
-	err = dsession.GuildMemberRoleAdd(guildid, userid, discord_pedal_role)
+	var admin_role string
+	if !discord_multiguild_support {
+		admin_role = discord_pedal_role
+	} else {
+		admin_role, ok = discord_player_roles[ROLE_ADMIN]
+		if !ok {
+			log.Println("Failed to find admin role")
+			return false
+		}
+	}
+	err = dsession.GuildMemberRoleAdd(guildid, userid, admin_role)
 	if err != nil {
 		log.Println("Login error: ", err)
 		return false
@@ -578,12 +684,33 @@ func login_user(guildid, userid string) bool {
 }
 
 func logoff_user(guildid, userid string) bool {
-	err := dsession.GuildMemberRoleRemove(guildid, userid, discord_pedal_role)
+	var player_role string
+	var ok bool
+	if !discord_multiguild_support {
+		player_role = discord_ooc_role
+	} else {
+		player_role, ok = discord_player_roles[ROLE_PLAYER]
+		if !ok {
+			log.Println("Failed to find player role")
+			return false
+		}
+	}
+	err := dsession.GuildMemberRoleRemove(guildid, userid, player_role)
 	if err != nil {
 		log.Println("Logoff error: ", err)
 		return false
 	}
-	err = dsession.GuildMemberRoleRemove(guildid, userid, discord_ooc_role)
+	var admin_role string
+	if !discord_multiguild_support {
+		admin_role = discord_pedal_role
+	} else {
+		admin_role, ok = discord_player_roles[ROLE_ADMIN]
+		if !ok {
+			log.Println("Failed to find admin role")
+			return false
+		}
+	}
+	err = dsession.GuildMemberRoleRemove(guildid, userid, admin_role)
 	if err != nil {
 		log.Println("Logoff error: ", err)
 		return false
@@ -605,6 +732,7 @@ func Dopen() {
 	log.Print("Successfully connected to discord, now running as ", dsession.State.User)
 	populate_known_channels()
 	update_local_users()
+	populate_known_roles()
 	Load_admins(&Known_admins)
 	dsession.AddHandler(messageCreate)
 	Discord_message_send("bot_status", "BOT", "STATUS UPDATE", "now running.")
