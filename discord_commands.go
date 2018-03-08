@@ -489,7 +489,7 @@ func init() {
 		Usage:     "",
 		Desc:      "prints your discord bans, if any",
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
-			ret := check_bans(message.Author, ^0)
+			ret := check_bans(message.Author, ^0, true)
 			if ret == "" {
 				return "you have no active bans"
 			}

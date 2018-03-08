@@ -143,7 +143,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 	if mcontent[:1] == Discord_command_character {
 		//it's command
 		defer delcommand(session, message)
-		if check_bans(message.Author, BANTYPE_COMMANDS) != "" {
+		if check_bans(message.Author, BANTYPE_COMMANDS, false) != "" {
 			reply(session, message, "you're banned from this action. Try !baninfo")
 			return
 		}
@@ -203,7 +203,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 
 	switch known_channels_id_t[message.ChannelID] {
 	case "ooc":
-		if check_bans(message.Author, BANTYPE_OOC) != "" {
+		if check_bans(message.Author, BANTYPE_OOC, false) != "" {
 			defer delcommand(session, message)
 			reply(session, message, "you're banned from this action. Try !baninfo")
 			return
@@ -707,7 +707,7 @@ func remove_ban(ckey string, user *discordgo.User) bool {
 	return false
 }
 
-func check_bans(user *discordgo.User, tp int) string {
+func check_bans(user *discordgo.User, tp int, forced bool) string {
 	ckey := local_users[user.ID]
 	if ckey == "" {
 		return ""
@@ -720,7 +720,7 @@ func check_bans(user *discordgo.User, tp int) string {
 	if (ban.bantype & tp) != 0 {
 		return "" //no matching ban
 	}
-	if Permissions_check(user, ban.permlevel) {
+	if Permissions_check(user, ban.permlevel) && !forced {
 		return "" //avoid bans from same level
 	}
 	bantype := make([]string, 0)
