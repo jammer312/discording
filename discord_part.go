@@ -86,10 +86,10 @@ func Permissions_check(user *discordgo.User, permission_level int) bool {
 
 	for _, admin := range Known_admins {
 		if ckey == strings.ToLower(admin) {
-			return PERMISSIONS_ADMIN > permission_level //generic admin
+			return PERMISSIONS_ADMIN >= permission_level //generic admin
 		}
 	}
-	return PERMISSIONS_REGISTERED > permission_level
+	return PERMISSIONS_REGISTERED >= permission_level
 }
 
 func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate) {
