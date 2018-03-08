@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/google/uuid"
@@ -20,6 +21,11 @@ var (
 	local_users               map[string]string
 	Known_admins              []string
 	discord_superuser_id      string
+
+	discord_multiguild_support bool                = false // OK or not OK
+	discord_ooc_role_m         map[string]string           //guildid -> role
+	discord_pedal_role_m       map[string]string           //guildid -> role
+	known_channels_t_id_m      map[string][]string         //type -> arr of ids
 )
 
 const (
@@ -53,10 +59,21 @@ func init() {
 	if discord_superuser_id == "" {
 		log.Fatalln("Failed to retrieve $discord_superuser_id")
 	}
+	dms := os.Getenv("discord_multiguild_support")
+	if dms == "OK" {
+		discord_multiguild_support = true
+		log.Println("Using experimental multiguild support")
+	}
 	known_channels_id_t = make(map[string]string)
 	known_channels_t_id = make(map[string]string)
 	local_users = make(map[string]string)
 	Known_admins = make([]string, 0)
+
+	if discord_multiguild_support {
+		discord_ooc_role_m = make(map[string]string)
+		discord_pedal_role_m = make(map[string]string)
+		known_channels_t_id_m = make(map[string][]string)
+	}
 }
 
 func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg string) {
@@ -71,6 +88,15 @@ func delcommand(session *discordgo.Session, message *discordgo.MessageCreate) {
 	if err != nil {
 		log.Println("NON-PANIC ERROR: failed to delete command message in discord: ", err)
 	}
+}
+
+func Get_guild(session *discordgo.Session, message *discordgo.MessageCreate) string {
+	channel, err := session.Channel(message.ChannelID)
+	if err != nil {
+		log.Println("Shiet: ", err)
+		return ""
+	}
+	return channel.GuildID
 }
 
 func Permissions_check(user *discordgo.User, permission_level int) bool {
@@ -174,16 +200,33 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 }
 
 func Discord_message_send(channel, prefix, ckey, message string) {
-	if known_channels_t_id[channel] == "" {
-		return //idk where to send it
-	}
-	var delim string
-	if prefix != "" && ckey != "" {
-		delim = " "
-	}
-	_, err := dsession.ChannelMessageSend(known_channels_t_id[channel], "**"+Dsanitize(prefix+delim+ckey)+":** "+Dsanitize(message))
-	if err != nil {
-		log.Println("DISCORD ERROR: failed to send message to discord: ", err)
+	if !discord_multiguild_support {
+		if known_channels_t_id[channel] == "" {
+			return //idk where to send it
+		}
+		var delim string
+		if prefix != "" && ckey != "" {
+			delim = " "
+		}
+		_, err := dsession.ChannelMessageSend(known_channels_t_id[channel], "**"+Dsanitize(prefix+delim+ckey)+":** "+Dsanitize(message))
+		if err != nil {
+			log.Println("DISCORD ERROR: failed to send message to discord: ", err)
+		}
+	} else {
+		channels, ok := known_channels_t_id_m[channel]
+		if !ok || len(channels) < 1 {
+			return //no bound channels
+		}
+		var delim string
+		if prefix != "" && ckey != "" {
+			delim = " "
+		}
+		for _, id := range channels {
+			_, err := dsession.ChannelMessageSend(id, "**"+Dsanitize(prefix+delim+ckey)+":** "+Dsanitize(message))
+			if err != nil {
+				log.Println("DISCORD ERROR: failed to send message to discord: ", err)
+			}
+		}
 	}
 }
 
@@ -206,6 +249,8 @@ func Dsanitize(m string) string {
 	out = strings.Replace(out, "`", "\\`", -1)
 	out = strings.Replace(out, "_", "\\_", -1)
 	out = strings.Replace(out, "~", "\\~", -1)
+	out = strings.Replace(out, "@everyone", "[я долбоеб]", -1)
+	out = strings.Replace(out, "@here", "[я долбоеб]", -1)
 	out = strings.Replace(out, "@", "\\@", -1)
 	return out
 }
@@ -228,24 +273,46 @@ func populate_known_channels() {
 	for k := range known_channels_id_t {
 		delete(known_channels_id_t, k)
 	} //clear id->type pairs
-	for k := range known_channels_t_id {
-		delete(known_channels_t_id, k)
-	} //clear type->id pairs too because now channeltypes can be added/removed
-	for rows.Next() {
-		var ch, id string
-		if terr := rows.Scan(&ch, &id); terr != nil {
-			log.Println("DB ERROR: ", terr)
+	if !discord_multiguild_support {
+		for k := range known_channels_t_id {
+			delete(known_channels_t_id, k)
+		} //clear type->id pairs too because now channeltypes can be added/removed
+
+		for rows.Next() {
+			var ch, id string
+			if terr := rows.Scan(&ch, &id); terr != nil {
+				log.Println("DB ERROR: ", terr)
+			}
+			ch = strings.Trim(ch, " ")
+			id = strings.Trim(id, " ")
+			known_channels_id_t[id] = ch
+			known_channels_t_id[ch] = id
+			log.Println("DB: setting `" + id + "` to '" + ch + "';")
 		}
-		ch = strings.Trim(ch, " ")
-		id = strings.Trim(id, " ")
-		known_channels_id_t[id] = ch
-		known_channels_t_id[ch] = id
-		log.Println("DB: setting `" + id + "` to '" + ch + "';")
+	} else {
+		for k := range known_channels_t_id_m {
+			delete(known_channels_t_id_m, k)
+		} //clear type->ids
+		for rows.Next() {
+			var ch, id string
+			if terr := rows.Scan(&ch, &id); terr != nil {
+				log.Println("DB ERROR: ", terr)
+			}
+			ch = strings.Trim(ch, " ")
+			id = strings.Trim(id, " ")
+			known_channels_id_t[id] = ch
+			chsl, ok := known_channels_t_id_m[ch]
+			if !ok {
+				chsl = make([]string, 0)
+			}
+			known_channels_t_id_m[ch] = append(chsl, id)
+			log.Println("DB: setting `" + id + "` to '" + ch + "';")
+		}
 	}
 }
 
-func add_known_channel(t, id string) bool {
-	result, err := Database.Exec("insert into DISCORD_CHANNELS values ($1, $2);", t, id)
+func add_known_channel(t, id, gid string) bool {
+	result, err := Database.Exec("insert into DISCORD_CHANNELS values ($1, $2, $3);", t, id, gid)
 	if err != nil {
 		log.Println("DB ERROR: failed to insert: ", err)
 		return false
@@ -262,8 +329,14 @@ func add_known_channel(t, id string) bool {
 	return false
 }
 
-func Remove_known_channel(t string) bool {
-	result, err := Database.Exec("delete from DISCORD_CHANNELS where CHANTYPE = $1 ;", t)
+func Remove_known_channels(t, gid string) bool {
+	var result sql.Result
+	var err error
+	if gid == "" {
+		result, err = Database.Exec("delete from DISCORD_CHANNELS where CHANTYPE = $1 ;", t)
+	} else {
+		result, err = Database.Exec("delete from DISCORD_CHANNELS where CHANTYPE = $1 and GUILDID = $2", t, gid)
+	}
 	if err != nil {
 		log.Println("DB ERROR: failed to delete: ", err)
 		return false
@@ -282,18 +355,14 @@ func Remove_known_channel(t string) bool {
 
 func List_known_channels() string {
 	ret := "known channels:\n"
-	for t, id := range known_channels_t_id {
-		if id == "" {
-			ret += fmt.Sprintf("`%s`\n", t)
-		} else {
-			ret += fmt.Sprintf("`%s` <-> <#%s>\n", t, id)
-		}
+	for id, t := range known_channels_id_t {
+		ret += fmt.Sprintf("`%s` <-> <#%s>\n", t, id)
 	}
 	return ret
 }
 
-func Update_known_channel(t, id string) bool {
-	result, err := Database.Exec("update DISCORD_CHANNELS set CHANID = $2 where CHANTYPE = $1;", t, id)
+func Update_known_channel(t, id, gid string) bool {
+	result, err := Database.Exec("update DISCORD_CHANNELS set CHANID = $2 where CHANTYPE = $1 and GUILDID = $3;", t, id, gid)
 	if err != nil {
 		log.Println("DB ERROR: failed to update: ", err)
 		return false
@@ -307,7 +376,7 @@ func Update_known_channel(t, id string) bool {
 		populate_known_channels() //update everything
 		return true
 	} else {
-		return add_known_channel(t, id)
+		return add_known_channel(t, id, gid)
 	}
 }
 

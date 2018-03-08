@@ -219,7 +219,11 @@ func init() {
 		Usage:     "[!channel type]",
 		Desc:      "create and/or bind provided channel type to discord channel",
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
-			if Update_known_channel(args[0], message.ChannelID) {
+			guild := Get_guild(session, message)
+			if guild == "" {
+				return "failed to retrieve guild"
+			}
+			if Update_known_channel(args[0], message.ChannelID, guild) {
 				return "changed `" + Dweaksanitize(args[0]) + "` channel to <#" + message.ChannelID + ">"
 			} else {
 				return "failed to change `" + Dweaksanitize(args[0]) + "` channel to <#" + message.ChannelID + ">"
@@ -247,6 +251,10 @@ func init() {
 		Usage:     "[?channel_type]",
 		Desc:      "unbind either provided channel type or else one bound to receiving discord channel and forget about it",
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+			guild := Get_guild(session, message)
+			if guild == "" {
+				return "failed to retrieve guild"
+			}
 			if len(args) < 1 {
 				tch := known_channels_id_t[message.ChannelID]
 				if tch == "" {
@@ -254,7 +262,7 @@ func init() {
 				}
 				args = append(args, tch)
 			}
-			if Remove_known_channel(args[0]) {
+			if Remove_known_channels(args[0], guild) {
 				return "removed `" + Dweaksanitize(args[0]) + "`"
 			} else {
 				return "failed to remove `" + Dweaksanitize(args[0]) + "`"
