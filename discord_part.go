@@ -710,17 +710,21 @@ func remove_ban(ckey string, user *discordgo.User) bool {
 func check_bans(user *discordgo.User, tp int, forced bool) string {
 	ckey := local_users[user.ID]
 	if ckey == "" {
+		log.Println("d1")
 		return ""
 	}
 	ban, ok := known_bans[ckey]
 	if !ok {
+		log.Println("d2")
 		return ""
 	}
 
 	if (ban.bantype & tp) == 0 {
+		log.Println("d3")
 		return "" //no matching ban
 	}
 	if Permissions_check(user, ban.permlevel) && !forced {
+		log.Println("d4")
 		return "" //avoid bans from same level
 	}
 	bantype := make([]string, 0)
