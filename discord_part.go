@@ -14,8 +14,6 @@ import (
 
 var (
 	discord_bot_token         string
-	discord_ooc_role          string
-	discord_pedal_role        string
 	Discord_command_character string
 	known_channels_id_t       map[string]string
 	known_channels_t_id       map[string]string
@@ -23,10 +21,9 @@ var (
 	Known_admins              []string
 	discord_superuser_id      string
 
-	discord_multiguild_support bool                = false // OK or not OK
-	discord_player_roles       map[string]string           //guildid -> role
-	discord_admin_roles        map[string]string           //guildid -> role
-	known_channels_t_id_m      map[string][]string         //type -> arr of ids
+	discord_player_roles  map[string]string   //guildid -> role
+	discord_admin_roles   map[string]string   //guildid -> role
+	known_channels_t_id_m map[string][]string //type -> arr of ids
 )
 
 const (
@@ -49,14 +46,7 @@ func init() {
 		log.Fatalln("Failed to retrieve $discord_bot_token")
 	}
 	dsession.Token = discord_bot_token
-	discord_ooc_role = os.Getenv("discord_ooc_role")
-	if discord_ooc_role == "" {
-		log.Fatalln("Failed to retrieve $discord_ooc_role")
-	}
-	discord_pedal_role = os.Getenv("discord_pedal_role")
-	if discord_pedal_role == "" {
-		log.Fatalln("Failed to retrieve $discord_pedal_role")
-	}
+
 	Discord_command_character = os.Getenv("discord_command_character")
 	if Discord_command_character == "" {
 		log.Fatalln("Failed to retrieve $discord_command_character")
@@ -65,21 +55,16 @@ func init() {
 	if discord_superuser_id == "" {
 		log.Fatalln("Failed to retrieve $discord_superuser_id")
 	}
-	dms := os.Getenv("discord_multiguild_support")
-	if dms == "OK" {
-		discord_multiguild_support = true
-		log.Println("Using experimental multiguild support")
-	}
+
 	known_channels_id_t = make(map[string]string)
 	known_channels_t_id = make(map[string]string)
 	local_users = make(map[string]string)
 	Known_admins = make([]string, 0)
 
-	if discord_multiguild_support {
-		discord_player_roles = make(map[string]string)
-		discord_admin_roles = make(map[string]string)
-		known_channels_t_id_m = make(map[string][]string)
-	}
+	discord_player_roles = make(map[string]string)
+	discord_admin_roles = make(map[string]string)
+	known_channels_t_id_m = make(map[string][]string)
+
 }
 
 func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg string) {
@@ -211,57 +196,39 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 }
 
 func Discord_message_send(channel, prefix, ckey, message string) {
-	if !discord_multiguild_support {
-		if known_channels_t_id[channel] == "" {
-			return //idk where to send it
-		}
-		var delim string
-		if prefix != "" && ckey != "" {
-			delim = " "
-		}
-		_, err := dsession.ChannelMessageSend(known_channels_t_id[channel], "**"+Dsanitize(prefix+delim+ckey)+":** "+Dsanitize(message))
+	channels, ok := known_channels_t_id_m[channel]
+	if !ok || len(channels) < 1 {
+		return //no bound channels
+	}
+	var delim string
+	if prefix != "" && ckey != "" {
+		delim = " "
+	}
+	for _, id := range channels {
+		_, err := dsession.ChannelMessageSend(id, "**"+Dsanitize(prefix+delim+ckey)+":** "+Dsanitize(message))
 		if err != nil {
 			log.Println("DISCORD ERROR: failed to send message to discord: ", err)
-		}
-	} else {
-		channels, ok := known_channels_t_id_m[channel]
-		if !ok || len(channels) < 1 {
-			return //no bound channels
-		}
-		var delim string
-		if prefix != "" && ckey != "" {
-			delim = " "
-		}
-		for _, id := range channels {
-			_, err := dsession.ChannelMessageSend(id, "**"+Dsanitize(prefix+delim+ckey)+":** "+Dsanitize(message))
-			if err != nil {
-				log.Println("DISCORD ERROR: failed to send message to discord: ", err)
-			}
 		}
 	}
 }
 
 func Discord_message_propagate(channel, prefix, ckey, message, chanid string) {
 	//given channel id and other params sends message to all channels except specified one
-	if !discord_multiguild_support {
-		return
-	} else {
-		channels, ok := known_channels_t_id_m[channel]
-		if !ok || len(channels) < 1 {
-			return //no bound channels
+	channels, ok := known_channels_t_id_m[channel]
+	if !ok || len(channels) < 1 {
+		return //no bound channels
+	}
+	var delim string
+	if prefix != "" && ckey != "" {
+		delim = " "
+	}
+	for _, id := range channels {
+		if id == chanid {
+			continue
 		}
-		var delim string
-		if prefix != "" && ckey != "" {
-			delim = " "
-		}
-		for _, id := range channels {
-			if id == chanid {
-				continue
-			}
-			_, err := dsession.ChannelMessageSend(id, "**"+Dsanitize(prefix+delim+ckey)+":** "+Dsanitize(message))
-			if err != nil {
-				log.Println("DISCORD ERROR: failed to send message to discord: ", err)
-			}
+		_, err := dsession.ChannelMessageSend(id, "**"+Dsanitize(prefix+delim+ckey)+":** "+Dsanitize(message))
+		if err != nil {
+			log.Println("DISCORD ERROR: failed to send message to discord: ", err)
 		}
 	}
 }
@@ -309,41 +276,23 @@ func populate_known_channels() {
 	for k := range known_channels_id_t {
 		delete(known_channels_id_t, k)
 	} //clear id->type pairs
-	if !discord_multiguild_support {
-		for k := range known_channels_t_id {
-			delete(known_channels_t_id, k)
-		} //clear type->id pairs too because now channeltypes can be added/removed
-
-		for rows.Next() {
-			var ch, id string
-			if terr := rows.Scan(&ch, &id); terr != nil {
-				log.Println("DB ERROR: ", terr)
-			}
-			ch = strings.Trim(ch, " ")
-			id = strings.Trim(id, " ")
-			known_channels_id_t[id] = ch
-			known_channels_t_id[ch] = id
-			log.Println("DB: setting `" + id + "` to '" + ch + "';")
+	for k := range known_channels_t_id_m {
+		delete(known_channels_t_id_m, k)
+	} //clear type->ids
+	for rows.Next() {
+		var ch, id string
+		if terr := rows.Scan(&ch, &id); terr != nil {
+			log.Println("DB ERROR: ", terr)
 		}
-	} else {
-		for k := range known_channels_t_id_m {
-			delete(known_channels_t_id_m, k)
-		} //clear type->ids
-		for rows.Next() {
-			var ch, id string
-			if terr := rows.Scan(&ch, &id); terr != nil {
-				log.Println("DB ERROR: ", terr)
-			}
-			ch = strings.Trim(ch, " ")
-			id = strings.Trim(id, " ")
-			known_channels_id_t[id] = ch
-			chsl, ok := known_channels_t_id_m[ch]
-			if !ok {
-				chsl = make([]string, 0)
-			}
-			known_channels_t_id_m[ch] = append(chsl, id)
-			log.Println("DB: setting `" + id + "` to '" + ch + "';")
+		ch = strings.Trim(ch, " ")
+		id = strings.Trim(id, " ")
+		known_channels_id_t[id] = ch
+		chsl, ok := known_channels_t_id_m[ch]
+		if !ok {
+			chsl = make([]string, 0)
 		}
+		known_channels_t_id_m[ch] = append(chsl, id)
+		log.Println("DB: setting `" + id + "` to '" + ch + "';")
 	}
 }
 
@@ -638,14 +587,10 @@ func login_user(guildid, userid string) bool {
 	ckey = strings.ToLower(ckey)
 	var player_role string
 	var ok bool
-	if !discord_multiguild_support {
-		player_role = discord_ooc_role
-	} else {
-		player_role, ok = discord_player_roles[guildid]
-		if !ok {
-			log.Println("Failed to find player role")
-			return false
-		}
+	player_role, ok = discord_player_roles[guildid]
+	if !ok {
+		log.Println("Failed to find player role")
+		return false
 	}
 	err := dsession.GuildMemberRoleAdd(guildid, userid, player_role)
 	if err != nil {
@@ -665,14 +610,10 @@ func login_user(guildid, userid string) bool {
 		return true
 	}
 	var admin_role string
-	if !discord_multiguild_support {
-		admin_role = discord_pedal_role
-	} else {
-		admin_role, ok = discord_admin_roles[guildid]
-		if !ok {
-			log.Println("Failed to find admin role")
-			return false
-		}
+	admin_role, ok = discord_admin_roles[guildid]
+	if !ok {
+		log.Println("Failed to find admin role")
+		return false
 	}
 	err = dsession.GuildMemberRoleAdd(guildid, userid, admin_role)
 	if err != nil {
@@ -686,14 +627,10 @@ func login_user(guildid, userid string) bool {
 func logoff_user(guildid, userid string) bool {
 	var player_role string
 	var ok bool
-	if !discord_multiguild_support {
-		player_role = discord_ooc_role
-	} else {
-		player_role, ok = discord_player_roles[guildid]
-		if !ok {
-			log.Println("Failed to find player role")
-			return false
-		}
+	player_role, ok = discord_player_roles[guildid]
+	if !ok {
+		log.Println("Failed to find player role")
+		return false
 	}
 	err := dsession.GuildMemberRoleRemove(guildid, userid, player_role)
 	if err != nil {
@@ -701,14 +638,10 @@ func logoff_user(guildid, userid string) bool {
 		return false
 	}
 	var admin_role string
-	if !discord_multiguild_support {
-		admin_role = discord_pedal_role
-	} else {
-		admin_role, ok = discord_admin_roles[guildid]
-		if !ok {
-			log.Println("Failed to find admin role")
-			return false
-		}
+	admin_role, ok = discord_admin_roles[guildid]
+	if !ok {
+		log.Println("Failed to find admin role")
+		return false
 	}
 	err = dsession.GuildMemberRoleRemove(guildid, userid, admin_role)
 	if err != nil {
