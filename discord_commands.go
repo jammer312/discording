@@ -453,7 +453,7 @@ func init() {
 				adm = "NONE"
 			} else {
 				for _, k := range groles {
-					if k.ID == plr {
+					if k.ID == adm {
 						adm = k.Name
 						break
 					}
