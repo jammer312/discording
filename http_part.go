@@ -93,6 +93,9 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Println("json error: ", err)
 		}
+		if parsed.Message == "" {
+			return //most probably got hit by stunbaton, idk why it sends it
+		}
 		Discord_message_send("me", "EMOTE:", parsed.Ckey, html.UnescapeString(parsed.Message))
 	case "garbage":
 		json_data := []byte(Bquery_deconvert(safe_param(form, "data")))
