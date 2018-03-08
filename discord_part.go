@@ -717,7 +717,7 @@ func check_bans(user *discordgo.User, tp int, forced bool) string {
 		return ""
 	}
 
-	if (ban.bantype & tp) != 0 {
+	if (ban.bantype & tp) == 0 {
 		return "" //no matching ban
 	}
 	if Permissions_check(user, ban.permlevel) && !forced {
