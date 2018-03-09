@@ -254,8 +254,10 @@ func Discord_subsriber_message_send(channel, message string) {
 		subs, ok := discord_onetime_subscriptions[guild.ID]
 		if !ok {
 			subs = ""
+		} else {
+			subs += ", "
 		}
-		_, err := dsession.ChannelMessageSend(id, "<@&"+rid+">, "+subs+", "+Dsanitize(message))
+		_, err := dsession.ChannelMessageSend(id, "<@&"+rid+">, "+subs+Dsanitize(message))
 		if err != nil {
 			log.Println("DISCORD ERROR: failed to send message to discord: ", err)
 		}
@@ -855,6 +857,7 @@ func flush_onetime_subscriptions() {
 			crstr += ", "
 		}
 		discord_onetime_subscriptions[guildid] = crstr + "<@!" + userid + ">"
+		log.Println(userid)
 	}
 	_, err = Database.Exec("delete * from DISCORD_ONETIME_SUBSCRIPTIONS")
 	if err != nil {
