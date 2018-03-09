@@ -657,6 +657,7 @@ func init() {
 			ret += "github repo: https://github.com/jammer312/discording\n"
 			ret += "main discord guild: https://discord.gg/T3kZZNR\n"
 			ret += "try typing `!register` , `!help` and `!usage`"
+			return ret
 		},
 	})
 	// ------------
