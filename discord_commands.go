@@ -587,7 +587,7 @@ func init() {
 	// ------------
 	// ------------
 	Register_command(Dcommand{
-		Command:   "subscribe",
+		Command:   "sub",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_REGISTERED,
 		Usage:     "",
@@ -607,7 +607,7 @@ func init() {
 	// ------------
 	// ------------
 	Register_command(Dcommand{
-		Command:   "subscribe_once",
+		Command:   "sub_once",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_REGISTERED,
 		Usage:     "",
@@ -627,7 +627,7 @@ func init() {
 	// ------------
 	// ------------
 	Register_command(Dcommand{
-		Command:   "unsubscribe",
+		Command:   "unsub",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_REGISTERED,
 		Usage:     "",
