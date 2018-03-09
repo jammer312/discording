@@ -503,7 +503,7 @@ func init() {
 		Minargs:   3,
 		Permlevel: PERMISSIONS_ADMIN,
 		Usage:     "[!ckey] [!type] [!reason]",
-		Desc:      "update existing ban's type or create new with following reason, valid types are " + BANSTRING_OOC + " and " + BANTYPE_COMMANDS,
+		Desc:      "update existing ban's type or create new with following reason, valid types are " + BANSTRING_OOC + " and " + BANSTRING_COMMANDS,
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
 			ckey := args[0]
 			bantypestr := args[1]
