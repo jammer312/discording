@@ -18,6 +18,7 @@ type Dcommand struct {
 	Usage      string
 	Desc       string
 	functional dcfunc
+	Temporary  int
 }
 
 var Known_commands map[string]Dcommand
@@ -181,6 +182,7 @@ func init() {
 		Permlevel: PERMISSIONS_SUPERUSER,
 		Usage:     "",
 		Desc:      "list registered users in format [discord nick] -> [ckey]",
+		Temporary: DEL_NEVER,
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
 			rep := "registered users:\n"
 			for login, ckey := range local_users {
@@ -238,6 +240,7 @@ func init() {
 		Permlevel: PERMISSIONS_ADMIN,
 		Usage:     "",
 		Desc:      "list known channel types and channels they're bound to",
+		Temporary: DEL_NEVER,
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
 			return List_known_channels()
 		},
@@ -291,6 +294,7 @@ func init() {
 		Permlevel: PERMISSIONS_ADMIN,
 		Usage:     "",
 		Desc:      "globally toggle ooc",
+		Temporary: DEL_NEVER,
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
 			Byond_query("OOC", true)
 			return "toggled global OOC"
@@ -304,6 +308,7 @@ func init() {
 		Permlevel: PERMISSIONS_NONE,
 		Usage:     "",
 		Desc:      "print list of commands available to you",
+		Temporary: DEL_LONG,
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
 			call, creg, cadm, csup := make([]string, 0), make([]string, 0), make([]string, 0), make([]string, 0)
 			ret := ""
@@ -348,6 +353,7 @@ func init() {
 		Permlevel: PERMISSIONS_NONE,
 		Usage:     "[!cmd_name]",
 		Desc:      "print description for provided command",
+		Temporary: DEL_LONG,
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
 			cmd_name := args[0]
 			dcmd, ok := Known_commands[cmd_name]
@@ -368,6 +374,7 @@ func init() {
 		Permlevel: PERMISSIONS_NONE,
 		Usage:     "",
 		Desc:      "prints admins currently on server",
+		Temporary: DEL_LONG,
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
 			br := Byond_query("adminwho", false)
 			return br.String()
@@ -481,6 +488,7 @@ func init() {
 		Permlevel: PERMISSIONS_REGISTERED,
 		Usage:     "[!@mention]",
 		Desc:      "returns ckey of mentioned user",
+		Temporary: DEL_LONG,
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
 			args = strings.Fields(message.Content[1:])
 			mention := args[1]
@@ -507,6 +515,7 @@ func init() {
 		Permlevel: PERMISSIONS_REGISTERED,
 		Usage:     "",
 		Desc:      "prints your discord bans, if any",
+		Temporary: DEL_LONG,
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
 			ret := check_bans(message.Author, ^0, true)
 			if ret == "" {
@@ -566,6 +575,7 @@ func init() {
 		Permlevel: PERMISSIONS_ADMIN,
 		Usage:     "",
 		Desc:      "prints existing bans",
+		Temporary: DEL_NEVER,
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
 			ret := "\n"
 			for ckey, ban := range known_bans {
@@ -677,6 +687,9 @@ Dcommand register template below
 
 		},
 	})
+	// ------------
+	additional params:
+		Temporary: , - 0=DEL_DEFAULT by default
 	// ------------
 */
 // --------------------------------------------------------------------

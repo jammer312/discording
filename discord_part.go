@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 )
 
 var (
@@ -48,6 +49,12 @@ const (
 const (
 	BANSTRING_OOC      = "OOC"
 	BANSTRING_COMMANDS = "COMMANDS"
+)
+
+const (
+	DEL_NEVER   = -1
+	DEL_DEFAULT = 0
+	DEL_LONG    = 3
 )
 
 type dban struct {
@@ -91,10 +98,26 @@ func init() {
 
 }
 
-func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg string) {
-	_, err := session.ChannelMessageSend(message.ChannelID, "<@!"+message.Author.ID+">, "+msg)
+func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg string, temporary int) {
+	rep, err := session.ChannelMessageSend(message.ChannelID, "<@!"+message.Author.ID+">, "+msg)
 	if err != nil {
 		log.Println("NON-PANIC ERROR: failed to send reply message to discord: ", err)
+	}
+	if temporary < 0 {
+		return
+	}
+	if temporary == DEL_DEFAULT {
+		temporary = 1
+	}
+	temporary = temporary * (2 + len(msg)/5)
+	go delete_in(session, rep, temporary)
+}
+
+func delete_in(session *discordgo.Session, message *discordgo.Message, seconds int) {
+	time.Sleep(time.Duration(seconds) * time.Second)
+	err := session.ChannelMessageDelete(message.ChannelID, message.ID)
+	if err != nil {
+		log.Println("NON-PANIC ERROR: failed to delete reply message in discord: ", err)
 	}
 }
 
@@ -151,7 +174,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		args := strings.Fields(mcontent[1:])
 		command := strings.ToLower(args[0])
 		if check_bans(message.Author, BANTYPE_COMMANDS, false) != "" && command != "baninfo" {
-			reply(session, message, "you're banned from this action. Try !baninfo")
+			reply(session, message, "you're banned from this action. Try !baninfo", DEL_DEFAULT)
 			return
 		}
 		if len(args) > 1 {
@@ -162,22 +185,22 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		log.Println(message.Author.String() + " c-> " + message.ContentWithMentionsReplaced())
 		dcomm, ok := Known_commands[command]
 		if !ok {
-			reply(session, message, "unknown command: `"+Dweaksanitize(command)+"`")
+			reply(session, message, "unknown command: `"+Dweaksanitize(command)+"`", DEL_DEFAULT)
 			return
 		}
 		if !Permissions_check(message.Author, dcomm.Permlevel) {
-			reply(session, message, "missing permissions required to run this command: `"+Dweaksanitize(command)+"`")
+			reply(session, message, "missing permissions required to run this command: `"+Dweaksanitize(command)+"`", DEL_DEFAULT)
 			return
 		}
 		if len(args) < dcomm.Minargs {
-			reply(session, message, "usage: "+dcomm.Usagestr())
+			reply(session, message, "usage: "+dcomm.Usagestr(), DEL_NEVER)
 			return
 		}
 		ret := dcomm.Exec(session, message, args)
 		if ret == "" {
 			return
 		}
-		reply(session, message, ret)
+		reply(session, message, ret, dcomm.Temporary)
 		return
 	}
 
@@ -191,10 +214,10 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		channel, err := session.Channel(message.ChannelID)
 		if err != nil {
 			log.Println("Shiet: ", err)
-			reply(session, message, "failed to retrieve channel")
+			reply(session, message, "failed to retrieve channel", DEL_DEFAULT)
 		}
 		if logoff_user(channel.GuildID, message.Author.ID) {
-			reply(session, message, "you were logged off because of missing registration entry (try !register)")
+			reply(session, message, "you were logged off because of missing registration entry (try !register)", DEL_NEVER)
 			return
 		}
 	}
@@ -210,18 +233,18 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 	case "ooc":
 		if check_bans(message.Author, BANTYPE_OOC, false) != "" {
 			defer delcommand(session, message)
-			reply(session, message, "you're banned from this action. Try !baninfo")
+			reply(session, message, "you're banned from this action. Try !baninfo", DEL_DEFAULT)
 			return
 		}
 		br := Byond_query("admin="+Bquery_convert(shown_nick)+"&ooc="+Bquery_convert(mcontent)+addstr, true)
 		if br.String() == "muted" {
 			defer delcommand(session, message)
-			reply(session, message, "your ckey is muted from OOC")
+			reply(session, message, "your ckey is muted from OOC", DEL_DEFAULT)
 			return
 		}
 		if br.String() == "globally muted" {
 			defer delcommand(session, message)
-			reply(session, message, "OOC is globally muted")
+			reply(session, message, "OOC is globally muted", DEL_DEFAULT)
 			return
 		}
 		Discord_message_propagate("ooc", "DISCORD OOC:", shown_nick, strip.StripTags(mcontent), message.ChannelID)
