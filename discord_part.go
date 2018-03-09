@@ -293,7 +293,9 @@ func Discord_subsriber_message_send(channel, message string) {
 		}
 		rid, ok := discord_subscriber_roles[guild.ID]
 		if !ok {
-			continue
+			rid = ""
+		} else {
+			rid = "<@&" + rid + ">, "
 		}
 		flush_onetime_subscriptions()
 		subs, ok := discord_onetime_subscriptions[guild.ID]
@@ -302,7 +304,7 @@ func Discord_subsriber_message_send(channel, message string) {
 		} else {
 			subs += ", "
 		}
-		_, err := dsession.ChannelMessageSend(id, "<@&"+rid+">, "+subs+Dsanitize(message))
+		_, err := dsession.ChannelMessageSend(id, rid+subs+Dsanitize(message))
 		if err != nil {
 			log.Println("DISCORD ERROR: failed to send message to discord: ", err)
 		}

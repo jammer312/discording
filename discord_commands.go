@@ -714,6 +714,18 @@ func init() {
 		},
 	})
 	// ------------
+	// ------------
+	Register_command(Dcommand{
+		Command:   "crash",
+		Minargs:   0,
+		Permlevel: PERMISSIONS_SUPERUSER,
+		Usage:     "",
+		Desc:      "crash bot (WHY WOULD YOU DO IT?)",
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+			panic("AAAAAAAAA")
+		},
+	})
+	// ------------
 }
 
 // --------------------------------------------------------------------
