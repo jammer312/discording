@@ -178,10 +178,14 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		return
 	}
 	mcontent := message.ContentWithMentionsReplaced()
-	if len(mcontent) < 2 { //one for command char and at least one for command
+	if is_in_private_channel(session, message) {
+		reply(session, message, "FORBIDDEN, won't execute commands in private channels", DEL_NEVER)
 		return
 	}
 	if mcontent[:1] == Discord_command_character {
+		if len(mcontent) < 2 { //one for command char and at least one for command
+			return
+		}
 		//it's command
 		defer delcommand(session, message)
 		args := strings.Fields(mcontent[1:])
