@@ -114,6 +114,15 @@ func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg str
 	go delete_in(session, rep, temporary)
 }
 
+func is_in_private_channel(session *discordgo.Session, message *discordgo.MessageCreate) bool {
+	channel, err := session.State.Channel(message.ChannelID)
+	if err != nil {
+		log.Println("ERROR: failed to retrieve channel: ", err)
+		return false
+	}
+	return channel.Type == discordgo.ChannelTypeDM || channel.Type == discordgo.ChannelTypeGroupDM
+}
+
 func delete_in(session *discordgo.Session, message *discordgo.Message, seconds int) {
 	time.Sleep(time.Duration(seconds) * time.Second)
 	err := session.ChannelMessageDelete(message.ChannelID, message.ID)
@@ -123,6 +132,9 @@ func delete_in(session *discordgo.Session, message *discordgo.Message, seconds i
 }
 
 func delcommand(session *discordgo.Session, message *discordgo.MessageCreate) {
+	if is_in_private_channel(session, message) {
+		return
+	}
 	err := session.ChannelMessageDelete(message.ChannelID, message.ID)
 	if err != nil {
 		log.Println("NON-PANIC ERROR: failed to delete command message in discord: ", err)
@@ -194,7 +206,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			return
 		}
 		if len(args) < dcomm.Minargs {
-			reply(session, message, "usage: "+dcomm.Usagestr(), DEL_NEVER)
+			reply(session, message, "usage: "+dcomm.Usagestr(), DEL_LONG)
 			return
 		}
 		ret := dcomm.Exec(session, message, args)
