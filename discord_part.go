@@ -86,6 +86,7 @@ func init() {
 	discord_player_roles = make(map[string]string)
 	discord_admin_roles = make(map[string]string)
 	discord_subscriber_roles = make(map[string]string)
+	discord_onetime_subscriptions = make(map[string]string)
 	known_channels_t_id_m = make(map[string][]string)
 
 }
