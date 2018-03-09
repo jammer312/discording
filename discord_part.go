@@ -820,12 +820,12 @@ func unsubscribe_user(guildid, userid string) bool {
 }
 
 func subscribe_user_once(guildid, userid string) bool {
-	ret := count_query("select * from DISCORD_ONETIME_SUBSCRIPTIONS where USERID = $1 and GUILDID = $2;", userid, guildid)
+	ret := count_query("select * from DISCORD_ONETIME_SUBSCRIPTIONS where USERID = '" + userid + "' and GUILDID = '" + guildid + "';")
 	if ret == -1 {
 		return false
 	}
 	if ret == 0 {
-		if count_query("insert into DISCORD_ONETIME_SUBSCRIPTIONS values($1,$2);", userid, guildid) < 1 {
+		if count_query("insert into DISCORD_ONETIME_SUBSCRIPTIONS values('"+userid+"','"+guildid+"');") < 1 {
 			return false
 		}
 	}
@@ -855,6 +855,10 @@ func flush_onetime_subscriptions() {
 			crstr += ", "
 		}
 		discord_onetime_subscriptions[guildid] = crstr + "<@!" + userid + ">"
+	}
+	_, err = Database.Exec("delete * from DISCORD_ONETIME_SUBSCRIPTIONS")
+	if err != nil {
+		log.Println("ERROR: del: ", err)
 	}
 }
 

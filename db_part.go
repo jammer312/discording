@@ -18,8 +18,8 @@ func init() {
 
 }
 
-func count_query(query string, args ...interface{}) int {
-	result, err := Database.Exec(query, args)
+func count_query(query string) int {
+	result, err := Database.Exec(query)
 	if err != nil {
 		log.Println("DB ERROR: failed to count: ", err)
 		return -1
