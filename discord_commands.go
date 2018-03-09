@@ -470,7 +470,7 @@ func init() {
 					}
 				}
 			}
-			return "\nplayer -> " + plr + "\nsubscriber -> " + adm
+			return "\nplayer -> " + plr + "\nadmin -> " + adm + "\nsubscriber -> " + sub
 		},
 	})
 	// ------------
