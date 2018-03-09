@@ -17,3 +17,17 @@ func init() {
 	}
 
 }
+
+func count_query(query string, args ...interface{}) int {
+	result, err := Database.Exec(query, args)
+	if err != nil {
+		log.Println("DB ERROR: failed to count: ", err)
+		return -1
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		log.Println("DB ERROR: failed to retrieve amount of rows affected: ", err)
+		return -1
+	}
+	return int(affected)
+}

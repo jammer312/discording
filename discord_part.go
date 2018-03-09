@@ -21,10 +21,11 @@ var (
 	Known_admins              []string
 	discord_superuser_id      string
 
-	discord_player_roles     map[string]string   //guildid -> role
-	discord_subscriber_roles map[string]string   //guilldid -> role
-	discord_admin_roles      map[string]string   //guildid -> role
-	known_channels_t_id_m    map[string][]string //type -> arr of ids
+	discord_player_roles          map[string]string   //guildid -> role
+	discord_subscriber_roles      map[string]string   //guilldid -> role
+	discord_admin_roles           map[string]string   //guildid -> role
+	discord_onetime_subscriptions map[string]string   // guildid -> userid
+	known_channels_t_id_m         map[string][]string //type -> arr of ids
 )
 
 const (
@@ -250,7 +251,11 @@ func Discord_subsriber_message_send(channel, message string) {
 		if !ok {
 			continue
 		}
-		_, err := dsession.ChannelMessageSend(id, "<@&"+rid+">, "+Dsanitize(message))
+		subs, ok := discord_onetime_subscriptions[guild.ID]
+		if !ok {
+			subs = ""
+		}
+		_, err := dsession.ChannelMessageSend(id, "<@&"+rid+">, "+subs+", "+Dsanitize(message))
 		if err != nil {
 			log.Println("DISCORD ERROR: failed to send message to discord: ", err)
 		}
@@ -812,6 +817,45 @@ func unsubscribe_user(guildid, userid string) bool {
 		return false
 	}
 	return true
+}
+
+func subscribe_user_once(guildid, userid string) bool {
+	ret := count_query("select * from DISCORD_ONETIME_SUBSCRIPTIONS where USERID = $1 and GUILDID = $2;", userid, guildid)
+	if ret == -1 {
+		return false
+	}
+	if ret == 0 {
+		if count_query("insert into DISCORD_ONETIME_SUBSCRIPTIONS values($1,$2);", userid, guildid) < 1 {
+			return false
+		}
+	}
+	return true
+}
+
+func flush_onetime_subscriptions() {
+	for k := range discord_onetime_subscriptions {
+		delete(discord_onetime_subscriptions, k)
+	} //delete in any case
+	rows, err := Database.Query("select USERID, GUILDID from DISCORD_ONETIME_SUBSCRIPTIONS")
+	if err != nil {
+		log.Println("DB ERROR: failed to retrieve known bans: ", err)
+		return
+	}
+	for rows.Next() {
+		var userid, guildid string
+		if terr := rows.Scan(&userid, &guildid); terr != nil {
+			log.Println("DB ERROR: ", terr)
+		}
+		userid = trim(userid)
+		guildid = trim(guildid)
+		crstr, ok := discord_onetime_subscriptions[guildid]
+		if !ok {
+			crstr = ""
+		} else {
+			crstr += ", "
+		}
+		discord_onetime_subscriptions[guildid] = crstr + "<@!" + userid + ">"
+	}
 }
 
 func login_user(guildid, userid string) bool {
