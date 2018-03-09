@@ -645,6 +645,21 @@ func init() {
 		},
 	})
 	// ------------
+	// ------------
+	Register_command(Dcommand{
+		Command:   "info",
+		Minargs:   0,
+		Permlevel: PERMISSIONS_NONE,
+		Usage:     "",
+		Desc:      "prints some info about bot",
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+			ret := "opensource golang bot for ss13<->discord\n"
+			ret += "github repo: https://github.com/jammer312/discording\n"
+			ret += "main discord guild: https://discord.gg/T3kZZNR\n"
+			ret += "try typing `!register` , `!help` and `!usage`"
+		},
+	})
+	// ------------
 }
 
 // --------------------------------------------------------------------
