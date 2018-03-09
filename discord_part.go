@@ -143,12 +143,12 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 	if mcontent[:1] == Discord_command_character {
 		//it's command
 		defer delcommand(session, message)
-		if check_bans(message.Author, BANTYPE_COMMANDS, false) != "" {
+		args := strings.Split(mcontent[1:], " ")
+		command := strings.ToLower(args[0])
+		if check_bans(message.Author, BANTYPE_COMMANDS, false) != "" && command != "baninfo" {
 			reply(session, message, "you're banned from this action. Try !baninfo")
 			return
 		}
-		args := strings.Split(mcontent[1:], " ")
-		command := strings.ToLower(args[0])
 		if len(args) > 1 {
 			args = args[1:]
 		} else {
