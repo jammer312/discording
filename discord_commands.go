@@ -459,7 +459,18 @@ func init() {
 					}
 				}
 			}
-			return "\nplayer -> " + plr + "\nadmin -> " + adm
+			sub, ok := discord_subscriber_roles[guild]
+			if !ok {
+				sub = "NONE"
+			} else {
+				for _, k := range groles {
+					if k.ID == sub {
+						sub = k.Name
+						break
+					}
+				}
+			}
+			return "\nplayer -> " + plr + "\nsubscriber -> " + adm
 		},
 	})
 	// ------------
