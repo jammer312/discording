@@ -607,7 +607,7 @@ func init() {
 	// ------------
 	// ------------
 	Register_command(Dcommand{
-		Command:   "subscribe",
+		Command:   "unsubscribe",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_REGISTERED,
 		Usage:     "",
