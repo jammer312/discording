@@ -471,7 +471,8 @@ func init() {
 		Usage:     "[!@mention]",
 		Desc:      "returns ckey of mentioned user",
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
-			mention := args[0]
+			args := strings.Split(message.Content[1:], " ")
+			mention := args[1]
 			userid := mention[3 : len(mention)-1]
 			ckey := local_users[userid]
 			if ckey == "" {
