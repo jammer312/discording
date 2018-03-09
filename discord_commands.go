@@ -372,7 +372,7 @@ func init() {
 			br := Byond_query("adminwho", false)
 			str := br.String()
 			if str == "NULL" {
-				str = "no admins online"
+				str = "strange shit happened, unable to get adminwho result"
 			}
 			return str
 		},
