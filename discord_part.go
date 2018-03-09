@@ -21,9 +21,10 @@ var (
 	Known_admins              []string
 	discord_superuser_id      string
 
-	discord_player_roles  map[string]string   //guildid -> role
-	discord_admin_roles   map[string]string   //guildid -> role
-	known_channels_t_id_m map[string][]string //type -> arr of ids
+	discord_player_roles     map[string]string   //guildid -> role
+	discord_subscriber_roles map[string]string   //guilldid -> role
+	discord_admin_roles      map[string]string   //guildid -> role
+	known_channels_t_id_m    map[string][]string //type -> arr of ids
 )
 
 const (
@@ -34,8 +35,9 @@ const (
 )
 
 const (
-	ROLE_PLAYER = "player"
-	ROLE_ADMIN  = "admin"
+	ROLE_PLAYER     = "player"
+	ROLE_ADMIN      = "admin"
+	ROLE_SUBSCRIBER = "subscriber"
 )
 
 const (
@@ -82,6 +84,7 @@ func init() {
 
 	discord_player_roles = make(map[string]string)
 	discord_admin_roles = make(map[string]string)
+	discord_subscriber_roles = make(map[string]string)
 	known_channels_t_id_m = make(map[string][]string)
 
 }
@@ -556,6 +559,8 @@ func populate_known_roles() {
 			discord_player_roles[gid] = rid
 		case ROLE_ADMIN:
 			discord_admin_roles[gid] = rid
+		case ROLE_SUBSCRIBER:
+			discord_subscriber_roles[gid] = rid
 		}
 	}
 }
@@ -739,6 +744,47 @@ func check_bans(user *discordgo.User, tp int, forced bool) string {
 	}
 	bantypestring := strings.Join(bantype, ", ")
 	return "You were banned from " + bantypestring + " by " + ban.admin + " with following reason:\n" + ban.reason
+}
+
+func subscribe_user(guildid, userid string) bool {
+	ckey := update_local_user(userid)
+	if ckey == "" {
+		return false
+	}
+	ckey = strings.ToLower(ckey)
+	var subscriber_role string
+	var ok bool
+	subscriber_role, ok = discord_subscriber_roles[guildid]
+	if !ok {
+		log.Println("Failed to find subscriber role")
+		return false
+	}
+	err := dsession.GuildMemberRoleAdd(guildid, userid, subscriber_role)
+	if err != nil {
+		log.Println("Subscribe error: ", err)
+		return false
+	}
+	return true
+}
+func unsubscribe_user(guildid, userid string) bool {
+	ckey := update_local_user(userid)
+	if ckey == "" {
+		return false
+	}
+	ckey = strings.ToLower(ckey)
+	var subscriber_role string
+	var ok bool
+	subscriber_role, ok = discord_subscriber_roles[guildid]
+	if !ok {
+		log.Println("Failed to find subscriber role")
+		return false
+	}
+	err := dsession.GuildMemberRoleRemove(guildid, userid, subscriber_role)
+	if err != nil {
+		log.Println("Subscribe error: ", err)
+		return false
+	}
+	return true
 }
 
 func login_user(guildid, userid string) bool {

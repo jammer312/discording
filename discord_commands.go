@@ -574,6 +574,46 @@ func init() {
 		},
 	})
 	// ------------
+	// ------------
+	Register_command(Dcommand{
+		Command:   "subscribe",
+		Minargs:   0,
+		Permlevel: PERMISSIONS_REGISTERED,
+		Usage:     "",
+		Desc:      "assigns you 'subscriber' role that gets slapped each time round is about to start",
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+			ret := "FAIL"
+			guild := Get_guild(session, message)
+			if guild == "" {
+				return "failed to retrieve guild"
+			}
+			if subscribe_user(guild, message.Author.ID) {
+				ret = "OK"
+			}
+			return ret
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(Dcommand{
+		Command:   "subscribe",
+		Minargs:   0,
+		Permlevel: PERMISSIONS_REGISTERED,
+		Usage:     "",
+		Desc:      "removes your 'subscriber' role that gets slapped each time round is about to start",
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+			ret := "FAIL"
+			guild := Get_guild(session, message)
+			if guild == "" {
+				return "failed to retrieve guild"
+			}
+			if unsubscribe_user(guild, message.Author.ID) {
+				ret = "OK"
+			}
+			return ret
+		},
+	})
+	// ------------
 }
 
 // --------------------------------------------------------------------
