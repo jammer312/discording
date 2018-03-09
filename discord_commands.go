@@ -341,6 +341,52 @@ func init() {
 	// ------------
 	// ------------
 	Register_command(Dcommand{
+		Command:   "help_pm",
+		Minargs:   0,
+		Permlevel: PERMISSIONS_NONE,
+		Usage:     "",
+		Desc:      "print list of commands available to you in private message",
+		Temporary: DEL_LONG,
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+			call, creg, cadm, csup := make([]string, 0), make([]string, 0), make([]string, 0), make([]string, 0)
+			ret := ""
+			user := message.Author
+			for comm, dcomm := range Known_commands {
+				switch dcomm.Permlevel {
+				case PERMISSIONS_NONE:
+					call = append(call, comm)
+				case PERMISSIONS_REGISTERED:
+					creg = append(creg, comm)
+				case PERMISSIONS_ADMIN:
+					cadm = append(cadm, comm)
+				case PERMISSIONS_SUPERUSER:
+					csup = append(csup, comm)
+				}
+			}
+			//sort it in alphabetical, because otherwise order is random which is no good
+			sort.Strings(call)
+			sort.Strings(creg)
+			sort.Strings(cadm)
+			sort.Strings(csup)
+			if Permissions_check(user, PERMISSIONS_NONE) {
+				ret += "\n**Generic commands:**\n" + strings.Join(call, "\n")
+			}
+			if Permissions_check(user, PERMISSIONS_REGISTERED) {
+				ret += "\n**Commands, available to registered users:**\n" + strings.Join(creg, "\n")
+			}
+			if Permissions_check(user, PERMISSIONS_ADMIN) {
+				ret += "\n**Admin commands:**\n" + strings.Join(cadm, "\n")
+			}
+			if Permissions_check(user, PERMISSIONS_SUPERUSER) {
+				ret += "\n**Superuser commands:**\n" + strings.Join(csup, "\n")
+			}
+			Discord_private_message_send(user, ret)
+			return "sent to PM"
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(Dcommand{
 		Command:   "usage",
 		Minargs:   1,
 		Permlevel: PERMISSIONS_NONE,
