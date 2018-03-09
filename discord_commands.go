@@ -594,7 +594,7 @@ func init() {
 		Minargs:   0,
 		Permlevel: PERMISSIONS_REGISTERED,
 		Usage:     "",
-		Desc:      "assigns you 'subscriber' role that gets slapped each time round is about to start",
+		Desc:      "assigns you 'subscriber' role that gets notification each time round is about to start",
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
 			ret := "FAIL"
 			guild := Get_guild(session, message)
@@ -614,7 +614,7 @@ func init() {
 		Minargs:   0,
 		Permlevel: PERMISSIONS_REGISTERED,
 		Usage:     "",
-		Desc:      "tells bot to slap you next time round is about to start",
+		Desc:      "tells bot to notify you next time round is about to start",
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
 			ret := "FAIL"
 			guild := Get_guild(session, message)
