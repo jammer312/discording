@@ -250,7 +250,7 @@ func Discord_subsriber_message_send(channel, message string) {
 		if !ok {
 			continue
 		}
-		_, err := dsession.ChannelMessageSend(id, "<@!"+rid+">, "+Dsanitize(message))
+		_, err := dsession.ChannelMessageSend(id, "<@&"+rid+">, "+Dsanitize(message))
 		if err != nil {
 			log.Println("DISCORD ERROR: failed to send message to discord: ", err)
 		}
