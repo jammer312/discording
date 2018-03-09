@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 func main() {
@@ -17,6 +18,7 @@ func main() {
 	//graceful shutdown for web server
 	if r := recover(); r != nil {
 		Discord_message_send("bot_status", "STATUS UPDATE", "", "CRASH")
+		time.Sleep(time.Duration(5) * time.Second)
 		panic(r)
 	}
 	if err := srv.Shutdown(nil); err != nil {
