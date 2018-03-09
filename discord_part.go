@@ -652,7 +652,7 @@ func update_ban(ckey, reason string, user *discordgo.User, tp int) bool {
 		return false
 	}
 	if affected > 0 {
-		result, err = Database.Exec("update DISCORD_BANS set TYPE = TYPE | $1 where CKEY = $3 and PERMISSIONS <= $2 ;", tp, permissions, ckey)
+		result, err = Database.Exec("update DISCORD_BANS set TYPE = TYPE | $1 where CKEY = $3 and PERMISSION <= $2 ;", tp, permissions, ckey)
 		if err != nil {
 			log.Println("DB ERROR: failed to update: ", err)
 			return false
