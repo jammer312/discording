@@ -182,21 +182,14 @@ func init() {
 		Permlevel: PERMISSIONS_SUPERUSER,
 		Usage:     "",
 		Desc:      "list registered users in format [discord nick] -> [ckey]",
-		Temporary: DEL_NEVER,
+		Temporary: DEL_DEFAULT,
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
 			rep := "registered users:\n"
 			for login, ckey := range local_users {
-				var nl string
-				usr, err := session.User(login)
-				if err != nil {
-					Discord_message_send("debug", "ERR:", "", fmt.Sprint(err))
-					nl = ""
-				} else {
-					nl = usr.String()
-				}
-				rep += fmt.Sprintf("%s -> %s\n", nl, ckey)
+				rep += fmt.Sprintf("<@!%s> -> %s\n", login, ckey)
 			}
-			return rep
+			Discord_private_message_send(message.Author, rep)
+			return "sent to PM"
 		},
 	})
 	// ------------
