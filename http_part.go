@@ -89,7 +89,9 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Println("json error: ", err)
 		}
-		last_ahelp = parsed.Ckey
+		if strings.Index(parsed.Ckey, "->") == -1 { //because ADMINPM is AHELP too for some wicked reason
+			last_ahelp = parsed.Ckey
+		}
 		Discord_message_send("admin", "AHELP:", parsed.Ckey, html.UnescapeString(parsed.Message))
 	case "memessage":
 		json_data := []byte(Bquery_deconvert(safe_param(form, "data")))
