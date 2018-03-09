@@ -15,6 +15,10 @@ func main() {
 	<-sc     //wait for SIGINT or kinda it
 	Dclose() //stop discord
 	//graceful shutdown for web server
+	if r := recover(); r != nil {
+		Discord_message_send("bot_status", "STATUS UPDATE", "", "CRASH")
+		panic(r)
+	}
 	if err := srv.Shutdown(nil); err != nil {
 		log.Fatal("Failed to shutdown webserver: ", err)
 	}
