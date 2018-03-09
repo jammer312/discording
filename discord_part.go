@@ -110,7 +110,7 @@ func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg str
 	if temporary == DEL_DEFAULT {
 		temporary = 1
 	}
-	temporary = temporary * int(math.Ceil(math.Sqrt(2.0+len(msg)/10.0)))
+	temporary = temporary * int(math.Ceil(math.Sqrt(2+float64(len(msg))/10)))
 	go delete_in(session, rep, temporary)
 }
 
