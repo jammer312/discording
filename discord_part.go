@@ -230,6 +230,33 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 	}
 }
 
+func Discord_subsriber_message_send(channel, message string) {
+	channels, ok := known_channels_t_id_m[channel]
+	if !ok || len(channels) < 1 {
+		return //no bound channels
+	}
+	for _, id := range channels {
+		chann, cerr := dsession.Channel(id)
+		if cerr != nil {
+			log.Println("ERROR: CHAN<-ID FAIL: ", cerr)
+			continue
+		}
+		guild, gerr := dsession.Guild(chann.GuildID)
+		if gerr != nil {
+			log.Println("ERROR: GUILD<-ID FAIL: ", gerr)
+			continue
+		}
+		rid, ok := discord_subscriber_roles[guild.ID]
+		if !ok {
+			continue
+		}
+		_, err := dsession.ChannelMessageSend(id, "<@!"+rid+">, "+Dsanitize(message))
+		if err != nil {
+			log.Println("DISCORD ERROR: failed to send message to discord: ", err)
+		}
+	}
+}
+
 func Discord_message_send(channel, prefix, ckey, message string) {
 	channels, ok := known_channels_t_id_m[channel]
 	if !ok || len(channels) < 1 {

@@ -51,6 +51,10 @@ type token struct {
 	Token string
 }
 
+type roundstatus struct {
+	Status string
+}
+
 func webhook_handler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "" && r.Method != "GET" {
 		return
@@ -113,6 +117,16 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 			log.Println("json error: ", err)
 		}
 		Discord_process_token(html.UnescapeString(parsed.Token), parsed.Ckey)
+	case "roundstatus":
+		json_data := []byte(Bquery_deconvert(safe_param(form, "data")))
+		var parsed roundstatus
+		err := json.Unmarshal(json_data, &parsed)
+		if err != nil {
+			log.Println("json error: ", err)
+		}
+		if parsed.Status == "lobby" {
+			Discord_subsriber_message_send("bot_status", "new round is about to start (lobby)")
+		}
 	default:
 		log.Print(form)
 	}
