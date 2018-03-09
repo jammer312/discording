@@ -370,7 +370,11 @@ func init() {
 		Temporary: DEL_LONG,
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
 			br := Byond_query("adminwho", false)
-			return br.String()
+			str := br.String()
+			if str == "NULL" {
+				str = "no admins online"
+			}
+			return str
 		},
 	})
 	// ------------
