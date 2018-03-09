@@ -8,6 +8,7 @@ import (
 	"github.com/grokify/html-strip-tags-go"
 	"html"
 	"log"
+	"math"
 	"os"
 	"strings"
 	"time"
@@ -109,7 +110,7 @@ func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg str
 	if temporary == DEL_DEFAULT {
 		temporary = 1
 	}
-	temporary = temporary * (2 + len(msg)/10)
+	temporary = temporary * int(math.Ceil(math.Sqrt2(2.0+len(msg)/10.0)))
 	go delete_in(session, rep, temporary)
 }
 
