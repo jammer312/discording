@@ -251,6 +251,7 @@ func Discord_subsriber_message_send(channel, message string) {
 		if !ok {
 			continue
 		}
+		flush_onetime_subscriptions()
 		subs, ok := discord_onetime_subscriptions[guild.ID]
 		if !ok {
 			subs = ""
@@ -857,7 +858,6 @@ func flush_onetime_subscriptions() {
 			crstr += ", "
 		}
 		discord_onetime_subscriptions[guildid] = crstr + "<@!" + userid + ">"
-		log.Println(userid)
 	}
 	_, err = Database.Exec("delete * from DISCORD_ONETIME_SUBSCRIPTIONS")
 	if err != nil {
