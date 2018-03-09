@@ -182,6 +182,9 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		reply(session, message, "FORBIDDEN, won't execute commands in private channels", DEL_NEVER)
 		return
 	}
+	if len(mcontent) < 1 { //wut?
+		return
+	}
 	if mcontent[:1] == Discord_command_character {
 		if len(mcontent) < 2 { //one for command char and at least one for command
 			return
@@ -916,8 +919,7 @@ func login_user(guildid, userid string) bool {
 	var ok bool
 	player_role, ok = discord_player_roles[guildid]
 	if !ok {
-		log.Println("Failed to find player role")
-		return false
+		return true
 	}
 	err := dsession.GuildMemberRoleAdd(guildid, userid, player_role)
 	if err != nil {
@@ -939,8 +941,7 @@ func login_user(guildid, userid string) bool {
 	var admin_role string
 	admin_role, ok = discord_admin_roles[guildid]
 	if !ok {
-		log.Println("Failed to find admin role")
-		return false
+		return true
 	}
 	err = dsession.GuildMemberRoleAdd(guildid, userid, admin_role)
 	if err != nil {
@@ -956,8 +957,7 @@ func logoff_user(guildid, userid string) bool {
 	var ok bool
 	player_role, ok = discord_player_roles[guildid]
 	if !ok {
-		log.Println("Failed to find player role")
-		return false
+		return true
 	}
 	err := dsession.GuildMemberRoleRemove(guildid, userid, player_role)
 	if err != nil {
@@ -967,8 +967,7 @@ func logoff_user(guildid, userid string) bool {
 	var admin_role string
 	admin_role, ok = discord_admin_roles[guildid]
 	if !ok {
-		log.Println("Failed to find admin role")
-		return false
+		return true
 	}
 	err = dsession.GuildMemberRoleRemove(guildid, userid, admin_role)
 	if err != nil {
