@@ -472,6 +472,9 @@ func init() {
 		Desc:      "returns ckey of mentioned user",
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
 			args = strings.Fields(message.Content[1:])
+			if len(mention) < 4 {
+				return "incorrect input"
+			}
 			mention := args[1]
 			userid := mention[2 : len(mention)-1]
 			ckey := local_users[userid]
