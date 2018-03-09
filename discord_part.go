@@ -68,6 +68,7 @@ type dban struct {
 var known_bans map[string]dban
 
 var dsession, _ = discordgo.New()
+var last_ahelp string
 
 func init() {
 	discord_bot_token = os.Getenv("discord_bot_token")

@@ -282,6 +282,22 @@ func init() {
 	// ------------
 	// ------------
 	Register_command(Dcommand{
+		Command:   "ahr",
+		Minargs:   1,
+		Permlevel: PERMISSIONS_ADMIN,
+		Usage:     "[!message]",
+		Desc:      "replies to last AHELP with [!message]",
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+			if last_ahelp == "" {
+				return ""
+			}
+			Byond_query("adminhelp&admin="+Bquery_convert(local_users[message.Author.ID])+"&ckey="+Bquery_convert(last_ahelp)+"&response="+Bquery_convert(strings.Join(args, " ")), true)
+			return ""
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(Dcommand{
 		Command:   "toggle_ooc",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_ADMIN,
@@ -711,18 +727,6 @@ func init() {
 			ret += "main discord guild: https://discord.gg/T3kZZNR\n"
 			ret += "try typing `!register` , `!help` and `!usage`"
 			return ret
-		},
-	})
-	// ------------
-	// ------------
-	Register_command(Dcommand{
-		Command:   "crash",
-		Minargs:   0,
-		Permlevel: PERMISSIONS_SUPERUSER,
-		Usage:     "",
-		Desc:      "crash bot (WHY WOULD YOU DO IT?)",
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
-			panic("AAAAAAAAA")
 		},
 	})
 	// ------------
