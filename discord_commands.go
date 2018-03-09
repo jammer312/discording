@@ -473,10 +473,13 @@ func init() {
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
 			args = strings.Split(message.Content[1:], " ")
 			mention := args[1]
-			userid := mention[3 : len(mention)-1]
-			ckey := local_users[userid]
+			userid1, userid2 := mention[3:len(mention)-1], mention[2:len(mention)-1]
+			ckey := local_users[userid1]
 			if ckey == "" {
-				return "no bound ckey"
+				ckey := local_users[userid2]
+				if ckey == "" {
+					return "no bound ckey"
+				}
 			}
 			return ckey
 		},
