@@ -9,16 +9,17 @@ import (
 	"strings"
 )
 
-type dcfunc func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string
+type dcfunc func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string
 
 type Dcommand struct {
-	Command    string
-	Minargs    int
-	Permlevel  int
-	Usage      string
-	Desc       string
-	functional dcfunc
-	Temporary  int
+	Command         string
+	Minargs         int
+	Permlevel       int
+	Usage           string
+	Desc            string
+	functional      dcfunc
+	Temporary       int
+	Server_specific bool
 }
 
 var Known_commands map[string]Dcommand
@@ -27,8 +28,8 @@ func Register_command(in Dcommand) {
 	Known_commands[in.Command] = in
 }
 
-func (d *Dcommand) Exec(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
-	return d.functional(session, message, args)
+func (d *Dcommand) Exec(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
+	return d.functional(session, message, args, server)
 }
 func (d *Dcommand) Usagestr() string {
 	return Discord_command_character + d.Command + " " + d.Usage
@@ -43,7 +44,7 @@ func init() {
 		Permlevel: PERMISSIONS_ADMIN,
 		Usage:     "[!ckey] [!permlevel]",
 		Desc:      "check permissions for user with supplied ckey for specified permissions level",
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			ckey := args[0]
 			permlevel, err := strconv.Atoi(args[1])
 			if err != nil {
@@ -79,7 +80,7 @@ func init() {
 		Permlevel: PERMISSIONS_NONE,
 		Usage:     "",
 		Desc:      "list known admin ckeys",
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			ret := "known admins:\n"
 			for _, admin := range Known_admins {
 				ret += admin + "\n"
@@ -95,7 +96,7 @@ func init() {
 		Permlevel: PERMISSIONS_ADMIN,
 		Usage:     "",
 		Desc:      "sync admins list with hub",
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			Load_admins(&Known_admins)
 			return ""
 		},
@@ -108,7 +109,7 @@ func init() {
 		Permlevel: PERMISSIONS_REGISTERED,
 		Usage:     "",
 		Desc:      "receive channel permissions according to your ckey rank",
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			channel, err := session.Channel(message.ChannelID)
 			if err != nil {
 				log.Println("Shiet: ", err)
@@ -128,7 +129,7 @@ func init() {
 		Permlevel: PERMISSIONS_REGISTERED,
 		Usage:     "",
 		Desc:      "remove channel permissions according to your ckey rank",
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			channel, err := session.Channel(message.ChannelID)
 			if err != nil {
 				log.Println("Shiet: ", err)
@@ -148,7 +149,7 @@ func init() {
 		Permlevel: PERMISSIONS_NONE,
 		Usage:     "",
 		Desc:      "printout ckey you account is linked to",
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			ckey := local_users[message.Author.ID]
 			if ckey == "" {
 				return "you're not registered"
@@ -164,7 +165,7 @@ func init() {
 		Permlevel: PERMISSIONS_NONE,
 		Usage:     "",
 		Desc:      "(re)bind your discord account to byond ckey",
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			Remove_token("register", message.Author.ID)
 			id := Create_token("register", message.Author.ID)
 			if id == "" {
@@ -183,7 +184,7 @@ func init() {
 		Usage:     "",
 		Desc:      "list registered users in format [discord nick] -> [ckey]",
 		Temporary: DEL_DEFAULT,
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			rep := "registered users:\n"
 			for login, ckey := range local_users {
 				rep += fmt.Sprintf("<@!%s> -> %s\n", login, ckey)
@@ -195,13 +196,14 @@ func init() {
 	// ------------
 	// ------------
 	Register_command(Dcommand{
-		Command:   "who",
-		Minargs:   0,
-		Permlevel: PERMISSIONS_NONE,
-		Usage:     "",
-		Desc:      "list players currently on server",
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
-			br := Byond_query("who", false)
+		Command:         "who",
+		Minargs:         0,
+		Permlevel:       PERMISSIONS_NONE,
+		Usage:           "",
+		Desc:            "list players currently on server",
+		Server_specific: true,
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
+			br := Byond_query(server, "who", false)
 			return br.String()
 		},
 	})
@@ -209,19 +211,20 @@ func init() {
 	// ------------
 	Register_command(Dcommand{
 		Command:   "channel_here",
-		Minargs:   1,
+		Minargs:   2,
 		Permlevel: PERMISSIONS_SUPERUSER,
-		Usage:     "[!channel type]",
+		Usage:     "[!server] [!channel type]",
 		Desc:      "create and/or bind provided channel type to discord channel",
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			guild := Get_guild(session, message)
 			if guild == "" {
 				return "failed to retrieve guild"
 			}
-			if Update_known_channel(args[0], message.ChannelID, guild) {
-				return "changed `" + Dweaksanitize(args[0]) + "` channel to <#" + message.ChannelID + ">"
+			server = args[0]
+			if Update_known_channel(server, args[1], message.ChannelID, guild) {
+				return "changed `" + Dweaksanitize(server) + "@" + Dweaksanitize(args[0]) + "` channel to <#" + message.ChannelID + ">"
 			} else {
-				return "failed to change `" + Dweaksanitize(args[0]) + "` channel to <#" + message.ChannelID + ">"
+				return "failed to change `" + Dweaksanitize(server) + "@" + Dweaksanitize(args[0]) + "` channel to <#" + message.ChannelID + ">"
 			}
 		},
 	})
@@ -234,7 +237,7 @@ func init() {
 		Usage:     "",
 		Desc:      "list known channel types and channels they're bound to",
 		Temporary: DEL_NEVER,
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			return List_known_channels()
 		},
 	})
@@ -244,24 +247,24 @@ func init() {
 		Command:   "channel_remove",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_SUPERUSER,
-		Usage:     "[?channel_type]",
+		Usage:     "[?1 server] [?1channel_type]",
 		Desc:      "unbind either provided channel type or else one bound to receiving discord channel and forget about it",
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			guild := Get_guild(session, message)
 			if guild == "" {
 				return "failed to retrieve guild"
 			}
-			if len(args) < 1 {
-				tch := known_channels_id_t[message.ChannelID]
-				if tch == "" {
+			if len(args) < 2 {
+				tch, ok := known_channels_id_t[message.ChannelID]
+				if !ok {
 					return "no channel bound here"
 				}
-				args = append(args, tch)
+				args = append(args[:0], tch.server, tch.generic_type)
 			}
-			if Remove_known_channels(args[0], guild) {
-				return "removed `" + Dweaksanitize(args[0]) + "`"
+			if Remove_known_channels(args[0], args[1], guild) {
+				return "removed `" + Dweaksanitize(args[0]) + "@" + Dweaksanitize(args[1]) + "`"
 			} else {
-				return "failed to remove `" + Dweaksanitize(args[0]) + "`"
+				return "failed to remove `" + Dweaksanitize(args[0]) + "@" + Dweaksanitize(args[1]) + "`"
 			}
 
 		},
@@ -269,43 +272,46 @@ func init() {
 	// ------------
 	// ------------
 	Register_command(Dcommand{
-		Command:   "ah",
-		Minargs:   2,
-		Permlevel: PERMISSIONS_ADMIN,
-		Usage:     "[!ckey] [!message]",
-		Desc:      "sends adminPM containing [!message] to [!ckey]",
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
-			Byond_query("adminhelp&admin="+Bquery_convert(local_users[message.Author.ID])+"&ckey="+Bquery_convert(args[0])+"&response="+Bquery_convert(strings.Join(args[1:], " ")), true)
+		Command:         "ah",
+		Minargs:         2,
+		Permlevel:       PERMISSIONS_ADMIN,
+		Usage:           "[!ckey] [!message]",
+		Desc:            "sends adminPM containing [!message] to [!ckey]",
+		Server_specific: true,
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
+			Byond_query(server, "adminhelp&admin="+Bquery_convert(local_users[message.Author.ID])+"&ckey="+Bquery_convert(args[0])+"&response="+Bquery_convert(strings.Join(args[1:], " ")), true)
 			return ""
 		},
 	})
 	// ------------
 	// ------------
 	Register_command(Dcommand{
-		Command:   "ahr",
-		Minargs:   1,
-		Permlevel: PERMISSIONS_ADMIN,
-		Usage:     "[!message]",
-		Desc:      "replies to last AHELP with [!message]",
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
-			if last_ahelp == "" {
+		Command:         "ahr",
+		Minargs:         1,
+		Permlevel:       PERMISSIONS_ADMIN,
+		Usage:           "[!message]",
+		Desc:            "replies to last AHELP with [!message]",
+		Server_specific: true,
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
+			if last_ahelp[server] == "" {
 				return ""
 			}
-			Byond_query("adminhelp&admin="+Bquery_convert(local_users[message.Author.ID])+"&ckey="+Bquery_convert(last_ahelp)+"&response="+Bquery_convert(strings.Join(args, " ")), true)
+			Byond_query(server, "adminhelp&admin="+Bquery_convert(local_users[message.Author.ID])+"&ckey="+Bquery_convert(last_ahelp[server])+"&response="+Bquery_convert(strings.Join(args, " ")), true)
 			return ""
 		},
 	})
 	// ------------
 	// ------------
 	Register_command(Dcommand{
-		Command:   "toggle_ooc",
-		Minargs:   0,
-		Permlevel: PERMISSIONS_ADMIN,
-		Usage:     "",
-		Desc:      "globally toggle ooc",
-		Temporary: DEL_NEVER,
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
-			Byond_query("OOC", true)
+		Command:         "toggle_ooc",
+		Minargs:         0,
+		Permlevel:       PERMISSIONS_ADMIN,
+		Usage:           "",
+		Desc:            "globally toggle ooc",
+		Temporary:       DEL_NEVER,
+		Server_specific: true,
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
+			Byond_query(server, "OOC", true)
 			return "toggled global OOC"
 		},
 	})
@@ -318,7 +324,7 @@ func init() {
 		Usage:     "",
 		Desc:      "print list of commands available to you",
 		Temporary: DEL_LONG,
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			call, creg, cadm, csup := make([]string, 0), make([]string, 0), make([]string, 0), make([]string, 0)
 			ret := ""
 			user := message.Author
@@ -363,7 +369,7 @@ func init() {
 		Usage:     "",
 		Desc:      "print list of commands available to you in private message",
 		Temporary: DEL_LONG,
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			call, creg, cadm, csup := make([]string, 0), make([]string, 0), make([]string, 0), make([]string, 0)
 			ret := ""
 			user := message.Author
@@ -409,7 +415,7 @@ func init() {
 		Usage:     "[!cmd_name]",
 		Desc:      "print description for provided command",
 		Temporary: DEL_LONG,
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			cmd_name := args[0]
 			dcmd, ok := Known_commands[cmd_name]
 			if !ok {
@@ -424,14 +430,15 @@ func init() {
 	// ------------
 	// ------------
 	Register_command(Dcommand{
-		Command:   "adminwho",
-		Minargs:   0,
-		Permlevel: PERMISSIONS_NONE,
-		Usage:     "",
-		Desc:      "prints admins currently on server",
-		Temporary: DEL_LONG,
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
-			br := Byond_query("adminwho", false)
+		Command:         "adminwho",
+		Minargs:         0,
+		Permlevel:       PERMISSIONS_NONE,
+		Usage:           "",
+		Desc:            "prints admins currently on server",
+		Temporary:       DEL_LONG,
+		Server_specific: true,
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
+			br := Byond_query(server, "adminwho", false)
 			str := br.String()
 			if str == "NULL" {
 				str = "strange shit happened, unable to get adminwho result"
@@ -445,18 +452,24 @@ func init() {
 		Command:   "role_update",
 		Minargs:   2,
 		Permlevel: PERMISSIONS_SUPERUSER,
-		Usage:     "[!type] [!role_slap]",
+		Usage:     "[!type] [!role_slap] [?server]",
 		Desc:      "adds/updates [!role_slap] role of [!type] type; correct roles are '" + ROLE_PLAYER + "' and '" + ROLE_ADMIN + "'",
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			tp, slap := args[0], args[1]
+			srv := ""
 			if tp == "" || slap == "" {
 				return "incorrect usage"
+			}
+			if tp != ROLE_PLAYER && len(args) < 3 {
+				return "this role requires server"
+			} else {
+				srv = args[2]
 			}
 			guild := Get_guild(session, message)
 			if guild == "" {
 				return "failed to retrieve guild"
 			}
-			if update_known_role(guild, tp, slap[3:len(slap)-1]) {
+			if update_known_role(guild, tp, slap[3:len(slap)-1], srv) {
 				return "OK"
 			}
 			return "FAIL"
@@ -468,18 +481,24 @@ func init() {
 		Command:   "role_remove",
 		Minargs:   1,
 		Permlevel: PERMISSIONS_SUPERUSER,
-		Usage:     "[!type]",
+		Usage:     "[!type] [?server]",
 		Desc:      "removes role of [!type] type",
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			tp := args[0]
+			srv := ""
 			if tp == "" {
 				return "incorrect usage"
+			}
+			if tp != ROLE_PLAYER && len(args) < 2 {
+				return "this role requires server"
+			} else {
+				srv = args[1]
 			}
 			guild := Get_guild(session, message)
 			if guild == "" {
 				return "failed to retrieve guild"
 			}
-			if remove_known_role(guild, tp) {
+			if remove_known_role(guild, tp, srv) {
 				return "OK"
 			}
 			return "FAIL"
@@ -493,7 +512,7 @@ func init() {
 		Permlevel: PERMISSIONS_SUPERUSER,
 		Usage:     "",
 		Desc:      "lists known roles for this guild",
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			guild := Get_guild(session, message)
 			if guild == "" {
 				return "failed to retrieve guild"
@@ -514,29 +533,35 @@ func init() {
 					}
 				}
 			}
-			adm, ok := discord_admin_roles[guild]
+			adm := ""
+			adms, ok := discord_admin_roles[guild]
 			if !ok {
-				adm = "NONE"
+				adm = "\nNONE"
 			} else {
-				for _, k := range groles {
-					if k.ID == adm {
-						adm = k.Name
-						break
+				for srv, ar := range adms {
+					for _, k := range groles {
+						if k.ID == ar {
+							adm += "\n" + srv + " admin -> " + k.Name
+							break
+						}
 					}
 				}
 			}
-			sub, ok := discord_subscriber_roles[guild]
+			sub := ""
+			subs, ok := discord_subscriber_roles[guild]
 			if !ok {
-				sub = "NONE"
+				sub = "\nNONE"
 			} else {
-				for _, k := range groles {
-					if k.ID == sub {
-						sub = k.Name
-						break
+				for srv, sr := range subs {
+					for _, k := range groles {
+						if k.ID == sr {
+							sub += "\n" + srv + " subscriber -> " + k.Name
+							break
+						}
 					}
 				}
 			}
-			return "\nplayer -> " + plr + "\nadmin -> " + adm + "\nsubscriber -> " + sub
+			return "\nplayer -> " + plr + adm + sub
 		},
 	})
 	// ------------
@@ -548,7 +573,7 @@ func init() {
 		Usage:     "[!@mention]",
 		Desc:      "returns ckey of mentioned user",
 		Temporary: DEL_LONG,
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			args = strings.Fields(message.Content[1:])
 			mention := args[1]
 			if len(mention) < 4 {
@@ -575,7 +600,7 @@ func init() {
 		Usage:     "",
 		Desc:      "prints your discord bans, if any",
 		Temporary: DEL_LONG,
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			ret := check_bans(message.Author, ^0, true)
 			if ret == "" {
 				return "you have no active bans"
@@ -591,7 +616,7 @@ func init() {
 		Permlevel: PERMISSIONS_ADMIN,
 		Usage:     "[!ckey] [!type] [!reason]",
 		Desc:      "update existing ban's type or create new with following reason, valid types are " + BANSTRING_OOC + " and " + BANSTRING_COMMANDS,
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			ckey := args[0]
 			bantypestr := args[1]
 			bantype := 0
@@ -618,7 +643,7 @@ func init() {
 		Permlevel: PERMISSIONS_ADMIN,
 		Usage:     "[!ckey]",
 		Desc:      "remove existing ban, if any",
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			ckey := args[0]
 			if remove_ban(ckey, message.Author) {
 				return "OK"
@@ -635,7 +660,7 @@ func init() {
 		Usage:     "",
 		Desc:      "prints existing bans",
 		Temporary: DEL_NEVER,
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			ret := "\n"
 			for ckey, ban := range known_bans {
 				bansarr := make([]string, 0)
@@ -656,18 +681,19 @@ func init() {
 	// ------------
 	// ------------
 	Register_command(Dcommand{
-		Command:   "sub",
-		Minargs:   0,
-		Permlevel: PERMISSIONS_REGISTERED,
-		Usage:     "",
-		Desc:      "assigns you 'subscriber' role that gets notification each time round is about to start",
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+		Command:         "sub",
+		Minargs:         0,
+		Permlevel:       PERMISSIONS_REGISTERED,
+		Usage:           "",
+		Desc:            "assigns you 'subscriber' role that gets notification each time round is about to start",
+		Server_specific: true,
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			ret := "FAIL"
 			guild := Get_guild(session, message)
 			if guild == "" {
 				return "failed to retrieve guild"
 			}
-			if subscribe_user(guild, message.Author.ID) {
+			if subscribe_user(guild, message.Author.ID, server) {
 				ret = "OK"
 			}
 			return ret
@@ -676,18 +702,19 @@ func init() {
 	// ------------
 	// ------------
 	Register_command(Dcommand{
-		Command:   "sub_once",
-		Minargs:   0,
-		Permlevel: PERMISSIONS_REGISTERED,
-		Usage:     "",
-		Desc:      "tells bot to notify you next time round is about to start",
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+		Command:         "sub_once",
+		Minargs:         0,
+		Permlevel:       PERMISSIONS_REGISTERED,
+		Usage:           "",
+		Desc:            "tells bot to notify you next time round is about to start",
+		Server_specific: true,
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			ret := "FAIL"
 			guild := Get_guild(session, message)
 			if guild == "" {
 				return "failed to retrieve guild"
 			}
-			if subscribe_user_once(guild, message.Author.ID) {
+			if subscribe_user_once(guild, message.Author.ID, server) {
 				ret = "OK"
 			}
 			return ret
@@ -696,18 +723,19 @@ func init() {
 	// ------------
 	// ------------
 	Register_command(Dcommand{
-		Command:   "unsub",
-		Minargs:   0,
-		Permlevel: PERMISSIONS_REGISTERED,
-		Usage:     "",
-		Desc:      "removes your 'subscriber' role that gets slapped each time round is about to start",
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+		Command:         "unsub",
+		Minargs:         0,
+		Permlevel:       PERMISSIONS_REGISTERED,
+		Usage:           "",
+		Desc:            "removes your 'subscriber' role that gets slapped each time round is about to start",
+		Server_specific: true,
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			ret := "FAIL"
 			guild := Get_guild(session, message)
 			if guild == "" {
 				return "failed to retrieve guild"
 			}
-			if unsubscribe_user(guild, message.Author.ID) {
+			if unsubscribe_user(guild, message.Author.ID, server) {
 				ret = "OK"
 			}
 			return ret
@@ -721,7 +749,7 @@ func init() {
 		Permlevel: PERMISSIONS_NONE,
 		Usage:     "",
 		Desc:      "prints some info about bot",
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			ret := "opensource golang bot for ss13<->discord\n"
 			ret += "github repo: https://github.com/jammer312/discording\n"
 			ret += "main discord guild: https://discord.gg/T3kZZNR\n"
@@ -742,13 +770,14 @@ Dcommand register template below
 		Permlevel: ,
 		Usage:     "",
 		Desc:      "",
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string) string {
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 
 		},
 	})
 	// ------------
 	additional params:
-		Temporary: , - 0=DEL_DEFAULT by default
+		Temporary: ,
+		Server_specific: ,
 	// ------------
 */
 // --------------------------------------------------------------------

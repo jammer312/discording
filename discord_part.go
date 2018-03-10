@@ -15,20 +15,26 @@ import (
 )
 
 var (
+	//server-invariant
 	discord_bot_token         string
 	Discord_command_character string
-	known_channels_id_t       map[string]string
-	known_channels_t_id       map[string]string
-	local_users               map[string]string
-	Known_admins              []string
 	discord_superuser_id      string
+	local_users               map[string]string  //user id -> ckey
+	discord_player_roles      map[string]string  //guild id -> role
+	known_channels_id_t       map[string]channel //channel id -> channel
 
-	discord_player_roles          map[string]string   //guildid -> role
-	discord_subscriber_roles      map[string]string   //guilldid -> role
-	discord_admin_roles           map[string]string   //guildid -> role
-	discord_onetime_subscriptions map[string]string   // guildid -> userid
-	known_channels_t_id_m         map[string][]string //type -> arr of ids
+	//server-specific
+	Known_admins                  []string                       //server -> ckeys
+	known_channels_s_t_id_m       map[string]map[string][]string //server -> type -> channel ids
+	discord_subscriber_roles      map[string]map[string]string   //guild id -> server -> role
+	discord_admin_roles           map[string]map[string]string   //guild id -> server -> role
+	discord_onetime_subscriptions map[string]map[string]string   //guild id -> server -> user id
 )
+
+type channel struct {
+	generic_type string //ooc, admin, debug etc
+	server       string //which server it belongs to
+}
 
 const (
 	PERMISSIONS_NONE = iota - 1
@@ -68,7 +74,7 @@ type dban struct {
 var known_bans map[string]dban
 
 var dsession, _ = discordgo.New()
-var last_ahelp string
+var last_ahelp map[string]string
 
 func init() {
 	discord_bot_token = os.Getenv("discord_bot_token")
@@ -86,18 +92,16 @@ func init() {
 		log.Fatalln("Failed to retrieve $discord_superuser_id")
 	}
 
-	known_channels_id_t = make(map[string]string)
-	known_channels_t_id = make(map[string]string)
-	known_bans = make(map[string]dban)
 	local_users = make(map[string]string)
-	Known_admins = make([]string, 0)
-
 	discord_player_roles = make(map[string]string)
-	discord_admin_roles = make(map[string]string)
-	discord_subscriber_roles = make(map[string]string)
-	discord_onetime_subscriptions = make(map[string]string)
-	known_channels_t_id_m = make(map[string][]string)
-
+	known_channels_id_t = make(map[string]channel)
+	Known_admins = make([]string, 0)
+	known_channels_s_t_id_m = make(map[string]map[string][]string)
+	discord_subscriber_roles = make(map[string]map[string]string)
+	discord_admin_roles = make(map[string]map[string]string)
+	discord_onetime_subscriptions = make(map[string]map[string]string)
+	known_bans = make(map[string]dban)
+	last_ahelp = make(map[string]string)
 }
 
 func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg string, temporary int) {
@@ -179,7 +183,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		return
 	}
 	mcontent := message.ContentWithMentionsReplaced()
-	if is_in_private_channel(session, message) {
+	if is_in_private_channel(session, message) && !Permissions_check(message.Author, PERMISSIONS_SUPERUSER) {
 		reply(session, message, "FORBIDDEN, won't execute commands in private channels", DEL_NEVER)
 		return
 	}
@@ -192,6 +196,11 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		}
 		//it's command
 		defer delcommand(session, message)
+		var server string
+		srvstr, ok := known_channels_id_t[message.ChannelID]
+		if ok {
+			server = srvstr.server
+		}
 		args := strings.Fields(mcontent[1:])
 		command := strings.ToLower(args[0])
 		if check_bans(message.Author, BANTYPE_COMMANDS, false) != "" && command != "baninfo" {
@@ -213,11 +222,15 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			reply(session, message, "missing permissions required to run this command: `"+Dweaksanitize(command)+"`", DEL_DEFAULT)
 			return
 		}
+		if server == "" && dcomm.Server_specific {
+			reply(session, message, "this command requires channel to be bound to server", DEL_DEFAULT)
+			return
+		}
 		if len(args) < dcomm.Minargs {
 			reply(session, message, "usage: "+dcomm.Usagestr(), DEL_LONG)
 			return
 		}
-		ret := dcomm.Exec(session, message, args)
+		ret := dcomm.Exec(session, message, args, server)
 		if ret == "" {
 			return
 		}
@@ -225,7 +238,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		return
 	}
 
-	if known_channels_id_t[message.ChannelID] != "ooc" && known_channels_id_t[message.ChannelID] != "admin" {
+	if known_channels_id_t[message.ChannelID].generic_type != "ooc" && known_channels_id_t[message.ChannelID].generic_type != "admin" {
 		return
 	}
 
@@ -249,15 +262,15 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		mcontent = "<font color='#39034f'>" + mcontent + "</font>"
 		addstr = "&isadmin=1"
 	}
-
-	switch known_channels_id_t[message.ChannelID] {
+	srv := known_channels_id_t[message.ChannelID]
+	switch srv.generic_type {
 	case "ooc":
 		if check_bans(message.Author, BANTYPE_OOC, false) != "" {
 			defer delcommand(session, message)
 			reply(session, message, "you're banned from this action. Try !baninfo", DEL_DEFAULT)
 			return
 		}
-		br := Byond_query("admin="+Bquery_convert(shown_nick)+"&ooc="+Bquery_convert(mcontent)+addstr, true)
+		br := Byond_query(srv.server, "admin="+Bquery_convert(shown_nick)+"&ooc="+Bquery_convert(mcontent)+addstr, true)
 		if br.String() == "muted" {
 			defer delcommand(session, message)
 			reply(session, message, "your ckey is muted from OOC", DEL_DEFAULT)
@@ -268,19 +281,25 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			reply(session, message, "OOC is globally muted", DEL_DEFAULT)
 			return
 		}
-		Discord_message_propagate("ooc", "DISCORD OOC:", shown_nick, strip.StripTags(mcontent), message.ChannelID)
+		Discord_message_propagate(srv.server, "ooc", "DISCORD OOC:", shown_nick, strip.StripTags(mcontent), message.ChannelID)
 	case "admin":
-		Byond_query("admin="+Bquery_convert(shown_nick)+"&asay="+Bquery_convert(mcontent), true)
-		Discord_message_propagate("admin", "DISCORD ASAY:", shown_nick, strip.StripTags(mcontent), message.ChannelID)
+		Byond_query(srv.server, "admin="+Bquery_convert(shown_nick)+"&asay="+Bquery_convert(mcontent), true)
+		Discord_message_propagate(srv.server, "admin", "DISCORD ASAY:", shown_nick, strip.StripTags(mcontent), message.ChannelID)
 	default:
 	}
 }
 
-func Discord_subsriber_message_send(channel, message string) {
-	channels, ok := known_channels_t_id_m[channel]
-	if !ok || len(channels) < 1 {
-		return //no bound channels
+func Discord_subsriber_message_send(servername, channel, message string) {
+	defer logging_recover("Dsms")
+	srvchans, ok := known_channels_s_t_id_m[servername]
+	if !ok {
+		panic("unknown server, " + servername)
 	}
+	channels, ok := srvchans[channel]
+	if !ok || len(channels) < 1 {
+		return
+	}
+	flush_onetime_subscriptions()
 	for _, id := range channels {
 		chann, cerr := dsession.Channel(id)
 		if cerr != nil {
@@ -292,18 +311,25 @@ func Discord_subsriber_message_send(channel, message string) {
 			log.Println("ERROR: GUILD<-ID FAIL: ", gerr)
 			continue
 		}
-		rid, ok := discord_subscriber_roles[guild.ID]
-		if !ok {
-			rid = ""
-		} else {
-			rid = "<@&" + rid + ">, "
+		var rid string
+		guildsubrole, ok := discord_subscriber_roles[guild.ID]
+		if ok {
+			rid, ok = guildsubrole[servername]
+			if !ok {
+				rid = ""
+			} else {
+				rid = "<@&" + rid + ">, "
+			}
 		}
-		flush_onetime_subscriptions()
-		subs, ok := discord_onetime_subscriptions[guild.ID]
-		if !ok {
-			subs = ""
-		} else {
-			subs += ", "
+		var subs string
+		guildoncesubs, ok := discord_onetime_subscriptions[guild.ID]
+		if ok {
+			subs, ok := guildoncesubs[servername]
+			if !ok {
+				subs = ""
+			} else {
+				subs += ", "
+			}
 		}
 		_, err := dsession.ChannelMessageSend(id, rid+subs+Dsanitize(message))
 		if err != nil {
@@ -312,8 +338,13 @@ func Discord_subsriber_message_send(channel, message string) {
 	}
 }
 
-func Discord_message_send(channel, prefix, ckey, message string) {
-	channels, ok := known_channels_t_id_m[channel]
+func Discord_message_send(servername, channel, prefix, ckey, message string) {
+	defer logging_recover("Dms")
+	srvchans, ok := known_channels_s_t_id_m[servername]
+	if !ok {
+		panic("unknown server, " + servername)
+	}
+	channels, ok := srvchans[channel]
 	if !ok || len(channels) < 1 {
 		return //no bound channels
 	}
@@ -329,9 +360,14 @@ func Discord_message_send(channel, prefix, ckey, message string) {
 	}
 }
 
-func Discord_message_propagate(channel, prefix, ckey, message, chanid string) {
+func Discord_message_propagate(servername, channel, prefix, ckey, message, chanid string) {
 	//given channel id and other params sends message to all channels except specified one
-	channels, ok := known_channels_t_id_m[channel]
+	defer logging_recover("Dmp")
+	srvchans, ok := known_channels_s_t_id_m[servername]
+	if !ok {
+		panic("unknown server, " + servername)
+	}
+	channels, ok := srvchans[channel]
 	if !ok || len(channels) < 1 {
 		return //no bound channels
 	}
@@ -385,36 +421,50 @@ func trim(str string) string {
 }
 
 func populate_known_channels() {
-	rows, err := Database.Query("select CHANTYPE, CHANID from DISCORD_CHANNELS")
+	defer logging_recover("pkc")
+	rows, err := Database.Query("select CHANTYPE, CHANID, SRVNAME from DISCORD_CHANNELS")
 	if err != nil {
-		log.Println("DB ERROR: failed to retrieve known channels: ", err)
-		return
+		panic(err)
 	}
 	for k := range known_channels_id_t {
 		delete(known_channels_id_t, k)
 	} //clear id->type pairs
-	for k := range known_channels_t_id_m {
-		delete(known_channels_t_id_m, k)
-	} //clear type->ids
-	for rows.Next() {
-		var ch, id string
-		if terr := rows.Scan(&ch, &id); terr != nil {
-			log.Println("DB ERROR: ", terr)
+	for k, v := range known_channels_s_t_id_m {
+		for sk := range v {
+			delete(v, sk)
 		}
-		ch = strings.Trim(ch, " ")
-		id = strings.Trim(id, " ")
-		known_channels_id_t[id] = ch
-		chsl, ok := known_channels_t_id_m[ch]
+		delete(known_channels_s_t_id_m, k)
+	} //clear server->type->ids and server->type
+	for rows.Next() {
+		var ch, id, srv string
+		if terr := rows.Scan(&ch, &id, &srv); terr != nil {
+			log.Println("DB ERROR: ", terr)
+			continue
+		}
+		ch = trim(ch)
+		id = trim(id)
+		srv = trim(srv)
+		known_channels_id_t[id] = channel{ch, srv}
+		if srv == "" {
+			log.Println("DB: setting `" + id + "` to '" + srv + "@" + ch + "';")
+			continue
+		}
+		srvchans, ok := known_channels_s_t_id_m[srv]
+		if !ok {
+			srvchans = make(map[string][]string)
+		}
+		chsl, ok := srvchans[ch]
 		if !ok {
 			chsl = make([]string, 0)
 		}
-		known_channels_t_id_m[ch] = append(chsl, id)
-		log.Println("DB: setting `" + id + "` to '" + ch + "';")
+		srvchans[ch] = append(chsl, id)
+		known_channels_s_t_id_m[srv] = srvchans // not needed since maps are references, but it's nice for readability
+		log.Println("DB: setting `" + id + "` to '" + srv + "@" + ch + "';")
 	}
 }
 
-func add_known_channel(t, id, gid string) bool {
-	result, err := Database.Exec("insert into DISCORD_CHANNELS values ($1, $2, $3);", t, id, gid)
+func add_known_channel(srv, t, id, gid string) bool {
+	result, err := Database.Exec("insert into DISCORD_CHANNELS values ($1, $2, $3, $4);", t, id, gid, srv)
 	if err != nil {
 		log.Println("DB ERROR: failed to insert: ", err)
 		return false
@@ -431,13 +481,13 @@ func add_known_channel(t, id, gid string) bool {
 	return false
 }
 
-func Remove_known_channels(t, gid string) bool {
+func Remove_known_channels(srv, t, gid string) bool {
 	var result sql.Result
 	var err error
 	if gid == "" {
-		result, err = Database.Exec("delete from DISCORD_CHANNELS where CHANTYPE = $1 ;", t)
+		result, err = Database.Exec("delete from DISCORD_CHANNELS where CHANTYPE = $1 and SRVNAME = $2;", t, srv)
 	} else {
-		result, err = Database.Exec("delete from DISCORD_CHANNELS where CHANTYPE = $1 and GUILDID = $2", t, gid)
+		result, err = Database.Exec("delete from DISCORD_CHANNELS where CHANTYPE = $1 and GUILDID = $2 and SRVNAME = $3;", t, gid, srv)
 	}
 	if err != nil {
 		log.Println("DB ERROR: failed to delete: ", err)
@@ -458,13 +508,13 @@ func Remove_known_channels(t, gid string) bool {
 func List_known_channels() string {
 	ret := "known channels:\n"
 	for id, t := range known_channels_id_t {
-		ret += fmt.Sprintf("`%s` <-> <#%s>\n", t, id)
+		ret += fmt.Sprintf("<#%s> <-> `%s@%s`\n", id, t.server, t.generic_type)
 	}
 	return ret
 }
 
-func Update_known_channel(t, id, gid string) bool {
-	result, err := Database.Exec("update DISCORD_CHANNELS set CHANID = $2 where CHANTYPE = $1 and GUILDID = $3;", t, id, gid)
+func Update_known_channel(srv, t, id, gid string) bool {
+	result, err := Database.Exec("update DISCORD_CHANNELS set CHANID = $2 where CHANTYPE = $1 and GUILDID = $3 and SRVNAME = $4;", t, id, gid, srv)
 	if err != nil {
 		log.Println("DB ERROR: failed to update: ", err)
 		return false
@@ -478,7 +528,7 @@ func Update_known_channel(t, id, gid string) bool {
 		populate_known_channels() //update everything
 		return true
 	} else {
-		return add_known_channel(t, id, gid)
+		return add_known_channel(srv, t, id, gid)
 	}
 }
 
@@ -591,6 +641,7 @@ func update_local_users() {
 		var login, ckey string
 		if terr := rows.Scan(&login, &ckey); terr != nil {
 			log.Println("DB ERROR: ", terr)
+			continue
 		}
 		login = trim(login)
 		ckey = trim(ckey)
@@ -616,7 +667,7 @@ func update_local_user(login string) (ckey string) {
 }
 
 func populate_known_roles() {
-	rows, err := Database.Query("select GUILDID, ROLEID, ROLETYPE from DISCORD_ROLES")
+	rows, err := Database.Query("select GUILDID, ROLEID, ROLETYPE, ROLESERVER from DISCORD_ROLES")
 	if err != nil {
 		log.Println("DB ERROR: failed to retrieve known roles: ", err)
 		return
@@ -629,25 +680,39 @@ func populate_known_roles() {
 		delete(discord_admin_roles, k)
 	}
 	for rows.Next() {
-		var gid, rid, tp string
-		if terr := rows.Scan(&gid, &rid, &tp); terr != nil {
+		var gid, rid, tp, srv string
+		if terr := rows.Scan(&gid, &rid, &tp, &srv); terr != nil {
 			log.Println("DB ERROR: ", terr)
+			continue
 		}
 		gid = trim(gid)
 		rid = trim(rid)
 		tp = trim(tp)
+		srv = trim(srv)
 		switch tp {
 		case ROLE_PLAYER:
 			discord_player_roles[gid] = rid
 		case ROLE_ADMIN:
-			discord_admin_roles[gid] = rid
+			if srv != "" {
+				m, ok := discord_admin_roles[gid]
+				if !ok {
+					m = make(map[string]string)
+					discord_admin_roles[gid] = m
+				}
+				m[tp] = rid
+			}
 		case ROLE_SUBSCRIBER:
-			discord_subscriber_roles[gid] = rid
+			m, ok := discord_subscriber_roles[gid]
+			if !ok {
+				m = make(map[string]string)
+				discord_subscriber_roles[gid] = m
+			}
+			m[tp] = rid
 		}
 	}
 }
-func update_known_role(gid, tp, rid string) bool {
-	result, err := Database.Exec("update DISCORD_ROLES set ROLEID = $1 where GUILDID = $2 and ROLETYPE = $3 ;", rid, gid, tp)
+func update_known_role(gid, tp, rid, srv string) bool {
+	result, err := Database.Exec("update DISCORD_ROLES set ROLEID = $1 where GUILDID = $2 and ROLETYPE = $3 and SRVNAME = $4;", rid, gid, tp, srv)
 	if err != nil {
 		log.Println("DB ERROR: failed to update: ", err)
 		return false
@@ -661,10 +726,10 @@ func update_known_role(gid, tp, rid string) bool {
 		populate_known_roles()
 		return true
 	}
-	return create_known_role(gid, tp, rid)
+	return create_known_role(gid, tp, rid, srv)
 }
-func create_known_role(gid, tp, rid string) bool {
-	result, err := Database.Exec("insert into DISCORD_ROLES values($1, $2, $3);", gid, rid, tp)
+func create_known_role(gid, tp, rid, srv string) bool {
+	result, err := Database.Exec("insert into DISCORD_ROLES values($1, $2, $3, $4);", gid, rid, tp, srv)
 	if err != nil {
 		log.Println("DB ERROR: failed to insert: ", err)
 		return false
@@ -680,8 +745,8 @@ func create_known_role(gid, tp, rid string) bool {
 	}
 	return false
 }
-func remove_known_role(gid, tp string) bool {
-	result, err := Database.Exec("delete from DISCORD_ROLES where GUILDID = $1 and ROLETYPE = $2;", gid, tp)
+func remove_known_role(gid, tp, srv string) bool {
+	result, err := Database.Exec("delete from DISCORD_ROLES where GUILDID = $1 and ROLETYPE = $2 and SRVNAME = $3;", gid, tp, srv)
 	if err != nil {
 		log.Println("DB ERROR: failed to delete: ", err)
 		return false
@@ -828,7 +893,7 @@ func check_bans(user *discordgo.User, tp int, forced bool) string {
 	return "You were banned from " + bantypestring + " by " + ban.admin + " with following reason:\n" + ban.reason
 }
 
-func subscribe_user(guildid, userid string) bool {
+func subscribe_user(guildid, userid, srv string) bool {
 	ckey := update_local_user(userid)
 	if ckey == "" {
 		return false
@@ -836,9 +901,13 @@ func subscribe_user(guildid, userid string) bool {
 	ckey = strings.ToLower(ckey)
 	var subscriber_role string
 	var ok bool
-	subscriber_role, ok = discord_subscriber_roles[guildid]
+	gsubs, ok := discord_subscriber_roles[guildid]
 	if !ok {
-		log.Println("Failed to find subscriber role")
+		return false
+	}
+	subscriber_role, ok = gsubs[srv]
+	if !ok {
+		log.Println("Failed to find subscriber role for server " + srv)
 		return false
 	}
 	err := dsession.GuildMemberRoleAdd(guildid, userid, subscriber_role)
@@ -848,7 +917,7 @@ func subscribe_user(guildid, userid string) bool {
 	}
 	return true
 }
-func unsubscribe_user(guildid, userid string) bool {
+func unsubscribe_user(guildid, userid, srv string) bool {
 	ckey := update_local_user(userid)
 	if ckey == "" {
 		return false
@@ -856,9 +925,13 @@ func unsubscribe_user(guildid, userid string) bool {
 	ckey = strings.ToLower(ckey)
 	var subscriber_role string
 	var ok bool
-	subscriber_role, ok = discord_subscriber_roles[guildid]
+	gsubs, ok := discord_subscriber_roles[guildid]
 	if !ok {
-		log.Println("Failed to find subscriber role")
+		return false
+	}
+	subscriber_role, ok = gsubs[srv]
+	if !ok {
+		log.Println("Failed to find subscriber role for server " + srv)
 		return false
 	}
 	err := dsession.GuildMemberRoleRemove(guildid, userid, subscriber_role)
@@ -869,13 +942,13 @@ func unsubscribe_user(guildid, userid string) bool {
 	return true
 }
 
-func subscribe_user_once(guildid, userid string) bool {
-	ret := count_query("select * from DISCORD_ONETIME_SUBSCRIPTIONS where USERID = '" + userid + "' and GUILDID = '" + guildid + "';")
+func subscribe_user_once(guildid, userid, srv string) bool {
+	ret := count_query("select * from DISCORD_ONETIME_SUBSCRIPTIONS where USERID = '" + userid + "' and GUILDID = '" + guildid + "' and SRVNAME = '" + srv + "';")
 	if ret == -1 {
 		return false
 	}
 	if ret == 0 {
-		if count_query("insert into DISCORD_ONETIME_SUBSCRIPTIONS values('"+userid+"','"+guildid+"');") < 1 {
+		if count_query("insert into DISCORD_ONETIME_SUBSCRIPTIONS values('"+userid+"','"+guildid+"','"+srv+"');") < 1 {
 			return false
 		}
 	}
@@ -883,30 +956,40 @@ func subscribe_user_once(guildid, userid string) bool {
 }
 
 func flush_onetime_subscriptions() {
-	for k := range discord_onetime_subscriptions {
+	for k, v := range discord_onetime_subscriptions {
+		for l := range v {
+			delete(v, l)
+		}
 		delete(discord_onetime_subscriptions, k)
 	} //delete in any case
-	rows, err := Database.Query("select USERID, GUILDID from DISCORD_ONETIME_SUBSCRIPTIONS")
+	rows, err := Database.Query("select USERID, GUILDID, SRVNAME from DISCORD_ONETIME_SUBSCRIPTIONS ;")
 	if err != nil {
-		log.Println("DB ERROR: failed to retrieve known bans: ", err)
+		log.Println("DB ERROR: failed to retrieve subs: ", err)
 		return
 	}
 	for rows.Next() {
-		var userid, guildid string
-		if terr := rows.Scan(&userid, &guildid); terr != nil {
+		var userid, guildid, srv string
+		if terr := rows.Scan(&userid, &guildid, &srv); terr != nil {
 			log.Println("DB ERROR: ", terr)
+			continue
 		}
 		userid = trim(userid)
 		guildid = trim(guildid)
-		crstr, ok := discord_onetime_subscriptions[guildid]
+		srv = trim(srv)
+		_, ok := discord_onetime_subscriptions[guildid]
+		if !ok {
+			discord_onetime_subscriptions[guildid] = make(map[string]string)
+		}
+		gsubs := discord_onetime_subscriptions[guildid]
+		crstr, ok := gsubs[guildid]
 		if !ok {
 			crstr = ""
 		} else {
 			crstr += ", "
 		}
-		discord_onetime_subscriptions[guildid] = crstr + "<@!" + userid + ">"
+		gsubs[guildid] = crstr + "<@!" + userid + ">"
 	}
-	_, err = Database.Exec("delete from DISCORD_ONETIME_SUBSCRIPTIONS")
+	_, err = Database.Exec("delete from DISCORD_ONETIME_SUBSCRIPTIONS;")
 	if err != nil {
 		log.Println("ERROR: del: ", err)
 	}
@@ -942,7 +1025,11 @@ func login_user(guildid, userid string) bool {
 		return true
 	}
 	var admin_role string
-	admin_role, ok = discord_admin_roles[guildid]
+	gadms, ok := discord_admin_roles[guildid]
+	if !ok {
+		return true
+	}
+	admin_role, ok = gadms["white"]
 	if !ok {
 		return true
 	}
@@ -968,7 +1055,11 @@ func logoff_user(guildid, userid string) bool {
 		return false
 	}
 	var admin_role string
-	admin_role, ok = discord_admin_roles[guildid]
+	gadms, ok := discord_admin_roles[guildid]
+	if !ok {
+		return true
+	}
+	admin_role, ok = gadms["white"]
 	if !ok {
 		return true
 	}
@@ -998,11 +1089,15 @@ func Dopen() {
 	populate_bans()
 	Load_admins(&Known_admins)
 	dsession.AddHandler(messageCreate)
-	Discord_message_send("bot_status", "BOT", "STATUS UPDATE", "now running.")
+	for _, srv := range known_servers {
+		Discord_message_send(srv.name, "bot_status", "BOT", "STATUS UPDATE", "now running.")
+	}
 }
 
 func Dclose() {
-	Discord_message_send("bot_status", "BOT", "STATUS UPDATE", "shutting down due to host request.")
+	for _, srv := range known_servers {
+		Discord_message_send(srv.name, "bot_status", "BOT", "STATUS UPDATE", "shutting down due to host request.")
+	}
 	err := dsession.Close()
 	if err != nil {
 		log.Fatal("Failed to close dsession: ", err)

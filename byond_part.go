@@ -9,7 +9,6 @@ import (
 	"log"
 	"net"
 	"net/url"
-	"os"
 	// "strings"
 	"time"
 )
@@ -21,11 +20,6 @@ const (
 
 	byond_request_timeout  int = 60 //in seconds
 	byond_response_timeout int = 60 //in seconds
-)
-
-var (
-	byond_server_addr string
-	byond_pass_key    string
 )
 
 type Byond_response struct {
@@ -62,14 +56,19 @@ func construct_byond_request(s string) string {
 	return ret
 }
 
-func Byond_query(request string, authed bool) Byond_response {
-	conn, err := net.Dial("tcp", byond_server_addr)
+func Byond_query(srvname, request string, authed bool) Byond_response {
+	defer logging_recover(srvname + "_bq")
+	srv, ok := known_servers[srvname]
+	if !ok {
+		panic("failed to find server '" + srvname + "'")
+	}
+	conn, err := net.Dial("tcp", srv.addr)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	defer conn.Close()
 	if authed {
-		request += "&key=" + byond_pass_key
+		request += "&key=" + srv.comm_key
 	}
 	//sending
 	conn.SetWriteDeadline(time.Now().Add(time.Duration(byond_request_timeout) * time.Second))
@@ -81,16 +80,16 @@ func Byond_query(request string, authed bool) Byond_response {
 	bytes := make([]byte, 5)
 	num, err := conn.Read(bytes)
 	if err != nil {
-		log.Fatal("Reading error: ", err)
+		panic(err)
 	}
 	L := uint16(bytes[2])<<8 + uint16(bytes[3])
 	ret := Byond_response{L - 1, bytes[4], make([]byte, L-1)}
 	num, err = conn.Read(ret.data)
 	if err != nil {
-		log.Fatal("Data reading error: ", err)
+		panic(err)
 	}
 	if num != int(ret.size) {
-		log.Fatal("Shit happened")
+		panic("SHIET")
 	}
 	return ret
 }
@@ -127,9 +126,4 @@ func Bquery_deconvert(s string) string {
 		log.Println("ERROR: Query unescape error: ", err)
 	}
 	return ret
-}
-
-func init() {
-	byond_server_addr = os.Getenv("byond_server_addr")
-	byond_pass_key = os.Getenv("byond_pass_key")
 }
