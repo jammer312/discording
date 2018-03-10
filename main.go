@@ -40,7 +40,7 @@ func populate_servers() {
 		delete(known_servers, k)
 	}
 	defer logging_recover("DB PS ERR:")
-	rows, err := Database.Query("select SRVNAME, SRVADDR, COMMKEY, WEBKEY from STATION ;")
+	rows, err := Database.Query("select SRVNAME, SRVADDR, COMMKEY, WEBKEY from STATION_SERVERS ;")
 	if err != nil {
 		panic(err)
 	}

@@ -667,7 +667,7 @@ func update_local_user(login string) (ckey string) {
 }
 
 func populate_known_roles() {
-	rows, err := Database.Query("select GUILDID, ROLEID, ROLETYPE, ROLESERVER from DISCORD_ROLES")
+	rows, err := Database.Query("select GUILDID, ROLEID, ROLETYPE, SRVNAME from DISCORD_ROLES")
 	if err != nil {
 		log.Println("DB ERROR: failed to retrieve known roles: ", err)
 		return
