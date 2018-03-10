@@ -46,7 +46,7 @@ func populate_servers() {
 	}
 	for rows.Next() {
 		var srvname, srvaddr, commkey, webkey string
-		if terr := rows.Scan(&srvname, &srvaddr, &commkey); terr != nil {
+		if terr := rows.Scan(&srvname, &srvaddr, &commkey, &webkey); terr != nil {
 			panic(terr)
 		}
 		srvname = trim(srvname)
