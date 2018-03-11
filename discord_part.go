@@ -701,7 +701,7 @@ func populate_known_roles() {
 					m = make(map[string]string)
 					discord_admin_roles[gid] = m
 				}
-				m[tp] = rid
+				m[srv] = rid
 			}
 		case ROLE_SUBSCRIBER:
 			m, ok := discord_subscriber_roles[gid]
@@ -709,7 +709,7 @@ func populate_known_roles() {
 				m = make(map[string]string)
 				discord_subscriber_roles[gid] = m
 			}
-			m[tp] = rid
+			m[srv] = rid
 		}
 	}
 }
