@@ -28,7 +28,7 @@ var (
 	known_channels_s_t_id_m       map[string]map[string][]string //server -> type -> channel ids
 	discord_subscriber_roles      map[string]map[string]string   //guild id -> server -> role
 	discord_admin_roles           map[string]map[string]string   //guild id -> server -> role
-	discord_onetime_subscriptions map[string]map[string]string   //guild id -> server -> user id
+	discord_onetime_subscriptions map[string]map[string]string   //guild id -> server -> users slap string
 )
 
 type channel struct {
@@ -983,13 +983,13 @@ func flush_onetime_subscriptions() {
 			discord_onetime_subscriptions[guildid] = make(map[string]string)
 		}
 		gsubs := discord_onetime_subscriptions[guildid]
-		crstr, ok := gsubs[guildid]
+		crstr, ok := gsubs[srv]
 		if !ok {
 			crstr = ""
 		} else {
 			crstr += ", "
 		}
-		gsubs[guildid] = crstr + "<@!" + userid + ">"
+		gsubs[srv] = crstr + "<@!" + userid + ">"
 	}
 	_, err = Database.Exec("delete from DISCORD_ONETIME_SUBSCRIPTIONS;")
 	if err != nil {
