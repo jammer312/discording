@@ -992,6 +992,7 @@ func flush_onetime_subscriptions() {
 		gsubs[srv] = crstr + "<@!" + userid + ">"
 	}
 	_, err = Database.Exec("delete from DISCORD_ONETIME_SUBSCRIPTIONS;")
+	log.Println(discord_onetime_subscriptions)
 	if err != nil {
 		log.Println("ERROR: del: ", err)
 	}
