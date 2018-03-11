@@ -116,7 +116,9 @@ func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg str
 		temporary = 1
 	}
 	temporary = temporary * int(math.Ceil(math.Sqrt(2+float64(len(msg))/10)))
-	go delete_in(session, rep, temporary)
+	if !is_in_private_channel(session, message) {
+		go delete_in(session, rep, temporary)
+	}
 }
 
 func is_in_private_channel(session *discordgo.Session, message *discordgo.MessageCreate) bool {
