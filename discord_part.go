@@ -1106,7 +1106,7 @@ func logoff_user(guildid, userid string) bool {
 
 func spam_check(userid string) bool {
 	ccnt := discord_spam_prot_checks[userid]
-	log.Println("check", cnt)
+	log.Println("check", ccnt)
 	discord_spam_prot_checks[userid] = ccnt + 1
 	if ccnt >= discord_spam_prot_limit && !discord_spam_prot_bans[userid] {
 		ckey := local_users[userid]
