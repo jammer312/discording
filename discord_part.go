@@ -10,18 +10,24 @@ import (
 	"log"
 	"math"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
 
 var (
 	//server-invariant
+	discord_bot_user_id       string //for permchecks
 	discord_bot_token         string
 	Discord_command_character string
 	discord_superuser_id      string
 	local_users               map[string]string  //user id -> ckey
 	discord_player_roles      map[string]string  //guild id -> role
 	known_channels_id_t       map[string]channel //channel id -> channel
+	discord_spam_prot_bans    map[string]bool
+	discord_spam_prot_checks  map[string]int //user id -> spammability
+	discord_spam_prot_limit   int            //if checks amount exceed limit, autoban dat spammer scum
+	discord_spam_prot_tick    int            //each tick all entries are nullified, in seconds
 
 	//server-specific
 	Known_admins                  []string                       //server -> ckeys
@@ -91,7 +97,23 @@ func init() {
 	if discord_superuser_id == "" {
 		log.Fatalln("Failed to retrieve $discord_superuser_id")
 	}
-
+	var err error
+	discord_spam_prot_limit_str := os.Getenv("discord_spam_prot_limit")
+	if discord_spam_prot_limit_str == "" {
+		log.Fatalln("Failed to retrieve $discord_spam_prot_limit")
+	}
+	discord_spam_prot_limit, err = strconv.Atoi(discord_spam_prot_limit_str)
+	if err != nil {
+		log.Fatalln("Failed to parse $discord_spam_prot_limit")
+	}
+	discord_spam_prot_tick_str := os.Getenv("discord_spam_prot_tick")
+	if discord_spam_prot_tick_str == "" {
+		log.Fatalln("Failed to retrieve $discord_spam_prot_tick")
+	}
+	discord_spam_prot_tick, err = strconv.Atoi(discord_spam_prot_tick_str)
+	if err != nil {
+		log.Fatalln("Failed to parse $discord_spam_prot_tick")
+	}
 	local_users = make(map[string]string)
 	discord_player_roles = make(map[string]string)
 	known_channels_id_t = make(map[string]channel)
@@ -102,6 +124,8 @@ func init() {
 	discord_onetime_subscriptions = make(map[string]map[string]string)
 	known_bans = make(map[string]dban)
 	last_ahelp = make(map[string]string)
+	discord_spam_prot_checks = make(map[string]int)
+	discord_spam_prot_bans = make(map[string]bool)
 }
 
 func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg string, temporary int) {
@@ -158,7 +182,7 @@ func Get_guild(session *discordgo.Session, message *discordgo.MessageCreate) str
 }
 
 func get_permission_level(user *discordgo.User) int {
-	if user.ID == discord_superuser_id {
+	if user.ID == discord_superuser_id || user.ID == discord_bot_user_id {
 		return PERMISSIONS_SUPERUSER //bot admin
 	}
 	ckey := local_users[user.ID]
@@ -193,6 +217,9 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		return
 	}
 	if mcontent[:1] == Discord_command_character {
+		if !spam_check(message.Author.ID) {
+			delete_in(session, message.Message, 1)
+		}
 		if len(mcontent) < 2 { //one for command char and at least one for command
 			return
 		}
@@ -243,7 +270,9 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 	if known_channels_id_t[message.ChannelID].generic_type != "ooc" && known_channels_id_t[message.ChannelID].generic_type != "admin" {
 		return
 	}
-
+	if !spam_check(message.Author.ID) {
+		delete_in(session, message.Message, 1)
+	}
 	shown_nick := local_users[message.Author.ID]
 	if shown_nick == "" {
 		defer delcommand(session, message)
@@ -1071,8 +1100,49 @@ func logoff_user(guildid, userid string) bool {
 		return false
 	}
 	return true
-
 }
+
+func spam_check(userid string) bool {
+	ccnt := discord_spam_prot_checks[userid]
+	discord_spam_prot_checks[userid] = ccnt + 1
+	if ccnt > discord_spam_prot_limit && !discord_spam_prot_bans[userid] {
+		ckey := local_users[userid]
+		if ckey != "" {
+			update_ban(ckey, "SPAM SPAM SPAM", dsession.State.User, BANTYPE_OOC|BANTYPE_COMMANDS)
+		}
+		discord_spam_prot_bans[userid] = true
+	}
+	if discord_spam_prot_bans[userid] {
+		return ccnt == 0
+	}
+	return true
+}
+
+func launch_spam_ticker() chan int {
+	quit := make(chan int)
+	go spam_ticker(quit)
+	return quit
+}
+
+func stop_spam_ticker(quit chan int) {
+	quit <- 0
+}
+
+func spam_ticker(quit chan int) {
+	tick := time.Tick(time.Duration(discord_spam_prot_tick) * time.Second)
+	for {
+		select {
+		case <-quit:
+			return
+		case <-tick:
+			for uid, _ := range discord_spam_prot_checks {
+				discord_spam_prot_checks[uid] = 0
+			}
+		}
+	}
+}
+
+var spamticker chan int
 
 func Dopen() {
 	var err error
@@ -1080,6 +1150,7 @@ func Dopen() {
 	if err != nil {
 		log.Fatalln("User fetch error: ", err)
 	}
+	discord_bot_user_id = dsession.State.User.ID
 	err = dsession.Open()
 	if err != nil {
 		log.Fatalln("Session Open error: ", err)
@@ -1090,6 +1161,7 @@ func Dopen() {
 	populate_known_roles()
 	populate_bans()
 	Load_admins(&Known_admins)
+	spamticker = launch_spam_ticker()
 	dsession.AddHandler(messageCreate)
 	for _, srv := range known_servers {
 		Discord_message_send(srv.name, "bot_status", "BOT", "STATUS UPDATE", "now running.")
@@ -1100,6 +1172,7 @@ func Dclose() {
 	for _, srv := range known_servers {
 		Discord_message_send(srv.name, "bot_status", "BOT", "STATUS UPDATE", "shutting down due to host request.")
 	}
+	stop_spam_ticker(spamticker)
 	err := dsession.Close()
 	if err != nil {
 		log.Fatal("Failed to close dsession: ", err)

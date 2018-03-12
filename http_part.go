@@ -84,7 +84,7 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 		Discord_message_send(servername, "admin", "AHELP:", parsed.Ckey, html.UnescapeString(parsed.Message))
 	case "memessage":
 		if parsed.Message == "" {
-			return //most probably got hit by stunbaton, idk why it sends it
+			return //probably got hit by stunbaton, idk why it sends it
 		}
 		Discord_message_send(servername, "me", "EMOTE:", parsed.Ckey, html.UnescapeString(parsed.Message))
 	case "garbage":
