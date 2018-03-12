@@ -1,6 +1,0 @@
-Add multiserver support:
-move server params to DB -- check
-add server param for channel
-change message and webhook routing
-add command routing
-widen ahr for multiserver
