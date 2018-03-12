@@ -1106,9 +1106,11 @@ func logoff_user(guildid, userid string) bool {
 
 func spam_check(userid string) bool {
 	ccnt := discord_spam_prot_checks[userid]
+	log.Println("check", cnt)
 	discord_spam_prot_checks[userid] = ccnt + 1
 	if ccnt >= discord_spam_prot_limit && !discord_spam_prot_bans[userid] {
 		ckey := local_users[userid]
+		log.Println("banning")
 		if ckey != "" {
 			update_ban(ckey, "SPAM SPAM SPAM", dsession.State.User, BANTYPE_OOC|BANTYPE_COMMANDS)
 		}
