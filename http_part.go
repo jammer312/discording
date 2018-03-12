@@ -72,6 +72,7 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
+	parsed.Message = DecodeWindows1251(parsed.Message)
 	switch safe_param(form, "method") {
 	case "oocmessage":
 		Discord_message_send(servername, "ooc", "OOC:", parsed.Ckey, html.UnescapeString(parsed.Message))
