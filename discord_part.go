@@ -219,6 +219,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 	if mcontent[:1] == Discord_command_character {
 		if !spam_check(message.Author.ID) {
 			delete_in(session, message.Message, 1)
+			return
 		}
 		if len(mcontent) < 2 { //one for command char and at least one for command
 			return
@@ -272,6 +273,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 	}
 	if !spam_check(message.Author.ID) {
 		delete_in(session, message.Message, 1)
+		return
 	}
 	shown_nick := local_users[message.Author.ID]
 	if shown_nick == "" {
@@ -1104,11 +1106,9 @@ func logoff_user(guildid, userid string) bool {
 
 func spam_check(userid string) bool {
 	ccnt := discord_spam_prot_checks[userid]
-	log.Println("check", cnt)
 	discord_spam_prot_checks[userid] = ccnt + 1
 	if ccnt >= discord_spam_prot_limit && !discord_spam_prot_bans[userid] {
 		ckey := local_users[userid]
-		log.Println("banning")
 		if ckey != "" {
 			update_ban(ckey, "SPAM SPAM SPAM", dsession.State.User, BANTYPE_OOC|BANTYPE_COMMANDS)
 		}
