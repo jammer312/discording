@@ -10,6 +10,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -82,6 +83,8 @@ var known_bans map[string]dban
 var dsession, _ = discordgo.New()
 var last_ahelp map[string]string
 
+var emoji_stripper *regexp.Regexp
+
 func init() {
 	discord_bot_token = os.Getenv("discord_bot_token")
 	if discord_bot_token == "" {
@@ -114,6 +117,7 @@ func init() {
 	if err != nil {
 		log.Fatalln("Failed to parse $discord_spam_prot_tick")
 	}
+	emoji_stripper = regexp.MustCompile("<a?:.+?:[0-9]{18}?>")
 	local_users = make(map[string]string)
 	discord_player_roles = make(map[string]string)
 	known_channels_id_t = make(map[string]channel)
@@ -289,6 +293,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		}
 	}
 	addstr := ""
+	mcontent = emoji_stripper.ReplaceAllString(mcontent, "")
 	if !Permissions_check(message.Author, PERMISSIONS_ADMIN) {
 		mcontent = html.EscapeString(mcontent)
 	} else {
