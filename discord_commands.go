@@ -179,7 +179,13 @@ func init() {
 		Server_specific: true,
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			br := Byond_query(server, "who", false)
-			return br.String()
+			preret := strings.Split(br.String(), "\n")
+			if len(preret) <= 2 {
+				return strings.Join(preret, "\n")
+			}
+			sort.Strings(preret[1 : len(preret)-1])
+			return strings.Join(preret, "\n")
+
 		},
 	})
 	// ------------
