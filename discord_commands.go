@@ -443,7 +443,7 @@ func init() {
 			}
 			if tp != ROLE_PLAYER && len(args) < 3 {
 				return "this role requires server"
-			} else {
+			} else if tp != ROLE_PLAYER {
 				srv = args[2]
 			}
 			guild := Get_guild(session, message)
