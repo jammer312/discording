@@ -31,7 +31,7 @@ var (
 	discord_spam_prot_tick    int            //each tick all entries are nullified, in seconds
 
 	//server-specific
-	Known_admins                  []string                       //server -> ckeys
+	Known_admins                  map[string][]string            //server -> ckeys
 	known_channels_s_t_id_m       map[string]map[string][]string //server -> type -> channel ids
 	discord_subscriber_roles      map[string]map[string]string   //guild id -> server -> role
 	discord_admin_roles           map[string]map[string]string   //guild id -> server -> role
@@ -121,7 +121,7 @@ func init() {
 	local_users = make(map[string]string)
 	discord_player_roles = make(map[string]string)
 	known_channels_id_t = make(map[string]channel)
-	Known_admins = make([]string, 0)
+	Known_admins = make(map[string][]string)
 	known_channels_s_t_id_m = make(map[string]map[string][]string)
 	discord_subscriber_roles = make(map[string]map[string]string)
 	discord_admin_roles = make(map[string]map[string]string)
@@ -185,7 +185,7 @@ func Get_guild(session *discordgo.Session, message *discordgo.MessageCreate) str
 	return channel.GuildID
 }
 
-func get_permission_level(user *discordgo.User) int {
+func get_permission_level(user *discordgo.User, server string) int {
 	if user.ID == discord_superuser_id || user.ID == discord_bot_user_id {
 		return PERMISSIONS_SUPERUSER //bot admin
 	}
@@ -196,16 +196,31 @@ func get_permission_level(user *discordgo.User) int {
 
 	ckey = strings.ToLower(ckey)
 
-	for _, admin := range Known_admins {
-		if ckey == strings.ToLower(admin) {
-			return PERMISSIONS_ADMIN //generic admin
+	if server != "" {
+		asl, ok := Known_admins[server]
+		if !ok {
+			return PERMISSIONS_REGISTERED
+		}
+		for _, ackey := range asl {
+			if ckey == strings.ToLower(ackey) {
+				return PERMISSIONS_ADMIN //this server admin
+			}
+		}
+		return PERMISSIONS_REGISTERED
+	}
+	//no server, wide check
+	for _, adminsl := range Known_admins {
+		for _, ackey := range adminsl {
+			if ckey == strings.ToLower(ackey) {
+				return PERMISSIONS_ADMIN //generic admin
+			}
 		}
 	}
 	return PERMISSIONS_REGISTERED
 }
 
-func Permissions_check(user *discordgo.User, permission_level int) bool {
-	return get_permission_level(user) >= permission_level
+func Permissions_check(user *discordgo.User, permission_level int, server string) bool {
+	return get_permission_level(user, server) >= permission_level
 }
 
 func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate) {
@@ -213,7 +228,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		return
 	}
 	mcontent := message.ContentWithMentionsReplaced()
-	if is_in_private_channel(session, message) && !Permissions_check(message.Author, PERMISSIONS_SUPERUSER) {
+	if is_in_private_channel(session, message) && !Permissions_check(message.Author, PERMISSIONS_SUPERUSER, "") {
 		reply(session, message, "FORBIDDEN, won't execute commands in private channels", DEL_NEVER)
 		return
 	}
@@ -252,12 +267,12 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			reply(session, message, "unknown command: `"+Dweaksanitize(command)+"`", DEL_DEFAULT)
 			return
 		}
-		if !Permissions_check(message.Author, dcomm.Permlevel) {
-			reply(session, message, "missing permissions required to run this command: `"+Dweaksanitize(command)+"`", DEL_DEFAULT)
-			return
-		}
 		if server == "" && dcomm.Server_specific {
 			reply(session, message, "this command requires channel to be bound to server", DEL_DEFAULT)
+			return
+		}
+		if !Permissions_check(message.Author, dcomm.Permlevel, server) {
+			reply(session, message, "missing permissions required to run this command: `"+Dweaksanitize(command)+"`", DEL_DEFAULT)
 			return
 		}
 		if len(args) < dcomm.Minargs {
@@ -293,14 +308,14 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		}
 	}
 	addstr := ""
+	srv := known_channels_id_t[message.ChannelID]
 	mcontent = emoji_stripper.ReplaceAllString(mcontent, "")
-	if !Permissions_check(message.Author, PERMISSIONS_ADMIN) {
+	if !Permissions_check(message.Author, PERMISSIONS_ADMIN, srv.server) {
 		mcontent = html.EscapeString(mcontent)
 	} else {
 		mcontent = "<font color='#39034f'>" + mcontent + "</font>"
 		addstr = "&isadmin=1"
 	}
-	srv := known_channels_id_t[message.ChannelID]
 	switch srv.generic_type {
 	case "ooc":
 		if check_bans(message.Author, BANTYPE_OOC, false) != "" {
@@ -826,7 +841,7 @@ func populate_bans() {
 
 func update_ban(ckey, reason string, user *discordgo.User, tp int) bool {
 	ckey = strings.ToLower(ckey)
-	permissions := get_permission_level(user)
+	permissions := get_permission_level(user, "")
 	if permissions < PERMISSIONS_ADMIN {
 		return false
 	}
@@ -882,7 +897,7 @@ func update_ban(ckey, reason string, user *discordgo.User, tp int) bool {
 
 func remove_ban(ckey string, user *discordgo.User) bool {
 	ckey = strings.ToLower(ckey)
-	permissions := get_permission_level(user)
+	permissions := get_permission_level(user, "")
 	if permissions < PERMISSIONS_ADMIN {
 		return false
 	}
@@ -917,7 +932,7 @@ func check_bans(user *discordgo.User, tp int, forced bool) string {
 	if (ban.bantype & tp) == 0 {
 		return "" //no matching ban
 	}
-	if Permissions_check(user, ban.permlevel) && !forced {
+	if Permissions_check(user, ban.permlevel, "") && !forced {
 		return "" //avoid bans from same level
 	}
 	bantype := make([]string, 0)
@@ -1051,30 +1066,35 @@ func login_user(guildid, userid string) bool {
 		return false
 	}
 
-	isadmin := false
-	for _, admin := range Known_admins {
-		if ckey == admin {
-			isadmin = true
-			break
+	for server := range known_servers {
+		isadmin := false
+		adm_entry, ok := Known_admins[server]
+		if !ok {
+			continue
 		}
-	}
-
-	if !isadmin {
-		return true
-	}
-	var admin_role string
-	gadms, ok := discord_admin_roles[guildid]
-	if !ok {
-		return true
-	}
-	admin_role, ok = gadms["white"]
-	if !ok {
-		return true
-	}
-	err = dsession.GuildMemberRoleAdd(guildid, userid, admin_role)
-	if err != nil {
-		log.Println("Login error: ", err)
-		return false
+		for _, admin := range adm_entry {
+			if ckey == strings.ToLower(admin) {
+				isadmin = true
+				break
+			}
+		}
+		if !isadmin {
+			return true
+		}
+		var admin_role string
+		gadms, ok := discord_admin_roles[guildid]
+		if !ok {
+			continue
+		}
+		admin_role, ok = gadms[server]
+		if !ok {
+			continue
+		}
+		err = dsession.GuildMemberRoleAdd(guildid, userid, admin_role)
+		if err != nil {
+			log.Println("Login error: ", err)
+			return false
+		}
 	}
 
 	return true
@@ -1092,19 +1112,21 @@ func logoff_user(guildid, userid string) bool {
 		log.Println("Logoff error: ", err)
 		return false
 	}
-	var admin_role string
-	gadms, ok := discord_admin_roles[guildid]
-	if !ok {
-		return true
-	}
-	admin_role, ok = gadms["white"]
-	if !ok {
-		return true
-	}
-	err = dsession.GuildMemberRoleRemove(guildid, userid, admin_role)
-	if err != nil {
-		log.Println("Logoff error: ", err)
-		return false
+	for server := range known_servers {
+		var admin_role string
+		gadms, ok := discord_admin_roles[guildid]
+		if !ok {
+			continue
+		}
+		admin_role, ok = gadms[server]
+		if !ok {
+			continue
+		}
+		err = dsession.GuildMemberRoleRemove(guildid, userid, admin_role)
+		if err != nil {
+			log.Println("Logoff error: ", err)
+			return false
+		}
 	}
 	return true
 }
@@ -1169,7 +1191,7 @@ func Dopen() {
 	update_local_users()
 	populate_known_roles()
 	populate_bans()
-	Load_admins(&Known_admins)
+	Load_admins()
 	spamticker = launch_spam_ticker()
 	dsession.AddHandler(messageCreate)
 	for _, srv := range known_servers {

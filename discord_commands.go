@@ -5,7 +5,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"log"
 	"sort"
-	"strconv"
 	"strings"
 )
 
@@ -39,42 +38,6 @@ func init() {
 	Known_commands = make(map[string]Dcommand)
 	// ------------
 	Register_command(Dcommand{
-		Command:   "check_permission",
-		Minargs:   2,
-		Permlevel: PERMISSIONS_ADMIN,
-		Usage:     "[!ckey] [!permlevel]",
-		Desc:      "check permissions for user with supplied ckey for specified permissions level",
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
-			ckey := args[0]
-			permlevel, err := strconv.Atoi(args[1])
-			if err != nil {
-				return "error parsing permlevel argument: " + fmt.Sprint(err)
-			}
-			userid := ""
-			for id, ck := range local_users {
-				if strings.ToLower(ckey) == strings.ToLower(ck) {
-					userid = id
-					break
-				}
-			}
-			if userid == "" {
-				return "no user bound to that ckey: `" + ckey + "`"
-			}
-			user, err := session.User(userid)
-			if err != nil {
-				log.Println(err)
-				return "failed to retrieve userid"
-			}
-			if Permissions_check(user, permlevel) {
-				return "permission check for `" + ckey + "` at permlevel " + fmt.Sprint(permlevel) + " OK"
-			} else {
-				return "permission check for `" + ckey + "` at permlevel " + fmt.Sprint(permlevel) + " FAIL"
-			}
-		},
-	})
-	// ------------
-	// ------------
-	Register_command(Dcommand{
 		Command:   "list_admins",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_NONE,
@@ -82,8 +45,16 @@ func init() {
 		Desc:      "list known admin ckeys",
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			ret := "known admins:\n"
-			for _, admin := range Known_admins {
-				ret += admin + "\n"
+			if server == "" {
+				for s, a := range Known_admins {
+					ret += s + ": " + strings.Join(a, ", ")
+				}
+			} else {
+				a, ok := Known_admins[server]
+				if !ok {
+					return "no entry for this server: " + server
+				}
+				ret += strings.Join(a, ", ")
 			}
 			return ret
 		},
@@ -97,7 +68,11 @@ func init() {
 		Usage:     "",
 		Desc:      "sync admins list with hub",
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
-			Load_admins(&Known_admins)
+			if server == "" {
+				Load_admins()
+			} else {
+				Load_admins_for_server(server)
+			}
 			return ""
 		},
 	})
@@ -345,16 +320,16 @@ func init() {
 			sort.Strings(creg)
 			sort.Strings(cadm)
 			sort.Strings(csup)
-			if Permissions_check(user, PERMISSIONS_NONE) {
+			if Permissions_check(user, PERMISSIONS_NONE, "") {
 				ret += "\n**Generic commands:**\n" + strings.Join(call, "\n")
 			}
-			if Permissions_check(user, PERMISSIONS_REGISTERED) {
+			if Permissions_check(user, PERMISSIONS_REGISTERED, "") {
 				ret += "\n**Commands, available to registered users:**\n" + strings.Join(creg, "\n")
 			}
-			if Permissions_check(user, PERMISSIONS_ADMIN) {
+			if Permissions_check(user, PERMISSIONS_ADMIN, "") {
 				ret += "\n**Admin commands:**\n" + strings.Join(cadm, "\n")
 			}
-			if Permissions_check(user, PERMISSIONS_SUPERUSER) {
+			if Permissions_check(user, PERMISSIONS_SUPERUSER, "") {
 				ret += "\n**Superuser commands:**\n" + strings.Join(csup, "\n")
 			}
 			return ret
@@ -390,16 +365,16 @@ func init() {
 			sort.Strings(creg)
 			sort.Strings(cadm)
 			sort.Strings(csup)
-			if Permissions_check(user, PERMISSIONS_NONE) {
+			if Permissions_check(user, PERMISSIONS_NONE, "") {
 				ret += "\n**Generic commands:**\n" + strings.Join(call, "\n")
 			}
-			if Permissions_check(user, PERMISSIONS_REGISTERED) {
+			if Permissions_check(user, PERMISSIONS_REGISTERED, "") {
 				ret += "\n**Commands, available to registered users:**\n" + strings.Join(creg, "\n")
 			}
-			if Permissions_check(user, PERMISSIONS_ADMIN) {
+			if Permissions_check(user, PERMISSIONS_ADMIN, "") {
 				ret += "\n**Admin commands:**\n" + strings.Join(cadm, "\n")
 			}
-			if Permissions_check(user, PERMISSIONS_SUPERUSER) {
+			if Permissions_check(user, PERMISSIONS_SUPERUSER, "") {
 				ret += "\n**Superuser commands:**\n" + strings.Join(csup, "\n")
 			}
 			Discord_private_message_send(user, ret)
@@ -421,7 +396,7 @@ func init() {
 			if !ok {
 				return "no such command"
 			}
-			if !Permissions_check(message.Author, dcmd.Permlevel) {
+			if !Permissions_check(message.Author, dcmd.Permlevel, "") {
 				return "missing required permissions"
 			}
 			return dcmd.Usagestr() + "\n" + dcmd.Desc

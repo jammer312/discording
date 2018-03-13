@@ -20,6 +20,7 @@ type server struct {
 	addr        string //for byond queries
 	comm_key    string //password
 	webhook_key string //password for bot
+	admins_page string //where to get admins from
 }
 
 func add_server(server server) {
@@ -40,24 +41,26 @@ func populate_servers() {
 		delete(known_servers, k)
 	}
 	defer logging_recover("DB PS ERR:")
-	rows, err := Database.Query("select SRVNAME, SRVADDR, COMMKEY, WEBKEY from STATION_SERVERS ;")
+	rows, err := Database.Query("select SRVNAME, SRVADDR, COMMKEY, WEBKEY, ADMINS_PAGE from STATION_SERVERS ;")
 	if err != nil {
 		panic(err)
 	}
 	for rows.Next() {
-		var srvname, srvaddr, commkey, webkey string
-		if terr := rows.Scan(&srvname, &srvaddr, &commkey, &webkey); terr != nil {
+		var srvname, srvaddr, commkey, webkey, admp string
+		if terr := rows.Scan(&srvname, &srvaddr, &commkey, &webkey, &admp); terr != nil {
 			panic(terr)
 		}
 		srvname = trim(srvname)
 		srvaddr = trim(srvaddr)
 		commkey = trim(commkey)
 		webkey = trim(webkey)
+		admp = trim(admp)
 		add_server(server{
 			name:        srvname,
 			addr:        srvaddr,
 			comm_key:    commkey,
 			webhook_key: webkey,
+			admins_page: admp,
 		})
 	}
 }

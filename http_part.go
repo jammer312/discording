@@ -101,50 +101,45 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func init() {
-	admin_retrieval_page = os.Getenv("admin_retrieval_page")
-	if admin_retrieval_page == "" {
-		log.Fatalln("Failed to retrieve $admin_retrieval_page")
-	}
 	port = os.Getenv("PORT")
 	if port == "" {
 		log.Fatalln("Failed to retrieve $PORT")
 	}
 }
 
-func Load_admins(str *[]string) {
-	*str = nil //clearing
-	response, err := http.Get(admin_retrieval_page)
+func Load_admins() {
+	for s := range known_servers {
+		Load_admins_for_server(s)
+	}
+}
+
+func Load_admins_for_server(server string) {
+	logging_recover("ADM " + server)
+	servstruct, ok := known_servers[server]
+	if !ok {
+		panic("can't find server")
+	}
+	response, err := http.Get(servstruct.admins_page)
 	if err != nil {
-		log.Println("FUCK: ", err)
+		panic(err)
 	}
 	defer response.Body.Close()
 	body, err := ioutil.ReadAll(response.Body)
 	bodyraw := string(body)
-	ind1 := strings.Index(bodyraw, "Architect")
-	ind2 := strings.Index(bodyraw, "Removed")
-	if ind1 == -1 || ind2 == -1 || ind2 < ind1 {
-		log.Println("Fuck")
-		return
+
+	admins := make(map[string][]string)
+	if err := json.Unmarshal([]byte(bodyraw), &admins); err != nil {
+		panic(err)
 	}
-	bodyraw = bodyraw[ind1+10 : ind2-1]
-	for ind3 := strings.Index(bodyraw, "<td>"); ind3 != -1; ind3 = strings.Index(bodyraw, "<td>") {
-		ind4 := strings.Index(bodyraw, "</td>")
-		*str = append(*str, fmt.Sprint(bodyraw[ind3+4:ind4]))
-		bodyraw = bodyraw[ind4+5:]
+	adminssl := make([]string, 0)
+	for k, v := range admins {
+		if k == "Removed" {
+			continue
+		}
+		adminssl = append(adminssl, v...)
 	}
-	bodyraw = string(body)
-	ind1 = strings.Index(bodyraw, "Siphon")
-	if ind1 == -1 {
-		log.Println("Fuck")
-		return
-	}
-	bodyraw = bodyraw[ind1+7:]
-	for ind3 := strings.Index(bodyraw, "<td>"); ind3 != -1; ind3 = strings.Index(bodyraw, "<td>") {
-		ind4 := strings.Index(bodyraw, "</td>")
-		*str = append(*str, fmt.Sprint(bodyraw[ind3+4:ind4]))
-		bodyraw = bodyraw[ind4+5:]
-	}
-	log.Println(*str)
+	Known_admins[server] = adminssl
+	log.Println(adminssl)
 }
 
 func Http_server() *http.Server {
