@@ -47,7 +47,7 @@ func init() {
 			ret := "known admins:\n"
 			if server == "" {
 				for s, a := range Known_admins {
-					ret += s + ": " + strings.Join(a, ", ")
+					ret += s + ": " + strings.Join(a, ", ") + "\n"
 				}
 			} else {
 				a, ok := Known_admins[server]
