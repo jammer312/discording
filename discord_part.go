@@ -310,10 +310,11 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 	addstr := ""
 	srv := known_channels_id_t[message.ChannelID]
 	mcontent = emoji_stripper.ReplaceAllString(mcontent, "")
+	var byondmcontent string //sent to byond
 	if !Permissions_check(message.Author, PERMISSIONS_ADMIN, srv.server) {
-		mcontent = html.EscapeString(mcontent)
+		byondmcontent = html.EscapeString(mcontent)
 	} else {
-		mcontent = "<font color='#39034f'>" + mcontent + "</font>"
+		byondmcontent = "<font color='#39034f'>" + mcontent + "</font>"
 		addstr = "&isadmin=1"
 	}
 	switch srv.generic_type {
@@ -323,7 +324,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			reply(session, message, "you're banned from this action. Try !baninfo", DEL_DEFAULT)
 			return
 		}
-		br := Byond_query(srv.server, "ckey="+Bquery_convert(shown_nick)+"&ooc="+Bquery_convert(mcontent)+addstr, true)
+		br := Byond_query(srv.server, "ckey="+Bquery_convert(shown_nick)+"&ooc="+Bquery_convert(byondmcontent)+addstr, true)
 		if br.String() == "muted" {
 			defer delcommand(session, message)
 			reply(session, message, "your ckey is muted from OOC", DEL_DEFAULT)
@@ -336,7 +337,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		}
 		Discord_message_propagate(srv.server, "ooc", "DISCORD OOC:", shown_nick, strip.StripTags(mcontent), message.ChannelID)
 	case "admin":
-		Byond_query(srv.server, "admin="+Bquery_convert(shown_nick)+"&asay="+Bquery_convert(mcontent), true)
+		Byond_query(srv.server, "admin="+Bquery_convert(shown_nick)+"&asay="+Bquery_convert(byondmcontent), true)
 		Discord_message_propagate(srv.server, "admin", "DISCORD ASAY:", shown_nick, strip.StripTags(mcontent), message.ChannelID)
 	default:
 	}
