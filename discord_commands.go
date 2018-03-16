@@ -203,9 +203,9 @@ func init() {
 			}
 			server = args[0]
 			if Update_known_channel(server, args[1], message.ChannelID, guild) {
-				return "changed `" + Dweaksanitize(server) + "@" + Dweaksanitize(args[0]) + "` channel to <#" + message.ChannelID + ">"
+				return "changed `" + Dweaksanitize(server) + "@" + Dweaksanitize(args[1]) + "` channel to <#" + message.ChannelID + ">"
 			} else {
-				return "failed to change `" + Dweaksanitize(server) + "@" + Dweaksanitize(args[0]) + "` channel to <#" + message.ChannelID + ">"
+				return "failed to change `" + Dweaksanitize(server) + "@" + Dweaksanitize(args[1]) + "` channel to <#" + message.ChannelID + ">"
 			}
 		},
 	})
