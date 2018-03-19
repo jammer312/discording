@@ -185,6 +185,10 @@ func Get_guild(session *discordgo.Session, message *discordgo.MessageCreate) str
 	return channel.GuildID
 }
 
+func ckey_simplier(s string) string {
+	return strings.ToLower(strings.Replace(s, "_", "", -1))
+}
+
 func get_permission_level(user *discordgo.User, server string) int {
 	if user.ID == discord_superuser_id || user.ID == discord_bot_user_id {
 		return PERMISSIONS_SUPERUSER //bot admin
@@ -194,7 +198,7 @@ func get_permission_level(user *discordgo.User, server string) int {
 		return PERMISSIONS_NONE //not registered
 	}
 
-	ckey = strings.ToLower(ckey)
+	ckey = ckey_simplier(ckey)
 
 	if server != "" {
 		asl, ok := Known_admins[server]
@@ -202,7 +206,7 @@ func get_permission_level(user *discordgo.User, server string) int {
 			return PERMISSIONS_REGISTERED
 		}
 		for _, ackey := range asl {
-			if ckey == strings.ToLower(ackey) {
+			if ckey == ackey {
 				return PERMISSIONS_ADMIN //this server admin
 			}
 		}
@@ -211,7 +215,7 @@ func get_permission_level(user *discordgo.User, server string) int {
 	//no server, wide check
 	for _, adminsl := range Known_admins {
 		for _, ackey := range adminsl {
-			if ckey == strings.ToLower(ackey) {
+			if ckey == ackey {
 				return PERMISSIONS_ADMIN //generic admin
 			}
 		}
