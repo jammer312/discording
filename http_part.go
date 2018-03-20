@@ -107,7 +107,6 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 			Title:       "",
 			Description: "",
 			Fields:      []*discordgo.MessageEmbedField{},
-			Timestamp:   get_time(),
 		}
 		out, _ := json.Marshal(&discordgo.MessageSend{
 			Embed: embed,
