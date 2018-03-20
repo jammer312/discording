@@ -1116,6 +1116,7 @@ func login_user(guildid, userid string) bool {
 			continue
 		}
 		for _, admin := range adm_entry {
+			log.Println("login check " + ckey + "<->" + admin)
 			if ckey == strings.ToLower(admin) {
 				isadmin = true
 				break
