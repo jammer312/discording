@@ -1123,7 +1123,7 @@ func login_user(guildid, userid string) bool {
 			}
 		}
 		if !isadmin {
-			return true
+			continue
 		}
 		var admin_role string
 		gadms, ok := discord_admin_roles[guildid]
