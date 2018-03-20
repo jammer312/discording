@@ -721,7 +721,7 @@ func register_user(login, ckey string) {
 	if err != nil {
 		panic("failed to get user")
 	}
-	Discord_private_message_send(user, "registered as `"+ckey+"`")
+	Discord_private_message_send(user, "Registered as `"+ckey+"`")
 }
 
 func update_local_users() {
