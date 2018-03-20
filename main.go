@@ -83,6 +83,7 @@ func init_time() {
 }
 
 func main() {
+	init_time()
 	populate_servers()
 	Dopen()              //start discord
 	srv := Http_server() //start web server
