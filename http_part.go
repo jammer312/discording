@@ -50,8 +50,6 @@ type universal_parse struct {
 	Seclevel string
 }
 
-type fref []*discordgo.MessageEmbedField
-
 func webhook_handler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "" && r.Method != "GET" {
 		return
@@ -103,14 +101,14 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 		if servername != "" {
 			color = known_servers[servername].color
 		}
-		log.Println("here-2")
-		embedd := discordgo.MessageEmbed{
+		log.Println("here-3")
+		embed := &discordgo.MessageEmbed{
 			Color:     color,
 			Timestamp: get_time(),
-			Fields:    make(fref, 0),
 		}
+		log.Println("here-2")
+		embed.Fields = make([]*discordgo.MessageEmbedField, 0)
 		log.Println("here-1")
-		embed := &embedd
 		switch parsed.Status {
 		case "lobby":
 			Discord_subsriber_message_send(servername, "bot_status", "New round is about to start (lobby)")
