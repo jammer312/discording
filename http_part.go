@@ -101,7 +101,7 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 		if servername != "" {
 			color = known_servers[servername].color
 		}
-		embed := &discordgo.MessageEmbed{
+		embed := discordgo.MessageEmbed{
 			Color: color,
 			//			Timestamp: get_time(),
 		}
@@ -122,42 +122,42 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 				Value: "Code: " + parsed.Seclevel,
 			},
 			}
-			Discord_send_embed(servername, "bot_status", embed)
+			Discord_send_embed(servername, "bot_status", &embed)
 			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle called")
 
 		case "shuttle recalled":
 			embed.Fields = []*discordgo.MessageEmbedField{&discordgo.MessageEmbedField{
 				Value: "**Shuttle recalled**",
 			}}
-			Discord_send_embed(servername, "bot_status", embed)
+			Discord_send_embed(servername, "bot_status", &embed)
 			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle recalled")
 
 		case "shuttle autocalled":
 			embed.Fields = []*discordgo.MessageEmbedField{&discordgo.MessageEmbedField{
 				Value: "**Shuttle autocalled**",
 			}}
-			Discord_send_embed(servername, "bot_status", embed)
+			Discord_send_embed(servername, "bot_status", &embed)
 			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle autocalled")
 
 		case "shuttle docked":
 			embed.Fields = []*discordgo.MessageEmbedField{&discordgo.MessageEmbedField{
 				Value: "**Shuttle docked with the station**",
 			}}
-			Discord_send_embed(servername, "bot_status", embed)
+			Discord_send_embed(servername, "bot_status", &embed)
 			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle docked with the station")
 
 		case "shuttle left":
 			embed.Fields = []*discordgo.MessageEmbedField{&discordgo.MessageEmbedField{
 				Value: "**Shuttle left the station**",
 			}}
-			Discord_send_embed(servername, "bot_status", embed)
+			Discord_send_embed(servername, "bot_status", &embed)
 			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle left the station")
 
 		case "shuttle escaped":
 			embed.Fields = []*discordgo.MessageEmbedField{&discordgo.MessageEmbedField{
 				Value: "**Shuttle docked with centcomm**",
 			}}
-			Discord_send_embed(servername, "bot_status", embed)
+			Discord_send_embed(servername, "bot_status", &embed)
 			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle docked with centcomm")
 			Discord_subsriber_message_send(servername, "bot_status", "Current round is about to end (roundend)")
 
