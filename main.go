@@ -73,10 +73,10 @@ var get_time func() string
 
 func init_time() {
 	defer logging_recover("init_time")
-	loc, err := time.LoadLocation("Europe/Moscow")
-	if err != nil {
-		panic(err)
-	}
+	/*	loc, err := time.LoadLocation("Europe/Moscow")
+		if err != nil {
+			panic(err)
+		}*/
 	get_time = func() string {
 		return time.Now().String()
 	}
