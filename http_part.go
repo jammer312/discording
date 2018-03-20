@@ -126,9 +126,10 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle called")
 
 		case "shuttle recalled":
-			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+			field := discordgo.MessageEmbedField{
 				Value: "**Shuttle recalled**",
-			})
+			}
+			embed.Fields = append(embed.Fields, &field)
 			Discord_send_embed(servername, "bot_status", embed)
 			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle recalled")
 
