@@ -106,7 +106,7 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 			Color:     color,
 			Timestamp: get_time(),
 		}
-		Discord_send_embed(servername, "debug", embed)
+		Discord_send_embed(servername, "debug", &embed)
 		switch parsed.Status {
 		case "lobby":
 			Discord_subsriber_message_send(servername, "bot_status", "New round is about to start (lobby)")
