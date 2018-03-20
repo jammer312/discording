@@ -106,7 +106,6 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 			Timestamp: get_time(),
 			Fields:    make([]*discordgo.MessageEmbedField, 0),
 		}
-		log.Println(get_time())
 		switch parsed.Status {
 		case "lobby":
 			Discord_subsriber_message_send(servername, "bot_status", "New round is about to start (lobby)")

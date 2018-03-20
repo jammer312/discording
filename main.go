@@ -78,7 +78,7 @@ func init_time() {
 		panic(err)
 	}
 	get_time = func() string {
-		return time.Now()
+		return time.Now().String()
 	}
 }
 
