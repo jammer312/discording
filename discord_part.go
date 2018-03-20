@@ -201,14 +201,12 @@ func get_permission_level(user *discordgo.User, server string) int {
 	}
 
 	ckey = ckey_simplier(ckey)
-	log.Println("Checking " + ckey)
 	if server != "" {
 		asl, ok := Known_admins[server]
 		if !ok {
 			return PERMISSIONS_REGISTERED
 		}
 		for _, ackey := range asl {
-			log.Println("Against " + ackey)
 			if ckey == ackey {
 				return PERMISSIONS_ADMIN //this server admin
 			}
@@ -218,7 +216,6 @@ func get_permission_level(user *discordgo.User, server string) int {
 	//no server, wide check
 	for _, adminsl := range Known_admins {
 		for _, ackey := range adminsl {
-			log.Println("Against " + ackey)
 			if ckey == ackey {
 				return PERMISSIONS_ADMIN //generic admin
 			}
@@ -1116,7 +1113,6 @@ func login_user(guildid, userid string) bool {
 			continue
 		}
 		for _, admin := range adm_entry {
-			log.Println("login check " + ckey + "<->" + admin)
 			if ckey == strings.ToLower(admin) {
 				isadmin = true
 				break
