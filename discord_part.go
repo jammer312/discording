@@ -703,22 +703,25 @@ func Discord_process_token(id, ckey string) {
 }
 
 func register_user(login, ckey string) {
+	defer logging_recover("ru:")
 	_, err := Database.Exec("delete from DISCORD_REGISTERED_USERS where DISCORDID = $1;", login)
 	if err != nil {
-		log.Println("DB ERROR: failed to delete: ", err)
-		return
+		panic(err)
 	}
 	_, err = Database.Exec("delete from DISCORD_REGISTERED_USERS where CKEY = $1;", ckey)
 	if err != nil {
-		log.Println("DB ERROR: failed to delete: ", err)
-		return
+		panic(err)
 	}
 	_, err = Database.Exec("insert into DISCORD_REGISTERED_USERS values ($1, $2);", login, ckey)
 	if err != nil {
-		log.Println("DB ERROR: failed to insert: ", err)
-		return
+		panic(err)
 	}
 	update_local_user(login)
+	user, err := dsession.User(login)
+	if err != nil {
+		panic("failed to get user")
+	}
+	Discord_private_message_send(user, "registered as `"+ckey+"`")
 }
 
 func update_local_users() {
