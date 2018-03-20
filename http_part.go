@@ -101,6 +101,8 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 		if servername != "" {
 			color = known_servers[servername].color
 		}
+		log.Println("here-4")
+		get_time()
 		log.Println("here-3")
 		embed := &discordgo.MessageEmbed{
 			Color:     color,
