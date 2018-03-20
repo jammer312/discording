@@ -12,7 +12,6 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"time"
 )
 
 var (
@@ -118,14 +117,7 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 					Inline: true,
 				},
 			},
-			Image: &discordgo.MessageEmbedImage{
-				URL: "https://cdn.discordapp.com/avatars/119249192806776836/cc32c5c3ee602e1fe252f9f595f9010e.jpg?size=2048",
-			},
-			Thumbnail: &discordgo.MessageEmbedThumbnail{
-				URL: "https://cdn.discordapp.com/avatars/119249192806776836/cc32c5c3ee602e1fe252f9f595f9010e.jpg?size=2048",
-			},
-			Timestamp: time.Now().String(),
-			Title:     "I am an Embed",
+			Title: "I am an Embed",
 		}
 		out, _ := json.Marshal(&discordgo.MessageSend{
 			Embed: embed,
