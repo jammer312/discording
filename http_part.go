@@ -105,19 +105,8 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 			Author:      &discordgo.MessageEmbedAuthor{},
 			Color:       0x00ff00, // Green
 			Description: "This is a discordgo embed",
-			Fields: []*discordgo.MessageEmbedField{
-				&discordgo.MessageEmbedField{
-					Name:   "I am a field",
-					Value:  "I am a value",
-					Inline: true,
-				},
-				&discordgo.MessageEmbedField{
-					Name:   "I am a second field",
-					Value:  "I am a value",
-					Inline: true,
-				},
-			},
-			Title: "I am an Embed",
+			Fields:      []*discordgo.MessageEmbedField{},
+			Title:       "I am an Embed",
 		}
 		out, _ := json.Marshal(&discordgo.MessageSend{
 			Embed: embed,
