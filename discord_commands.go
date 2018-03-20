@@ -374,7 +374,11 @@ func init() {
 			if !ok {
 				return "no active lock"
 			}
-			return discord_ahelp_locks[server][message.Author.ID]
+			lock := discord_ahelp_locks[server][message.Author.ID]
+			if lock == "" {
+				return "no active lock"
+			}
+			return lock
 		},
 	})
 	// ------------
