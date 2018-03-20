@@ -98,17 +98,17 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 		Discord_message_send(servername, "debug", "DEBUG:", "RUNTIME", html.UnescapeString(parsed.Message))
 	case "roundstatus":
 		color := 0
-		log.Println("here-2")
 		if servername != "" {
 			color = known_servers[servername].color
 		}
+		log.Println("here-2")
 		embedd := discordgo.MessageEmbed{
 			Color:     color,
 			Timestamp: get_time(),
 			Fields:    make([]*discordgo.MessageEmbedField, 0),
 		}
-		embed := &embedd
 		log.Println("here-1")
+		embed := &embedd
 		switch parsed.Status {
 		case "lobby":
 			Discord_subsriber_message_send(servername, "bot_status", "New round is about to start (lobby)")
