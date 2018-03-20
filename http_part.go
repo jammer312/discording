@@ -116,32 +116,31 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 			embed.Fields = []*discordgo.MessageEmbedField{&discordgo.MessageEmbedField{Name: "Code:", Value: parsed.Seclevel, Inline: true}, &discordgo.MessageEmbedField{Name: "Reason:", Value: parsed.Reason, Inline: true}}
 			embed.Title = "SHUTTLE CALLED"
 			Discord_send_embed(servername, "bot_status", embed)
-			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle called")
-
+			Discord_send_embed(servername, "ooc", embed)
 		case "shuttle recalled":
 			embed.Title = "SHUTTLE RECALLED"
 			Discord_send_embed(servername, "bot_status", embed)
-			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle recalled")
+			Discord_send_embed(servername, "ooc", embed)
 
 		case "shuttle autocalled":
 			embed.Title = "SHUTTLE AUTOCALLED"
 			Discord_send_embed(servername, "bot_status", embed)
-			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle autocalled")
+			Discord_send_embed(servername, "ooc", embed)
 
 		case "shuttle docked":
 			embed.Title = "SHUTTLE DOCKED WITH THE STATION"
 			Discord_send_embed(servername, "bot_status", embed)
-			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle docked with the station")
+			Discord_send_embed(servername, "ooc", embed)
 
 		case "shuttle left":
 			embed.Title = "SHUTTLE LEFT THE STATION"
 			Discord_send_embed(servername, "bot_status", embed)
-			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle left the station")
+			Discord_send_embed(servername, "ooc", embed)
 
 		case "shuttle escaped":
 			embed.Title = "SHUTTLE DOCKED WITH CENTCOMM"
 			Discord_send_embed(servername, "bot_status", embed)
-			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle docked with centcomm")
+			Discord_send_embed(servername, "ooc", embed)
 			Discord_subsriber_message_send(servername, "bot_status", "Current round is about to end (roundend)")
 
 		case "reboot":
