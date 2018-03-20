@@ -98,10 +98,10 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 	case "runtimemessage":
 		Discord_message_send(servername, "debug", "DEBUG:", "RUNTIME", html.UnescapeString(parsed.Message))
 	case "roundstatus":
-		color := 0
+		/*color := 0
 		if servername != "" {
 			color = known_servers[servername].color
-		}
+		}*/
 		embed := &discordgo.MessageEmbed{
 			Author:      &discordgo.MessageEmbedAuthor{},
 			Color:       0x00ff00, // Green
