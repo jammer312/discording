@@ -108,11 +108,6 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 			Description: "",
 			Fields:      []*discordgo.MessageEmbedField{},
 		}
-		out, _ := json.Marshal(&discordgo.MessageSend{
-			Embed: embed,
-		})
-		fmt.Println(string(out))
-		Discord_send_embed(servername, "debug", embed)
 		switch parsed.Status {
 		case "lobby":
 			Discord_subsriber_message_send(servername, "bot_status", "New round is about to start (lobby)")
