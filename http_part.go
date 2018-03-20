@@ -97,16 +97,17 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 	case "runtimemessage":
 		Discord_message_send(servername, "debug", "DEBUG:", "RUNTIME", html.UnescapeString(parsed.Message))
 	case "roundstatus":
-		/*color := 0
+		color := 0
 		if servername != "" {
 			color = known_servers[servername].color
-		}*/
+		}
 		embed := &discordgo.MessageEmbed{
 			Author:      &discordgo.MessageEmbedAuthor{},
-			Color:       0x00ff00, // Green
-			Title:       "I am an Embed",
+			Color:       color, // Green
+			Title:       "",
 			Description: "",
 			Fields:      []*discordgo.MessageEmbedField{},
+			Timestamp:   get_time(),
 		}
 		out, _ := json.Marshal(&discordgo.MessageSend{
 			Embed: embed,
@@ -118,21 +119,34 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 			Discord_subsriber_message_send(servername, "bot_status", "New round is about to start (lobby)")
 
 		case "shuttle called":
+			embed.Fields = []*discordgo.MessageEmbedField{&discordgo.MessageEmbedField{Name: "Code:", Value: parsed.Seclevel, Inline: true}, &discordgo.MessageEmbedField{Name: "Reason:", Value: parsed.Reason, Inline: true}}
+			embed.Title = "SHUTTLE CALLED"
+			Discord_send_embed(servername, "bot_status", embed)
 			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle called")
 
 		case "shuttle recalled":
+			embed.Title = "SHUTTLE RECALLED"
+			Discord_send_embed(servername, "bot_status", embed)
 			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle recalled")
 
 		case "shuttle autocalled":
+			embed.Title = "SHUTTLE AUTOCALLED"
+			Discord_send_embed(servername, "bot_status", embed)
 			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle autocalled")
 
 		case "shuttle docked":
+			embed.Title = "SHUTTLE DOCKED WITH THE STATION"
+			Discord_send_embed(servername, "bot_status", embed)
 			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle docked with the station")
 
 		case "shuttle left":
+			embed.Title = "SHUTTLE LEFT THE STATION"
+			Discord_send_embed(servername, "bot_status", embed)
 			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle left the station")
 
 		case "shuttle escaped":
+			embed.Title = "SHUTTLE DOCKED WITH CENTCOMM"
+			Discord_send_embed(servername, "bot_status", embed)
 			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle docked with centcomm")
 			Discord_subsriber_message_send(servername, "bot_status", "Current round is about to end (roundend)")
 
