@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 func logging_recover(ctx string) {
@@ -21,6 +22,7 @@ type server struct {
 	comm_key    string //password
 	webhook_key string //password for bot
 	admins_page string //where to get admins from
+	color       int    //for embeds
 }
 
 func add_server(server server) {
@@ -41,13 +43,14 @@ func populate_servers() {
 		delete(known_servers, k)
 	}
 	defer logging_recover("DB PS ERR:")
-	rows, err := Database.Query("select SRVNAME, SRVADDR, COMMKEY, WEBKEY, ADMINS_PAGE from STATION_SERVERS ;")
+	rows, err := Database.Query("select SRVNAME, SRVADDR, COMMKEY, WEBKEY, ADMINS_PAGE, COLOR from STATION_SERVERS ;")
 	if err != nil {
 		panic(err)
 	}
 	for rows.Next() {
 		var srvname, srvaddr, commkey, webkey, admp string
-		if terr := rows.Scan(&srvname, &srvaddr, &commkey, &webkey, &admp); terr != nil {
+		var clr int
+		if terr := rows.Scan(&srvname, &srvaddr, &commkey, &webkey, &admp, &clr); terr != nil {
 			panic(terr)
 		}
 		srvname = trim(srvname)
@@ -61,7 +64,21 @@ func populate_servers() {
 			comm_key:    commkey,
 			webhook_key: webkey,
 			admins_page: admp,
+			color:       clr,
 		})
+	}
+}
+
+var get_time func() string
+
+func init_time() {
+	defer logging_recover("init_time")
+	loc, err := time.LoadLocation("Europe/Moscow")
+	if err != nil {
+		panic(err)
+	}
+	get_time = func() string {
+		return time.Now().In(loc).Format("15:04")
 	}
 }
 

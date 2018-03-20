@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/bwmarrin/discordgo"
 	"github.com/grokify/html-strip-tags-go"
 	"html"
 	"io/ioutil"
@@ -41,10 +42,12 @@ func safe_param(m *url.Values, param string) string {
 }
 
 type universal_parse struct {
-	Ckey    string
-	Message string
-	Token   string
-	Status  string
+	Ckey     string
+	Message  string
+	Token    string
+	Status   string
+	Reason   string
+	Seclevel string
 }
 
 func webhook_handler(w http.ResponseWriter, r *http.Request) {
@@ -91,9 +94,90 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 		Discord_message_send(servername, "garbage", "", parsed.Ckey, strip.StripTags(html.UnescapeString(parsed.Message)))
 	case "token":
 		Discord_process_token(html.UnescapeString(parsed.Token), parsed.Ckey)
+	case "runtimemessage":
+		Discord_message_send(servername, "debug", "DEBUG:", "RUNTIME", html.UnescapeString(parsed.Message))
 	case "roundstatus":
-		if parsed.Status == "lobby" {
-			Discord_subsriber_message_send(servername, "bot_status", "new round is about to start (lobby)")
+		color := 0
+		if servername != "" {
+			color = known_servers[servername].color
+		}
+		embed := &discordgo.MessageEmbed{
+			Color:     color,
+			Timestamp: get_time(),
+		}
+		switch parsed.Status {
+		case "lobby":
+			Discord_subsriber_message_send(servername, "bot_status", "New round is about to start (lobby)")
+
+		case "shuttle called":
+			embed.Fields = []*discordgo.MessageEmbedField{
+				&discordgo.MessageEmbedField{
+					Value: "**Shuttle called**",
+				},
+				&discordgo.MessageEmbedField{
+					Value:  "Reason:",
+					Inline: true,
+				},
+				&discordgo.MessageEmbedField{
+					Value:  Dsanitize(parsed.Reason),
+					Inline: true,
+				},
+				&discordgo.MessageEmbedField{
+					Value: "Code: " + parsed.Seclevel,
+				},
+			}
+			Discord_send_embed(servername, "bot_status", embed)
+			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle called")
+
+		case "shuttle recalled":
+			embed.Fields = []*discordgo.MessageEmbedField{
+				&discordgo.MessageEmbedField{
+					Value: "**Shuttle recalled**",
+				},
+			}
+			Discord_send_embed(servername, "bot_status", embed)
+			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle recalled")
+
+		case "shuttle autocalled":
+			embed.Fields = []*discordgo.MessageEmbedField{
+				&discordgo.MessageEmbedField{
+					Value: "**Shuttle autocalled**",
+				},
+			}
+			Discord_send_embed(servername, "bot_status", embed)
+			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle autocalled")
+
+		case "shuttle docked":
+			embed.Fields = []*discordgo.MessageEmbedField{
+				&discordgo.MessageEmbedField{
+					Value: "**Shuttle docked with the station**",
+				},
+			}
+			Discord_send_embed(servername, "bot_status", embed)
+			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle docked with the station")
+
+		case "shuttle left":
+			embed.Fields = []*discordgo.MessageEmbedField{
+				&discordgo.MessageEmbedField{
+					Value: "**Shuttle left the station**",
+				},
+			}
+			Discord_send_embed(servername, "bot_status", embed)
+			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle left the station")
+
+		case "shuttle escaped":
+			embed.Fields = []*discordgo.MessageEmbedField{
+				&discordgo.MessageEmbedField{
+					Value: "**Shuttle docked with centcomm**",
+				},
+			}
+			Discord_send_embed(servername, "bot_status", embed)
+			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle docked with centcomm")
+			Discord_subsriber_message_send(servername, "bot_status", "Current round is about to end (roundend)")
+
+		case "reboot":
+			Discord_message_send_raw(servername, "ooc", "**===REBOOT===**")
+
 		}
 	default:
 		log.Print(form)

@@ -316,7 +316,8 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 	mcontent = emoji_stripper.ReplaceAllString(mcontent, "")
 	var byondmcontent string //sent to byond
 	if !Permissions_check(message.Author, PERMISSIONS_ADMIN, srv.server) {
-		byondmcontent = html.EscapeString(mcontent)
+		byondmcontent = strings.Replace(mcontent, "\n", "#", -1)
+		byondmcontent = html.EscapeString(byondmcontent)
 	} else {
 		byondmcontent = "<font color='#39034f'>" + mcontent + "</font>"
 		addstr = "&isadmin=1"
@@ -417,7 +418,40 @@ func Discord_message_send(servername, channel, prefix, ckey, message string) {
 		}
 	}
 }
-
+func Discord_message_send_raw(servername, channel, message string) {
+	defer logging_recover("Dmsr")
+	srvchans, ok := known_channels_s_t_id_m[servername]
+	if !ok {
+		panic("unknown server, " + servername)
+	}
+	channels, ok := srvchans[channel]
+	if !ok || len(channels) < 1 {
+		return //no bound channels
+	}
+	for _, id := range channels {
+		_, err := dsession.ChannelMessageSend(id, message)
+		if err != nil {
+			log.Println("DISCORD ERROR: failed to send message to discord: ", err)
+		}
+	}
+}
+func Discord_send_embed(servername, channel string, embed *discordgo.MessageEmbed) {
+	defer logging_recover("Dse")
+	srvchans, ok := known_channels_s_t_id_m[servername]
+	if !ok {
+		panic("unknown server, " + servername)
+	}
+	channels, ok := srvchans[channel]
+	if !ok || len(channels) < 1 {
+		return //no bound channels
+	}
+	for _, id := range channels {
+		_, err := dsession.ChannelMessageSendEmbed(id, embed)
+		if err != nil {
+			log.Println("DISCORD ERROR: failed to send embed to discord: ", err)
+		}
+	}
+}
 func Discord_message_propagate(servername, channel, prefix, ckey, message, chanid string) {
 	//given channel id and other params sends message to all channels except specified one
 	defer logging_recover("Dmp")
