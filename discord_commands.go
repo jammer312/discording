@@ -284,6 +284,102 @@ func init() {
 	// ------------
 	// ------------
 	Register_command(Dcommand{
+		Command:         "ahl",
+		Minargs:         1,
+		Permlevel:       PERMISSIONS_ADMIN,
+		Usage:           "[!ckey]",
+		Desc:            "locks your ahelp to [!ckey]",
+		Server_specific: true,
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
+			_, ok := discord_ahelp_locks[server]
+			if !ok {
+				discord_ahelp_locks[server] = make(map[string]string)
+			}
+			discord_ahelp_locks[server][message.Author.ID] = args[0]
+			return "locked to " + args[0]
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(Dcommand{
+		Command:         "ahlr",
+		Minargs:         0,
+		Permlevel:       PERMISSIONS_ADMIN,
+		Usage:           "",
+		Desc:            "locks your ahelp to last AHELP",
+		Server_specific: true,
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
+			if last_ahelp[server] == "" {
+				return "no recent AHELP found"
+			}
+			_, ok := discord_ahelp_locks[server]
+			if !ok {
+				discord_ahelp_locks[server] = make(map[string]string)
+			}
+			discord_ahelp_locks[server][message.Author.ID] = last_ahelp[server]
+			return "locked to " + last_ahelp[server]
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(Dcommand{
+		Command:         "ahm",
+		Minargs:         1,
+		Permlevel:       PERMISSIONS_ADMIN,
+		Usage:           "[!message]",
+		Desc:            "sends admin [!message] to locked ckey (see 'ahl' and 'ahlr')",
+		Server_specific: true,
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
+			_, ok := discord_ahelp_locks[server]
+			if !ok {
+				return "no active lock"
+			}
+			lock := discord_ahelp_locks[server][message.Author.ID]
+			if lock == "" {
+				return "no active lock"
+			}
+			Byond_query(server, "adminhelp&admin="+Bquery_convert(local_users[message.Author.ID])+"&ckey="+lock+"&response="+Bquery_convert(strings.Join(args, " ")), true)
+			return ""
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(Dcommand{
+		Command:         "ahu",
+		Minargs:         0,
+		Permlevel:       PERMISSIONS_ADMIN,
+		Usage:           "",
+		Desc:            "unlocks your ahelp",
+		Server_specific: true,
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
+			_, ok := discord_ahelp_locks[server]
+			if !ok {
+				discord_ahelp_locks[server] = make(map[string]string)
+			}
+			discord_ahelp_locks[server][message.Author.ID] = ""
+			return "ahelp unlocked"
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(Dcommand{
+		Command:         "ahl?",
+		Minargs:         0,
+		Permlevel:       PERMISSIONS_ADMIN,
+		Usage:           "",
+		Desc:            "shows your current ahelp lock",
+		Server_specific: true,
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
+			_, ok := discord_ahelp_locks[server]
+			if !ok {
+				return "no active lock"
+			}
+			return discord_ahelp_locks[server][message.Author.ID]
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(Dcommand{
 		Command:         "toggle_ooc",
 		Minargs:         0,
 		Permlevel:       PERMISSIONS_ADMIN,

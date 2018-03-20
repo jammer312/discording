@@ -36,6 +36,7 @@ var (
 	discord_subscriber_roles      map[string]map[string]string   //guild id -> server -> role
 	discord_admin_roles           map[string]map[string]string   //guild id -> server -> role
 	discord_onetime_subscriptions map[string]map[string]string   //guild id -> server -> users slap string
+	discord_ahelp_locks           map[string]map[string]string   //server -> adminid -> ckey
 )
 
 type channel struct {
@@ -130,6 +131,7 @@ func init() {
 	last_ahelp = make(map[string]string)
 	discord_spam_prot_checks = make(map[string]int)
 	discord_spam_prot_bans = make(map[string]bool)
+	discord_ahelp_locks = make(map[string]map[string]string)
 }
 
 func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg string, temporary int) {

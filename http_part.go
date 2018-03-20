@@ -113,7 +113,7 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 			Discord_subsriber_message_send(servername, "bot_status", "New round is about to start (lobby)")
 
 		case "shuttle called":
-			embed.Fields = []*discordgo.MessageEmbedField{&discordgo.MessageEmbedField{Name: "Code:", Value: parsed.Seclevel, Inline: true}, &discordgo.MessageEmbedField{Name: "Reason:", Value: parsed.Reason, Inline: true}}
+			embed.Fields = []*discordgo.MessageEmbedField{&discordgo.MessageEmbedField{Name: "Code:", Value: parsed.Seclevel, Inline: true}, &discordgo.MessageEmbedField{Name: "Reason:", Value: Dsanitize(parsed.Reason), Inline: true}}
 			embed.Title = "SHUTTLE CALLED"
 			Discord_send_embed(servername, "bot_status", embed)
 			Discord_send_embed(servername, "ooc", embed)
