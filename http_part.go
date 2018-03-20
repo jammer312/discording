@@ -102,8 +102,8 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 			color = known_servers[servername].color
 		}
 		embed := &discordgo.MessageEmbed{
-			Color:     color,
-			Timestamp: get_time(),
+			Color: color,
+			//			Timestamp: get_time(),
 		}
 		switch parsed.Status {
 		case "lobby":
