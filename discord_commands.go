@@ -62,6 +62,33 @@ func init() {
 	// ------------
 	// ------------
 	Register_command(Dcommand{
+		Command:   "check_permissions",
+		Minargs:   1,
+		Permlevel: PERMISSIONS_SUPERUSER,
+		Usage:     "[!id]",
+		Desc:      "check permissions for given id",
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
+			usr, err := dsession.User(args[0])
+			if err != nil {
+				return "fail"
+			}
+			switch get_permission_level(usr, server) {
+			case PERMISSIONS_NONE:
+				return "none"
+			case PERMISSIONS_REGISTERED:
+				return "registered"
+			case PERMISSIONS_ADMIN:
+				return "admin"
+			case PERMISSIONS_SUPERUSER:
+				return "superuser"
+			default:
+				return "unknown"
+			}
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(Dcommand{
 		Command:   "reload_admins",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_ADMIN,
