@@ -127,7 +127,9 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 			Timestamp: time.Now().String(),
 			Title:     "I am an Embed",
 		}
-		out, _ := json.Marshal(embed)
+		out, _ := json.Marshal(&discordgo.MessageSend{
+			Embed: embed,
+		})
 		fmt.Println(string(out))
 		Discord_send_embed(servername, "debug", embed)
 		switch parsed.Status {
