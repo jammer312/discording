@@ -98,6 +98,7 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 		Discord_message_send(servername, "debug", "DEBUG:", "RUNTIME", html.UnescapeString(parsed.Message))
 	case "roundstatus":
 		color := 0
+		log.Println("here-2")
 		if servername != "" {
 			color = known_servers[servername].color
 		}
@@ -106,7 +107,6 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 			Timestamp: get_time(),
 			Fields:    make([]*discordgo.MessageEmbedField, 0),
 		}
-		log.Println("here-2")
 		embed := &embedd
 		log.Println("here-1")
 		switch parsed.Status {
