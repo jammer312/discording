@@ -101,16 +101,12 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 		if servername != "" {
 			color = known_servers[servername].color
 		}
-		log.Println("here-4")
-		get_time()
-		log.Println("here-3")
 		embed := &discordgo.MessageEmbed{
 			Color:     color,
 			Timestamp: get_time(),
+			Fields:    make([]*discordgo.MessageEmbedField, 0),
 		}
-		log.Println("here-2")
-		embed.Fields = make([]*discordgo.MessageEmbedField, 0)
-		log.Println("here-1")
+		log.Println(get_time())
 		switch parsed.Status {
 		case "lobby":
 			Discord_subsriber_message_send(servername, "bot_status", "New round is about to start (lobby)")
@@ -131,12 +127,9 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle called")
 
 		case "shuttle recalled":
-			log.Println("here1")
-			field := discordgo.MessageEmbedField{
+			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
 				Value: "**Shuttle recalled**",
-			}
-			log.Println("here2")
-			embed.Fields = append(embed.Fields, &field)
+			})
 			Discord_send_embed(servername, "bot_status", embed)
 			Discord_message_send(servername, "ooc", "", "ROUND STATUS", "Shuttle recalled")
 
