@@ -50,6 +50,8 @@ type universal_parse struct {
 	Seclevel string
 }
 
+type fref []*discordgo.MessageEmbedField
+
 func webhook_handler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "" && r.Method != "GET" {
 		return
@@ -105,7 +107,7 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 		embedd := discordgo.MessageEmbed{
 			Color:     color,
 			Timestamp: get_time(),
-			Fields:    make([]*discordgo.MessageEmbedField, 0),
+			Fields:    make(fref, 0),
 		}
 		log.Println("here-1")
 		embed := &embedd
