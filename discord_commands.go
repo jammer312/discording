@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"log"
+	"math/rand" //dice
 	"sort"
+	"strconv"
 	"strings"
+	"time" //dice
 )
 
 type dcfunc func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string
@@ -255,7 +258,7 @@ func init() {
 		Command:   "channel_remove",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_SUPERUSER,
-		Usage:     "[?1 server] [?1channel_type]",
+		Usage:     "[?server] [?channel_type]",
 		Desc:      "unbind either provided channel type or else one bound to receiving discord channel and forget about it",
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			guild := Get_guild(session, message)
@@ -862,6 +865,75 @@ func init() {
 			ret += "github repo: https://github.com/jammer312/discording\n"
 			ret += "main discord guild: https://discord.gg/T3kZZNR\n"
 			ret += "try typing `!register` , `!help` and `!usage`"
+			return ret
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(Dcommand{
+		Command:   "dice",
+		Minargs:   0,
+		Permlevel: PERMISSIONS_NONE,
+		Temporary: DEL_NEVER,
+		Usage:     "[?sides] [?times] [?mode]",
+		Desc:      "Rolls dice with [0<sides<312] (default: 6) sides [0<times<312] (default: 1) times and outputs result based on given [mode] (default: SUM). Possible modes - SUM, MOD, AVG",
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
+			inputlen := len(args)
+			sides, times := 6, 1
+			mode := "SUM"
+			var err error
+			if inputlen > 0 {
+				sides, err = strconv.Atoi(args[0])
+				if err != nil {
+					return "failed to parse input: " + fmt.Sprint(err)
+				}
+				if sides < 1 {
+					sides = 1
+				}
+				if sides > 312 {
+					sides = 312
+				}
+			}
+			if inputlen > 1 {
+				times, err = strconv.Atoi(args[1])
+				if err != nil {
+					return "failed to parse input: " + fmt.Sprint(err)
+				}
+				if times < 1 {
+					times = 1
+				} else if times > 312 {
+					times = 312
+				}
+			}
+			if inputlen > 2 {
+				smode := args[2]
+				if smode == "MOD" || smode == "AVG" {
+					mode = smode
+				}
+			}
+			ret := fmt.Sprintf("%vd%v %v result: ", times, sides, mode)
+			r := rand.New(rand.NewSource(time.Now().UnixNano()))
+			roll := func() int { return r.Intn(sides) + 1 }
+			switch mode {
+			case "SUM":
+				sum := 0
+				for i := 0; i < times; i++ {
+					sum += roll()
+				}
+				ret += fmt.Sprint(sum)
+			case "AVG":
+				sum := 0
+				for i := 0; i < times; i++ {
+					sum += roll()
+				}
+				ret += fmt.Sprint(sum * 1.0 / times)
+			case "MOD":
+				sum := 0
+				for i := 0; i < times; i++ {
+					sum += roll()
+				}
+				ret += fmt.Sprint(sum % sides)
+			}
 			return ret
 		},
 	})
