@@ -9,7 +9,6 @@ import (
 	"html"
 	"log"
 	"math"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -85,37 +84,59 @@ var last_ahelp map[string]string
 
 var emoji_stripper *regexp.Regexp
 
-func init() {
-	discord_bot_token = os.Getenv("discord_bot_token")
-	if discord_bot_token == "" {
-		log.Fatalln("Failed to retrieve $discord_bot_token")
+// db table app_config {key<->value}
+var config_entries map[string]string
+
+func populate_configs() {
+	defer logging_recover("p_c")
+	config_entries = make(map[string]string)
+	rows, err := Database.Query("select KEY, VALUE from app_config;")
+	if err != nil {
+		panic(err)
 	}
+	for rows.Next() {
+		var key, val string
+		if err = rows.Scan(&key, &val); err != nil {
+			panic(err)
+		}
+		config_entries[key] = val
+	}
+}
+
+func check_config(entry string) bool {
+	_, ok := config_entries[entry]
+	return ok
+}
+
+func get_config(entry string) string {
+	return config_entries[entry]
+}
+
+func get_config_must(entry string) string {
+	val, ok := config_entries[entry]
+	if !ok {
+		panic("Failed to retrieve '" + entry + "'' config entry")
+	}
+	return val
+}
+
+func init() {
+	populate_configs()
+	discord_bot_token = get_config_must("discord_bot_token")
 	dsession.Token = discord_bot_token
 
-	Discord_command_character = os.Getenv("discord_command_character")
-	if Discord_command_character == "" {
-		log.Fatalln("Failed to retrieve $discord_command_character")
-	}
-	discord_superuser_id = os.Getenv("discord_superuser_id")
-	if discord_superuser_id == "" {
-		log.Fatalln("Failed to retrieve $discord_superuser_id")
-	}
+	Discord_command_character = get_config_must("discord_command_character")
+	discord_superuser_id = get_config_must("discord_superuser_id")
+	discord_spam_prot_limit_str := get_config_must("discord_spam_prot_limit")
 	var err error
-	discord_spam_prot_limit_str := os.Getenv("discord_spam_prot_limit")
-	if discord_spam_prot_limit_str == "" {
-		log.Fatalln("Failed to retrieve $discord_spam_prot_limit")
-	}
 	discord_spam_prot_limit, err = strconv.Atoi(discord_spam_prot_limit_str)
 	if err != nil {
-		log.Fatalln("Failed to parse $discord_spam_prot_limit")
+		log.Fatalln("Failed to parse 'discord_spam_prot_limit'")
 	}
-	discord_spam_prot_tick_str := os.Getenv("discord_spam_prot_tick")
-	if discord_spam_prot_tick_str == "" {
-		log.Fatalln("Failed to retrieve $discord_spam_prot_tick")
-	}
+	discord_spam_prot_tick_str := get_config_must("discord_spam_prot_tick")
 	discord_spam_prot_tick, err = strconv.Atoi(discord_spam_prot_tick_str)
 	if err != nil {
-		log.Fatalln("Failed to parse $discord_spam_prot_tick")
+		log.Fatalln("Failed to parse 'discord_spam_prot_tick'")
 	}
 	emoji_stripper = regexp.MustCompile("<a?:.+?:[0-9]{18}?>")
 	local_users = make(map[string]string)
