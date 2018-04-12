@@ -9,3 +9,5 @@
 
 
 env_vars.sh
+# windows case
+*.exe
