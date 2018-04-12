@@ -61,10 +61,10 @@ func prepare_template(name, query string) {
 	db_templates[name] = db_query_template{stmt}
 }
 
-func (dbqt *db_query_template) exec(values ...interface{}) db_query_result {
+func (dbqt *db_query_template) exec(values ...interface{}) *db_query_result {
 	res, err := dbqt.stmt.Exec(values)
 	noerror(err)
-	return db_query_result{res}
+	return &db_query_result{res}
 }
 
 func (dbqr *db_query_result) count() int64 {
@@ -73,8 +73,8 @@ func (dbqr *db_query_result) count() int64 {
 	return affected
 }
 
-func (dbqt *db_query_template) row(values ...interface{}) db_query_row {
-	return db_query_row{dbqt.stmt.QueryRow(dbqt, values)}
+func (dbqt *db_query_template) row(values ...interface{}) *db_query_row {
+	return &db_query_row{dbqt.stmt.QueryRow(dbqt, values)}
 }
 
 func (dbqr *db_query_row) parse(refs ...interface{}) {
@@ -82,10 +82,10 @@ func (dbqr *db_query_row) parse(refs ...interface{}) {
 	noerror(err)
 }
 
-func (dbqt *db_query_template) rows(values ...interface{}) db_query_rows {
+func (dbqt *db_query_template) query(values ...interface{}) *db_query_rows {
 	rows, err := dbqt.stmt.Query(values)
 	noerror(err)
-	return db_query_rows{rows}
+	return &db_query_rows{rows}
 }
 
 func (dbqr *db_query_rows) parse(closure_callback func(), refs ...interface{}) {
@@ -136,9 +136,18 @@ func templates_init() {
 	prepare_template("create_ban", "insert into DISCORD_BANS values($1, $2, $3, $4, $5);")
 	prepare_template("remove_ban", "delete from DISCORD_BANS where CKEY = $1 and PERMISSION <= $2::numeric;")
 	prepare_template("select_onetime_sub", "select * from DISCORD_ONETIME_SUBSCRIPTIONS where USERID=$1 and GUILDID=$2 and SRVNAME=$3;")
-	prepare_template("select_onetime_subs", "select USERID, GUILDID, SRVNAME from DISCORD_ONETIME_SUBSCRIPTIONS;")
+	prepare_template("select_onetime_subs", "select USERID, GUILDID, SRVNAME from DISCORD_ONETIME_SUBSCRIPTIONS where SRVNAME=$1;")
 	prepare_template("create_onetime_sub", "insert into DISCORD_ONETIME_SUBSCRIPTIONS values($1,$2,$3);")
 	prepare_template("remove_onetime_subs", "delete from DISCORD_ONETIME_SUBSCRIPTIONS where SRVNAME = $1;")
+	prepare_template("select_configs", "select KEY, VALUE from app_config;")
+}
+
+func db_template(name string) *db_query_template {
+	template, ok := db_templates[name]
+	if !ok {
+		panic("no template named '" + name + "'")
+	}
+	return &template
 }
 
 //cleanup

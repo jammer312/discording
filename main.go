@@ -21,6 +21,19 @@ func logging_recover(ctx string) {
 	}
 }
 
+func recovering_callback(callback func()) {
+	if r := recover(); r != nil {
+		callback()
+	}
+}
+
+func logging_pass(ctx string) {
+	if r := recover(); r != nil {
+		log.Println("ERR: ["+ctx+"]:", r)
+		panic(r)
+	}
+}
+
 func rise_error(app string) {
 	if r := recover(); r != nil {
 		panic(fmt.Sprintf("[%v]:%v", app, r))

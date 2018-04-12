@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/google/uuid"
@@ -91,17 +90,12 @@ var config_entries map[string]string
 func populate_configs() {
 	defer logging_recover("p_c")
 	config_entries = make(map[string]string)
-	rows, err := Database.Query("select KEY, VALUE from app_config;")
-	if err != nil {
-		panic(err)
-	}
-	for rows.Next() {
-		var key, val string
-		if err = rows.Scan(&key, &val); err != nil {
-			panic(err)
-		}
+
+	var key, val string
+	closure_callback := func() {
 		config_entries[key] = val
 	}
+	db_template("select_configs").query().parse(closure_callback, &key, &val)
 }
 
 func check_config(entry string) bool {
@@ -536,10 +530,6 @@ func trim(str string) string {
 
 func populate_known_channels() {
 	defer logging_recover("pkc")
-	rows, err := Database.Query("select CHANTYPE, CHANID, SRVNAME from DISCORD_CHANNELS")
-	if err != nil {
-		panic(err)
-	}
 	for k := range known_channels_id_t {
 		delete(known_channels_id_t, k)
 	} //clear id->type pairs
@@ -549,19 +539,12 @@ func populate_known_channels() {
 		}
 		delete(known_channels_s_t_id_m, k)
 	} //clear server->type->ids and server->type
-	for rows.Next() {
-		var ch, id, srv string
-		if terr := rows.Scan(&ch, &id, &srv); terr != nil {
-			log.Println("DB ERROR: ", terr)
-			continue
-		}
-		ch = trim(ch)
-		id = trim(id)
-		srv = trim(srv)
+	var ch, id, srv string
+	clcllb := func() {
 		known_channels_id_t[id] = channel{ch, srv}
 		if srv == "" {
 			log.Println("DB: setting `" + id + "` to '" + srv + "@" + ch + "';")
-			continue
+			return
 		}
 		srvchans, ok := known_channels_s_t_id_m[srv]
 		if !ok {
@@ -575,45 +558,28 @@ func populate_known_channels() {
 		known_channels_s_t_id_m[srv] = srvchans // not needed since maps are references, but it's nice for readability
 		log.Println("DB: setting `" + id + "` to '" + srv + "@" + ch + "';")
 	}
+	db_template("select_known_channels").query().parse(clcllb, &ch, &id, &srv)
 }
 
 func add_known_channel(srv, t, id, gid string) bool {
-	result, err := Database.Exec("insert into DISCORD_CHANNELS values ($1, $2, $3, $4);", t, id, gid, srv)
-	if err != nil {
-		log.Println("DB ERROR: failed to insert: ", err)
-		return false
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		log.Println("DB ERROR: failed to retrieve amount of rows affected: ", err)
-		return false
-	}
-	if affected > 0 {
-		populate_known_channels() //update everything
+	defer logging_recover("akc")
+	if db_template("add_known_channel").exec(t, id, gid, srv).count() > 0 {
+		populate_known_channels()
 		return true
 	}
 	return false
 }
 
 func Remove_known_channels(srv, t, gid string) bool {
-	var result sql.Result
-	var err error
+	defer logging_recover("rkc")
+	var res *db_query_result
 	if gid == "" {
-		result, err = Database.Exec("delete from DISCORD_CHANNELS where CHANTYPE = $1 and SRVNAME = $2;", t, srv)
+		res = db_template("remove_known_channels").exec(t, srv)
 	} else {
-		result, err = Database.Exec("delete from DISCORD_CHANNELS where CHANTYPE = $1 and GUILDID = $2 and SRVNAME = $3;", t, gid, srv)
+		res = db_template("remove_known_channels_guild").exec(t, gid, srv)
 	}
-	if err != nil {
-		log.Println("DB ERROR: failed to delete: ", err)
-		return false
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		log.Println("DB ERROR: failed to retrieve amount of rows affected: ", err)
-		return false
-	}
-	if affected > 0 {
-		populate_known_channels() //update everything
+	if res.count() > 0 {
+		populate_known_channels()
 		return true
 	}
 	return false
@@ -628,17 +594,8 @@ func List_known_channels() string {
 }
 
 func Update_known_channel(srv, t, id, gid string) bool {
-	result, err := Database.Exec("update DISCORD_CHANNELS set CHANID = $2 where CHANTYPE = $1 and GUILDID = $3 and SRVNAME = $4;", t, id, gid, srv)
-	if err != nil {
-		log.Println("DB ERROR: failed to update: ", err)
-		return false
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		log.Println("DB ERROR: failed to retrieve amount of rows affected: ", err)
-		return false
-	}
-	if affected > 0 {
+	logging_recover("ukc")
+	if db_template("update_known_channel").exec(t, id, gid, srv).count() > 0 {
 		populate_known_channels() //update everything
 		return true
 	} else {
@@ -647,67 +604,34 @@ func Update_known_channel(srv, t, id, gid string) bool {
 }
 
 func Remove_token(ttype, data string) bool {
-	result, err := Database.Exec("delete from DISCORD_TOKENS where TYPE = $1 and DATA = $2;", ttype, data)
-	if err != nil {
-		log.Println("DB ERROR: failed to delete: ", err)
-		return false
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		log.Println("DB ERROR: failed to retrieve amount of rows affected: ", err)
-		return false
-	}
-	if affected > 0 {
+	logging_recover("rt")
+	if db_template("remove_token").exec(ttype, data).count() > 0 {
 		return true
 	}
 	return false
 }
 
 func remove_token_by_id(id string) bool {
-	result, err := Database.Exec("delete from DISCORD_TOKENS where TOKEN = $1;", id)
-	if err != nil {
-		log.Println("DB ERROR: failed to delete: ", err)
-		return false
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		log.Println("DB ERROR: failed to retrieve amount of rows affected: ", err)
-		return false
-	}
-	if affected > 0 {
+	logging_recover("rtbi")
+	if db_template("remove_token_by_id").exec(id).count() > 0 {
 		return true
 	}
 	return false
 }
 
 func Create_token(ttype, data string) string {
+	logging_recover("ct")
 	id := uuid.New().String()
-	result, err := Database.Exec("insert into DISCORD_TOKENS values ($1, $2, $3);", id, ttype, data)
-	if err != nil {
-		log.Println("DB ERROR: failed to insert: ", err)
-		return ""
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		log.Println("DB ERROR: failed to retrieve amount of rows affected: ", err)
-		return ""
-	}
-	if affected > 0 {
+	if db_template("create_token").exec(id, ttype, data).count() > 0 {
 		return id
 	}
 	return ""
 }
 
 func expend_token(id string) (ttype, data string) {
-	row := Database.QueryRow("select TYPE, DATA from DISCORD_TOKENS where TOKEN = $1", id)
-	err := row.Scan(&ttype, &data)
-	if err != nil {
-		log.Println("DB ERROR: failed to retrieve token data: ", err)
-		return
-	}
+	logging_recover("et")
+	db_template("select_token").row(id).parse(&ttype, &data)
 	remove_token_by_id(id)
-	ttype = trim(ttype)
-	data = trim(data)
 	return
 }
 
@@ -724,19 +648,10 @@ func Discord_process_token(id, ckey string) {
 }
 
 func register_user(login, ckey string) {
-	defer logging_recover("ru:")
-	_, err := Database.Exec("delete from DISCORD_REGISTERED_USERS where DISCORDID = $1;", login)
-	if err != nil {
-		panic(err)
-	}
-	_, err = Database.Exec("delete from DISCORD_REGISTERED_USERS where CKEY = $1;", ckey)
-	if err != nil {
-		panic(err)
-	}
-	_, err = Database.Exec("insert into DISCORD_REGISTERED_USERS values ($1, $2);", login, ckey)
-	if err != nil {
-		panic(err)
-	}
+	defer logging_recover("ru")
+	db_template("delete_user_did").exec(login)
+	db_template("delete_user_ckey").exec(ckey)
+	db_template("register_user").exec(login, ckey)
 	update_local_user(login)
 	user, err := dsession.User(login)
 	if err != nil {
@@ -746,34 +661,19 @@ func register_user(login, ckey string) {
 }
 
 func update_local_users() {
-	rows, err := Database.Query("select DISCORDID, CKEY from DISCORD_REGISTERED_USERS")
-	if err != nil {
-		log.Println("DB ERROR: failed to retrieve known channels: ", err)
-		return
-	}
+	defer logging_recover("ulus")
 	for k := range local_users {
 		delete(local_users, k)
 	}
-	for rows.Next() {
-		var login, ckey string
-		if terr := rows.Scan(&login, &ckey); terr != nil {
-			log.Println("DB ERROR: ", terr)
-			continue
-		}
-		login = trim(login)
-		ckey = trim(ckey)
+	var login, ckey string
+	db_template("select_users").query().parse(func() {
 		local_users[login] = ckey
-	}
+	}, &login, &ckey)
 }
 
 func update_local_user(login string) (ckey string) {
-	row := Database.QueryRow("select CKEY from DISCORD_REGISTERED_USERS where DISCORDID = $1", login)
-	err := row.Scan(&ckey)
-	if err != nil {
-		log.Println("DB ERROR: failed to retrieve token data: ", err)
-		return
-	}
-	ckey = trim(ckey)
+	defer logging_recover("ulu")
+	db_template("select_user").row(login).parse(&ckey)
 	for l, c := range local_users {
 		if l == login || c == ckey {
 			delete(local_users, l)
@@ -784,28 +684,15 @@ func update_local_user(login string) (ckey string) {
 }
 
 func populate_known_roles() {
-	rows, err := Database.Query("select GUILDID, ROLEID, ROLETYPE, SRVNAME from DISCORD_ROLES")
-	if err != nil {
-		log.Println("DB ERROR: failed to retrieve known roles: ", err)
-		return
-	}
-	//clean known
+	logging_recover("pkr")
 	for k := range discord_player_roles {
 		delete(discord_player_roles, k)
 	}
 	for k := range discord_admin_roles {
 		delete(discord_admin_roles, k)
 	}
-	for rows.Next() {
-		var gid, rid, tp, srv string
-		if terr := rows.Scan(&gid, &rid, &tp, &srv); terr != nil {
-			log.Println("DB ERROR: ", terr)
-			continue
-		}
-		gid = trim(gid)
-		rid = trim(rid)
-		tp = trim(tp)
-		srv = trim(srv)
+	var gid, rid, tp, srv string
+	closure_callback := func() {
 		switch tp {
 		case ROLE_PLAYER:
 			discord_player_roles[gid] = rid
@@ -827,53 +714,27 @@ func populate_known_roles() {
 			m[srv] = rid
 		}
 	}
+	db_template("select_known_roles").query().parse(closure_callback, &gid, &rid, &tp, &srv)
 }
 func update_known_role(gid, tp, rid, srv string) bool {
-	result, err := Database.Exec("update DISCORD_ROLES set ROLEID = $1 where GUILDID = $2 and ROLETYPE = $3 and SRVNAME = $4;", rid, gid, tp, srv)
-	if err != nil {
-		log.Println("DB ERROR: failed to update: ", err)
-		return false
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		log.Println("DB ERROR: failed to retrieve amount of rows affected: ", err)
-		return false
-	}
-	if affected > 0 {
+	defer logging_recover("ukr")
+	if db_template("update_known_role").exec(rid, gid, tp, srv).count() > 0 {
 		populate_known_roles()
 		return true
 	}
 	return create_known_role(gid, tp, rid, srv)
 }
 func create_known_role(gid, tp, rid, srv string) bool {
-	result, err := Database.Exec("insert into DISCORD_ROLES values($1, $2, $3, $4);", gid, rid, tp, srv)
-	if err != nil {
-		log.Println("DB ERROR: failed to insert: ", err)
-		return false
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		log.Println("DB ERROR: failed to retrieve amount of rows affected: ", err)
-		return false
-	}
-	if affected > 0 {
+	defer logging_recover("ckr")
+	if db_template("create_known_role").exec(gid, rid, tp, srv).count() > 0 {
 		populate_known_roles()
 		return true
 	}
 	return false
 }
 func remove_known_role(gid, tp, srv string) bool {
-	result, err := Database.Exec("delete from DISCORD_ROLES where GUILDID = $1 and ROLETYPE = $2 and SRVNAME = $3;", gid, tp, srv)
-	if err != nil {
-		log.Println("DB ERROR: failed to delete: ", err)
-		return false
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		log.Println("DB ERROR: failed to retrieve amount of rows affected: ", err)
-		return false
-	}
-	if affected > 0 {
+	defer logging_recover("rkr")
+	if db_template("remove_known_role").exec(gid, tp, srv).count() > 0 {
 		populate_known_roles()
 		return true
 	}
@@ -881,77 +742,39 @@ func remove_known_role(gid, tp, srv string) bool {
 }
 
 func populate_bans() {
-	rows, err := Database.Query("select CKEY, REASON, ADMIN, TYPE, PERMISSION from DISCORD_BANS")
-	if err != nil {
-		log.Println("DB ERROR: failed to retrieve known bans: ", err)
-		return
-	}
+	defer logging_recover("pb")
 	//clean known
 	for k := range known_bans {
 		delete(known_bans, k)
 	}
-	for rows.Next() {
-		var ckey, reason, admin string
-		var bantype, permission int
-		if terr := rows.Scan(&ckey, &reason, &admin, &bantype, &permission); terr != nil {
-			log.Println("DB ERROR: ", terr)
-		}
-		ckey = trim(ckey)
-		reason = trim(reason)
-		admin = trim(admin)
+	var ckey, reason, admin string
+	var bantype, permission int
+	closure_callback := func() {
 		known_bans[ckey] = dban{reason, admin, bantype, permission}
 	}
+	db_template("select_bans").query().parse(closure_callback, &ckey, &reason, &admin, &bantype, &permission)
 }
 
 func update_ban(ckey, reason string, user *discordgo.User, tp int) bool {
+	defer logging_recover("ub")
 	ckey = strings.ToLower(ckey)
 	permissions := get_permission_level(user, "")
 	if permissions < PERMISSIONS_ADMIN {
 		return false
 	}
 	admin := local_users[user.ID]
-	result, err := Database.Exec("SELECT * from DISCORD_BANS where CKEY = $1 ;", ckey)
-	if err != nil {
-		log.Println("DB ERROR: failed to select: ", err)
-		return false
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		log.Println("DB ERROR: failed to retrieve amount of rows affected: ", err)
-		return false
-	}
-	if affected > 0 {
+	if db_template("select_ban").exec(ckey).count() > 0 {
 		bn, ok := known_bans[ckey]
 		if ok {
 			tp |= bn.bantype
 		}
-		result, err = Database.Exec("update DISCORD_BANS set TYPE = $1::numeric where CKEY = $3 and PERMISSION <= $2::numeric ;", tp, permissions, ckey)
-		if err != nil {
-			log.Println("DB ERROR: failed to update: ", err)
-			return false
-		}
-		affected, err := result.RowsAffected()
-		if err != nil {
-			log.Println("DB ERROR: failed to retrieve amount of rows affected: ", err)
-			return false
-		}
-		if affected > 0 {
+		if db_template("update_ban").exec(tp, permissions, ckey).count() > 0 {
 			populate_bans()
 			return true
 		}
 	} else {
 		// no such entry, create new
-		result, err = Database.Exec("insert into DISCORD_BANS values($1, $2, $3, $4, $5) ;", ckey, admin, reason, tp, permissions)
-		if err != nil {
-			log.Println("DB ERROR: failed to update: ", err)
-			return false
-		}
-		affected, err = result.RowsAffected()
-		if err != nil {
-			log.Println("DB ERROR: failed to retrieve amount of rows affected: ", err)
-			return false
-		}
-		if affected > 0 {
+		if db_template("create_ban").exec(ckey, admin, reason, tp, permissions).count() > 0 {
 			populate_bans()
 			return true
 		}
@@ -960,22 +783,13 @@ func update_ban(ckey, reason string, user *discordgo.User, tp int) bool {
 }
 
 func remove_ban(ckey string, user *discordgo.User) bool {
+	defer logging_recover("rb")
 	ckey = strings.ToLower(ckey)
 	permissions := get_permission_level(user, "")
 	if permissions < PERMISSIONS_ADMIN {
 		return false
 	}
-	result, err := Database.Exec("delete from DISCORD_BANS where CKEY = $1 and PERMISSION <= $2::numeric ;", ckey, permissions)
-	if err != nil {
-		log.Println("DB ERROR: failed to update: ", err)
-		return false
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		log.Println("DB ERROR: failed to retrieve amount of rows affected: ", err)
-		return false
-	}
-	if affected > 0 {
+	if db_template("remove_ban").exec(ckey, permissions).count() > 0 {
 		populate_bans()
 		return true
 	}
@@ -1060,12 +874,9 @@ func unsubscribe_user(guildid, userid, srv string) bool {
 }
 
 func subscribe_user_once(guildid, userid, srv string) bool {
-	ret := count_query("select * from DISCORD_ONETIME_SUBSCRIPTIONS where USERID = '" + userid + "' and GUILDID = '" + guildid + "' and SRVNAME = '" + srv + "';")
-	if ret == -1 {
-		return false
-	}
-	if ret == 0 {
-		if count_query("insert into DISCORD_ONETIME_SUBSCRIPTIONS values('"+userid+"','"+guildid+"','"+srv+"');") < 1 {
+	defer logging_recover("suo")
+	if db_template("select_onetime_sub").exec(userid, guildid, srv).count() == 0 {
+		if db_template("create_onetime_sub").exec(userid, guildid, srv).count() == 0 {
 			return false
 		}
 	}
@@ -1073,26 +884,15 @@ func subscribe_user_once(guildid, userid, srv string) bool {
 }
 
 func flush_onetime_subscriptions(servername string) {
+	defer logging_recover("fos")
 	for k, v := range discord_onetime_subscriptions {
 		for l := range v {
 			delete(v, l)
 		}
 		delete(discord_onetime_subscriptions, k)
 	} //delete in any case
-	rows, err := Database.Query("select USERID, GUILDID, SRVNAME from DISCORD_ONETIME_SUBSCRIPTIONS;")
-	if err != nil {
-		log.Println("DB ERROR: failed to retrieve subs: ", err)
-		return
-	}
-	for rows.Next() {
-		var userid, guildid, srv string
-		if terr := rows.Scan(&userid, &guildid, &srv); terr != nil {
-			log.Println("DB ERROR: ", terr)
-			continue
-		}
-		userid = trim(userid)
-		guildid = trim(guildid)
-		srv = trim(srv)
+	var userid, guildid, srv string
+	closure_callback := func() {
 		_, ok := discord_onetime_subscriptions[guildid]
 		if !ok {
 			discord_onetime_subscriptions[guildid] = make(map[string]string)
@@ -1106,10 +906,8 @@ func flush_onetime_subscriptions(servername string) {
 		}
 		gsubs[srv] = crstr + "<@!" + userid + ">"
 	}
-	_, err = Database.Exec("delete from DISCORD_ONETIME_SUBSCRIPTIONS;")
-	if err != nil {
-		log.Println("ERROR: del: ", err)
-	}
+	db_template("select_onetime_subs").query(servername).parse(closure_callback, &userid, &guildid, &srv)
+	db_template("remove_onetime_subs").exec(servername)
 }
 
 func login_user(guildid, userid string) bool {
