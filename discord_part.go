@@ -110,7 +110,7 @@ func get_config(entry string) string {
 func get_config_must(entry string) string {
 	val, ok := config_entries[entry]
 	if !ok {
-		panic("Failed to retrieve '" + entry + "'' config entry")
+		panic("Failed to retrieve '" + entry + "' config entry")
 	}
 	return val
 }
