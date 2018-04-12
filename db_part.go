@@ -24,18 +24,10 @@ func add_table(tbls table_schema) {
 	database_schema.tables = append(database_schema.tables, tbls)
 }
 
-//TODO: check and correct actual field width
-
 const (
 	text_db_type = "text"
 	int_bd_type  = "numeric"
 )
-
-// //should update/create all necessary tables and all that
-// //returns success state
-// func update_db() bool {
-
-// }
 
 type db_query_template struct {
 	stmt *sql.Stmt
@@ -238,4 +230,28 @@ func schema_init() {
 				"": "",
 			},})
 	*/
+	database_schema.deploy_db()
+}
+
+//create missing tables
+//TODO: add automatic db alteration
+func (dbs *db_schema) deploy_db() {
+	for _, v := range dbs.tables {
+		tps := v.typestring()
+		cmd := "CREATE TABLE IF NOT EXISTS " + v.name + " " + tps
+		log.Println(cmd)
+	}
+}
+
+func (tbs *table_schema) typestring() string {
+	ret := "("
+	first := true
+	for k, v := range fields {
+		if !first {
+			ret += ", "
+		}
+		ret += k + " " + v
+		first = false
+	}
+	ret += ")"
 }
