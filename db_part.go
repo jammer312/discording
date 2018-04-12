@@ -246,7 +246,7 @@ func (dbs *db_schema) deploy_db() {
 func (tbs *table_schema) typestring() string {
 	ret := "("
 	first := true
-	for k, v := range fields {
+	for k, v := range tbs.fields {
 		if !first {
 			ret += ", "
 		}
@@ -254,4 +254,5 @@ func (tbs *table_schema) typestring() string {
 		first = false
 	}
 	ret += ")"
+	return ret
 }
