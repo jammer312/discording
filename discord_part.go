@@ -380,7 +380,7 @@ func Discord_subsriber_message_send(servername, channel, message string) {
 	if !ok || len(channels) < 1 {
 		return
 	}
-	flush_onetime_subscriptions()
+	flush_onetime_subscriptions(servername)
 	for _, id := range channels {
 		chann, cerr := dsession.Channel(id)
 		if cerr != nil {
@@ -1072,14 +1072,14 @@ func subscribe_user_once(guildid, userid, srv string) bool {
 	return true
 }
 
-func flush_onetime_subscriptions() {
+func flush_onetime_subscriptions(servername string) {
 	for k, v := range discord_onetime_subscriptions {
 		for l := range v {
 			delete(v, l)
 		}
 		delete(discord_onetime_subscriptions, k)
 	} //delete in any case
-	rows, err := Database.Query("select USERID, GUILDID, SRVNAME from DISCORD_ONETIME_SUBSCRIPTIONS ;")
+	rows, err := Database.Query("select USERID, GUILDID, SRVNAME from DISCORD_ONETIME_SUBSCRIPTIONS;")
 	if err != nil {
 		log.Println("DB ERROR: failed to retrieve subs: ", err)
 		return

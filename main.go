@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -8,9 +9,27 @@ import (
 	"time"
 )
 
+func logging_crash(ctx string) {
+	if r := recover(); r != nil {
+		log.Fatalln("ERRF: ["+ctx+"]:", r)
+	}
+}
+
 func logging_recover(ctx string) {
 	if r := recover(); r != nil {
 		log.Println("ERR: ["+ctx+"]:", r)
+	}
+}
+
+func rise_error(app string) {
+	if r := recover(); r != nil {
+		panic(fmt.Sprintf("[%v]:%v", app, r))
+	}
+}
+
+func noerror(err error) {
+	if err != nil {
+		panic(err)
 	}
 }
 
@@ -83,14 +102,16 @@ func init_time() {
 }
 
 func main() {
+	db_init()
 	init_time()
 	populate_servers()
 	Dopen()              //start discord
 	srv := Http_server() //start web server
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
-	<-sc     //wait for SIGINT or kinda it
-	Dclose() //stop discord
+	<-sc        //wait for SIGINT or kinda it
+	Dclose()    //stop discord
+	db_deinit() //clean db templates
 	//graceful shutdown for web server
 	if err := srv.Shutdown(nil); err != nil {
 		log.Fatal("Failed to shutdown webserver: ", err)
