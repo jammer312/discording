@@ -48,7 +48,7 @@ type db_query_rows struct {
 var db_templates map[string]db_query_template // name -> template
 
 func (dbqt *db_query_template) exec(values ...interface{}) *db_query_result {
-	res, err := dbqt.stmt.Exec(values)
+	res, err := dbqt.stmt.Exec(values...)
 	noerror(err)
 	return &db_query_result{res}
 }
@@ -60,24 +60,23 @@ func (dbqr *db_query_result) count() int64 {
 }
 
 func (dbqt *db_query_template) row(values ...interface{}) *db_query_row {
-	return &db_query_row{dbqt.stmt.QueryRow(dbqt, values)}
+	return &db_query_row{dbqt.stmt.QueryRow(values...)}
 }
 
 func (dbqr *db_query_row) parse(refs ...interface{}) {
-	err := dbqr.row.Scan(refs)
+	err := dbqr.row.Scan(refs...)
 	noerror(err)
 }
 
 func (dbqt *db_query_template) query(values ...interface{}) *db_query_rows {
-	log.Println("DEBUG: ", values)
-	rows, err := dbqt.stmt.Query(values)
+	rows, err := dbqt.stmt.Query(values...)
 	noerror(err)
 	return &db_query_rows{rows}
 }
 
 func (dbqr *db_query_rows) parse(closure_callback func(), refs ...interface{}) {
 	for dbqr.rows.Next() {
-		terr := dbqr.rows.Scan(refs)
+		terr := dbqr.rows.Scan(refs...)
 		noerror(terr)
 		closure_callback()
 	}
