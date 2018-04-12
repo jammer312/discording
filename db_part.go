@@ -69,6 +69,7 @@ func (dbqr *db_query_row) parse(refs ...interface{}) {
 }
 
 func (dbqt *db_query_template) query(values ...interface{}) *db_query_rows {
+	log.Println("DEBUG: ", values)
 	rows, err := dbqt.stmt.Query(values)
 	noerror(err)
 	return &db_query_rows{rows}
