@@ -239,7 +239,8 @@ func (dbs *db_schema) deploy_db() {
 	for _, v := range dbs.tables {
 		tps := v.typestring()
 		cmd := "CREATE TABLE IF NOT EXISTS " + v.name + " " + tps
-		log.Println(cmd)
+		_, err := Database.Exec(cmd)
+		noerror(err)
 	}
 }
 
