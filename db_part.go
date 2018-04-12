@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	_ "github.com/lib/pq"
+	"log"
 	"os"
 )
 
@@ -53,13 +54,6 @@ type db_query_rows struct {
 }
 
 var db_templates map[string]db_query_template // name -> template
-
-func prepare_template(name, query string) {
-	defer rise_error(name)
-	stmt, err := Database.Prepare(query)
-	noerror(err)
-	db_templates[name] = db_query_template{stmt}
-}
 
 func (dbqt *db_query_template) exec(values ...interface{}) *db_query_result {
 	res, err := dbqt.stmt.Exec(values)
@@ -140,6 +134,14 @@ func templates_init() {
 	prepare_template("create_onetime_sub", "insert into DISCORD_ONETIME_SUBSCRIPTIONS values($1,$2,$3);")
 	prepare_template("remove_onetime_subs", "delete from DISCORD_ONETIME_SUBSCRIPTIONS where SRVNAME = $1;")
 	prepare_template("select_configs", "select KEY, VALUE from app_config;")
+}
+
+func prepare_template(name, query string) {
+	defer rise_error(name)
+	stmt, err := Database.Prepare(query)
+	noerror(err)
+	db_templates[name] = db_query_template{stmt}
+	log.Println("Adding template '" + name + "'")
 }
 
 func db_template(name string) *db_query_template {
