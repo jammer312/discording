@@ -326,7 +326,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			reply(session, message, "you were logged off because of missing registration entry (try !register)", DEL_NEVER)
 			return
 		} else {
-			reply(session, message, "no registration entry found + automatic logoff failed (probably because broken permissions); your message weren't delivered, register (!register) to be able to use OOC; also ask guild admins to fix bot's permissions", DEL_DEFAULT)
+			reply(session, message, "no registration entry found + automatic logoff failed (probably because broken permissions); your message weren't delivered, register (!register) to be able to use OOC; also ask guild admins to fix bot's permissions", DEL_NEVER)
 			return
 		}
 	}
