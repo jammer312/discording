@@ -115,7 +115,7 @@ func get_config_must(entry string) string {
 	return val
 }
 
-func init() {
+func discord_init() {
 	populate_configs()
 	discord_bot_token = get_config_must("discord_bot_token")
 	dsession.Token = discord_bot_token
