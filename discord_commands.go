@@ -860,11 +860,13 @@ func init() {
 		Permlevel: PERMISSIONS_NONE,
 		Usage:     "",
 		Desc:      "prints some info about bot",
+		Temporary: DEL_LONG,
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			ret := "opensource golang bot for ss13<->discord\n"
 			ret += "github repo: https://github.com/jammer312/discording\n"
 			ret += "main discord guild: https://discord.gg/T3kZZNR\n"
-			ret += "try typing `!register` , `!help` and `!usage`"
+			ret += "try typing `!register` , `!help` and `!usage`\n"
+			ret += "or maybe check out https://forum.ss13.ru/index.php?showtopic=18451"
 			return ret
 		},
 	})

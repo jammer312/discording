@@ -1040,18 +1040,21 @@ func spam_ticker(quit chan int) {
 
 var spamticker chan int
 
+func set_status() {
+	defer rise_error("s_s")
+	noerror(dsession.UpdateStatus(0, "!info"))
+}
+
 func Dopen() {
+	defer logging_crash("Do")
 	var err error
 	dsession.State.User, err = dsession.User("@me")
-	if err != nil {
-		log.Fatalln("User fetch error: ", err)
-	}
+	noerror(err)
 	discord_bot_user_id = dsession.State.User.ID
 	err = dsession.Open()
-	if err != nil {
-		log.Fatalln("Session Open error: ", err)
-	}
+	noerror(err)
 	log.Print("Successfully connected to discord, now running as ", dsession.State.User)
+	set_status()
 	populate_known_channels()
 	update_local_users()
 	populate_known_roles()
@@ -1065,12 +1068,11 @@ func Dopen() {
 }
 
 func Dclose() {
+	defer logging_crash("Dc")
 	for _, srv := range known_servers {
 		Discord_message_send(srv.name, "bot_status", "BOT", "STATUS UPDATE", "shutting down due to host request.")
 	}
 	stop_spam_ticker(spamticker)
 	err := dsession.Close()
-	if err != nil {
-		log.Fatal("Failed to close dsession: ", err)
-	}
+	noerror(err)
 }
