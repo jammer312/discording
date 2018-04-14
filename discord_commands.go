@@ -22,6 +22,7 @@ type Dcommand struct {
 	functional      dcfunc
 	Temporary       int
 	Server_specific bool
+	Command_nodel   bool
 }
 
 var Known_commands map[string]Dcommand
@@ -937,6 +938,50 @@ func init() {
 				ret += fmt.Sprint(sum % sides)
 			}
 			return ret
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(Dcommand{
+		Command:       "bind_status",
+		Minargs:       1,
+		Permlevel:     PERMISSIONS_SUPERUSER,
+		Usage:         "[!server]",
+		Desc:          "bind dynamic embed for server status to this channel",
+		Command_nodel: true,
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
+			srv := args[0]
+			chn := message.ChannelID
+			msg := message.Message.ID
+			_, ok := known_servers[srv]
+			if !ok {
+				return "no such known server"
+			}
+			if !bind_server_embed(srv, chn, msg) {
+				return "failed to bind embed"
+			}
+			return "OK"
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(Dcommand{
+		Command:   "unbind_status",
+		Minargs:   1,
+		Permlevel: PERMISSIONS_SUPERUSER,
+		Usage:     "[!server]",
+		Desc:      "unbind dynamic embed for server status from this channel",
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
+			srv := args[0]
+			chn := message.ChannelID
+			_, ok := known_servers[srv]
+			if !ok {
+				return "no such known server"
+			}
+			if !unbind_server_embed(srv, chn) {
+				return "failed to unbind embed"
+			}
+			return "OK"
 		},
 	})
 	// ------------

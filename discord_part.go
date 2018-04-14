@@ -264,7 +264,6 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			return
 		}
 		//it's command
-		defer delcommand(session, message)
 		var server string
 		srvstr, ok := known_channels_id_t[message.ChannelID]
 		if ok {
@@ -273,6 +272,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		args := strings.Fields(mcontent[1:])
 		command := strings.ToLower(args[0])
 		if check_bans(message.Author, BANTYPE_COMMANDS, false) != "" && command != "baninfo" {
+			defer delcommand(session, message)
 			reply(session, message, "you're banned from this action. Try !baninfo", DEL_DEFAULT)
 			return
 		}
@@ -284,8 +284,12 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		log.Println(message.Author.String() + " c-> " + message.ContentWithMentionsReplaced())
 		dcomm, ok := Known_commands[command]
 		if !ok {
+			defer delcommand(session, message)
 			reply(session, message, "unknown command: `"+Dweaksanitize(command)+"`", DEL_DEFAULT)
 			return
+		}
+		if !dcomm.Command_nodel {
+			defer delcommand(session, message)
 		}
 		if server == "" && dcomm.Server_specific {
 			reply(session, message, "this command requires channel to be bound to server", DEL_DEFAULT)
@@ -454,6 +458,7 @@ func Discord_message_send_raw(servername, channel, message string) {
 		}
 	}
 }
+
 func Discord_send_embed(servername, channel string, embed *discordgo.MessageEmbed) {
 	defer logging_recover("Dse")
 	srvchans, ok := known_channels_s_t_id_m[servername]
@@ -471,6 +476,13 @@ func Discord_send_embed(servername, channel string, embed *discordgo.MessageEmbe
 		}
 	}
 }
+
+func Discord_replace_embed(channelid, messageid string, embed *discordgo.MessageEmbed) {
+	defer logging_recover("Dre")
+	_, err := dsession.ChannelMessageEditEmbed(channelid, messageid, embed)
+	noerror(err)
+}
+
 func Discord_message_propagate(servername, channel, prefix, ckey, message, chanid string) {
 	//given channel id and other params sends message to all channels except specified one
 	defer logging_recover("Dmp")

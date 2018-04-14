@@ -126,6 +126,10 @@ func templates_init() {
 	prepare_template("create_onetime_sub", "insert into DISCORD_ONETIME_SUBSCRIPTIONS values($1,$2,$3);")
 	prepare_template("remove_onetime_subs", "delete from DISCORD_ONETIME_SUBSCRIPTIONS where SRVNAME = $1;")
 	prepare_template("select_configs", "select KEY, VALUE from app_config;")
+	prepare_template("select_dynembeds", "select server, channelid, messageid from dynamic_embeds;")
+	prepare_template("update_dynembed", "update dynamic_embeds set messageid=$3 where server=$1 and channelid=$2;")
+	prepare_template("create_dynembed", "insert into dynamic_embeds values($1,$2,$3);")
+	prepare_template("remove_dynembed", "delete from dynamic_embeds where server=$1 and channelid=$2;")
 }
 
 func prepare_template(name, query string) {
@@ -221,6 +225,14 @@ func schema_init() {
 		fields: map[string]string{
 			"key":   text_db_type,
 			"value": text_db_type,
+		}})
+
+	add_table(table_schema{
+		name: "dynamic_embeds",
+		fields: map[string]string{
+			"server":    text_db_type,
+			"channelid": text_db_type,
+			"messageid": text_db_type,
 		}})
 
 	/*

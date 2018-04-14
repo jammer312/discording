@@ -5,11 +5,12 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/bwmarrin/discordgo"
 	"golang.org/x/text/encoding/charmap"
 	"log"
 	"net"
 	"net/url"
-	// "strings"
+	"strings"
 	"time"
 )
 
@@ -18,8 +19,11 @@ const (
 	ByondTypeFLOAT  byte = 0x2a
 	ByondTypeSTRING byte = 0x06
 
-	byond_request_timeout  int = 60 //in seconds
-	byond_response_timeout int = 60 //in seconds
+	//in seconds
+	byond_request_timeout      int = 60
+	byond_response_timeout     int = 60
+	byond_fastrequest_timeout  int = 1
+	byond_fastresponse_timeout int = 1
 )
 
 type Byond_response struct {
@@ -57,6 +61,14 @@ func construct_byond_request(s string) string {
 }
 
 func Byond_query(srvname, request string, authed bool) Byond_response {
+	return Byond_query_adv(srvname, request, authed, byond_request_timeout, byond_response_timeout)
+}
+
+func Byond_query_fast(srvname, request string, authed bool) Byond_response {
+	return Byond_query_adv(srvname, request, authed, byond_request_timeout, byond_fastresponse_timeout)
+}
+
+func Byond_query_adv(srvname, request string, authed bool, req_to, res_to int) Byond_response {
 	defer logging_recover(srvname + "_bq")
 	srv, ok := known_servers[srvname]
 	if !ok {
@@ -71,12 +83,12 @@ func Byond_query(srvname, request string, authed bool) Byond_response {
 		request += "&key=" + srv.comm_key
 	}
 	//sending
-	conn.SetWriteDeadline(time.Now().Add(time.Duration(byond_request_timeout) * time.Second))
+	conn.SetWriteDeadline(time.Now().Add(time.Duration(req_to) * time.Second))
 
 	fmt.Fprint(conn, construct_byond_request(request))
 
 	//receiving
-	conn.SetReadDeadline(time.Now().Add(time.Duration(byond_response_timeout) * time.Second))
+	conn.SetReadDeadline(time.Now().Add(time.Duration(res_to) * time.Second))
 	bytes := make([]byte, 5)
 	num, err := conn.Read(bytes)
 	if err != nil {
@@ -126,4 +138,190 @@ func Bquery_deconvert(s string) string {
 		log.Println("ERROR: Query unescape error: ", err)
 	}
 	return ret
+}
+
+const SS_AUTOUPDATES_INTERVAL = 60
+
+type server_status struct {
+	server_name       string
+	status_table      map[string]string
+	associated_embeds map[string]string //channelid -> messageid, no more than one per channel (because no reason for more than one)
+	embed             discordgo.MessageEmbed
+	timerchan         chan int
+	/*	server_name    string
+		version        string
+		mode           string
+		enter          string
+		host           string
+		players        string
+		admins         string
+		gamestate      string
+		map_name       string
+		security_level string
+		round_duration string
+		shuttle_mode   string
+		shuttle_timer  string*/
+}
+
+type embed_ft struct {
+	name        string
+	value_entry string
+	inline      bool
+}
+
+var embed_teplate = [...]embed_ft{
+	embed_ft{"Server", "server_name", false},
+	embed_ft{"Version", "version", true},
+	embed_ft{"Map", "map_name", true},
+	embed_ft{"Address", "host", false},
+	embed_ft{"Players", "players", true},
+	embed_ft{"Admins", "admins", true},
+	embed_ft{"Security level", "security_level", false},
+	embed_ft{"Shuttle mode", "shuttle_mode", true},
+	embed_ft{"Shuttle timer", "shuttle_timer", true},
+	embed_ft{"Gamemode", "mode", false},
+	embed_ft{"Game state", "gamestate", true},
+	embed_ft{"Round duration", "round_duration", true},
+}
+
+//syncs with hub
+func (ss *server_status) global_update() {
+	if ss.status_table == nil {
+		ss.status_table = make(map[string]string)
+	}
+	resp := Byond_query(ss.server_name, "status", true)
+	stat := resp.String()
+	if stat == "" {
+		return //probably timeout
+	}
+	stat_split := strings.Split(stat, "&")
+	for i := 0; i+1 < len(stat_split); i += 2 {
+		ss.status_table[stat_split[i]] = stat_split[i+1]
+	}
+	ss.update_embeds()
+}
+
+func (ss *server_status) local_update(key, value string) {
+	if ss.status_table == nil {
+		ss.status_table = make(map[string]string)
+	}
+	ss.status_table[key] = value
+	ss.update_embeds()
+}
+
+func (ss *server_status) update_embeds() {
+	ss.update_embed()
+	for ch, msg := range ss.associated_embeds {
+		Discord_replace_embed(ch, msg, &(ss.embed))
+	}
+}
+
+func (ss *server_status) entry(key string) string {
+	if key == "server_name" {
+		return ss.server_name
+	}
+	val, ok := ss.status_table[key]
+	if !ok {
+		return "unknown"
+	}
+	return val
+}
+
+func (ss *server_status) update_embed() {
+	if ss.embed.Fields == nil {
+		ss.rebuild_embed()
+		return
+	}
+	for i := 0; i < len(embed_teplate); i++ {
+		ss.embed.Fields[i].Value = ss.entry(embed_teplate[i].value_entry)
+	}
+}
+
+func (ss *server_status) rebuild_embed() {
+	ss.embed.Color = known_servers[ss.server_name].color
+	ss.embed.Fields = make([]*discordgo.MessageEmbedField, len(embed_teplate))
+	for i := 0; i < len(embed_teplate); i++ {
+		ss.embed.Fields[i] = &discordgo.MessageEmbedField{
+			Name:   embed_teplate[i].name,
+			Value:  ss.entry(embed_teplate[i].value_entry),
+			Inline: embed_teplate[i].inline,
+		}
+	}
+}
+
+func (ss *server_status) start_ticker() {
+	if ss.timerchan != nil {
+		ss.stop_ticker()
+	}
+	go func() {
+		ticker := time.NewTicker(SS_AUTOUPDATES_INTERVAL * time.Second)
+		ss.timerchan = make(chan int, 0)
+		for {
+			select {
+			case <-ticker.C:
+				ss.global_update()
+			case <-ss.timerchan:
+				ticker.Stop()
+				ss.timerchan = nil
+			}
+		}
+	}()
+}
+
+func (ss *server_status) stop_ticker() {
+	if ss.timerchan == nil {
+		return
+	}
+	ss.timerchan <- 1
+}
+
+var server_statuses map[string]*server_status
+
+func populate_server_embeds() {
+	for k := range server_statuses {
+		delete(server_statuses, k)
+	}
+	defer logging_recover("pse")
+	server_statuses = make(map[string]*server_status)
+	var srv, chn, msg string
+	closure_callback := func() {
+		if server_statuses[srv].associated_embeds == nil {
+			server_statuses[srv].associated_embeds = make(map[string]string)
+		}
+		server_statuses[srv].associated_embeds[chn] = msg
+	}
+	db_template("select_dynembeds").query().parse(closure_callback, &srv, &chn, &msg)
+}
+
+func launch_ss_tickers() {
+	for _, s := range server_statuses {
+		s.start_ticker()
+	}
+}
+func stop_ss_tickers() {
+	for _, s := range server_statuses {
+		s.stop_ticker()
+	}
+}
+
+func bind_server_embed(srv, chn, msg string) bool {
+	defer logging_recover("bse")
+
+	if db_template("update_dynembed").exec(srv, chn, msg).count() < 0 {
+		db_template("create_dynembed").exec(srv, chn, msg)
+	}
+
+	ss := server_statuses[srv]
+	if ss.associated_embeds == nil {
+		ss.associated_embeds = make(map[string]string)
+	}
+	ss.associated_embeds[chn] = msg
+	ss.global_update()
+	ss.start_ticker()
+	return true
+}
+
+func unbind_server_embed(srv, chn string) bool {
+	defer logging_recover("use")
+	return db_template("remove_dynembed").exec(srv, chn).count() > 0
 }
