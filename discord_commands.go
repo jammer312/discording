@@ -943,7 +943,7 @@ func init() {
 	// ------------
 	// ------------
 	Register_command(Dcommand{
-		Command:       "bind_status",
+		Command:       "status_bind",
 		Minargs:       1,
 		Permlevel:     PERMISSIONS_SUPERUSER,
 		Usage:         "[!server]",
@@ -966,7 +966,7 @@ func init() {
 	// ------------
 	// ------------
 	Register_command(Dcommand{
-		Command:   "unbind_status",
+		Command:   "status_unbind",
 		Minargs:   1,
 		Permlevel: PERMISSIONS_SUPERUSER,
 		Usage:     "[!server]",
