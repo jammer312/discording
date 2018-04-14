@@ -317,7 +317,7 @@ func bind_server_embed(srv, chn, msg string) bool {
 
 	ss, ok := server_statuses[srv]
 	if !ok {
-		ss = &server_status{}
+		ss = &server_status{server_name: srv}
 	}
 
 	if ss.associated_embeds == nil {
@@ -331,5 +331,10 @@ func bind_server_embed(srv, chn, msg string) bool {
 
 func unbind_server_embed(srv, chn string) bool {
 	defer logging_recover("use")
+	ss, ok := server_statuses[srv]
+	if !ok {
+		return false
+	}
+	delete(ss.associated_embeds, chn)
 	return db_template("remove_dynembed").exec(srv, chn).count() > 0
 }
