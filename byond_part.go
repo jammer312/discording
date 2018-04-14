@@ -287,7 +287,7 @@ func populate_server_embeds() {
 	closure_callback := func() {
 		ss, ok := server_statuses[srv]
 		if !ok {
-			ss = &server_status{}
+			ss = &server_status{server_name: srv}
 			server_statuses[srv] = ss
 		}
 		if ss.associated_embeds == nil {
