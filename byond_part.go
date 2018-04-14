@@ -285,10 +285,14 @@ func populate_server_embeds() {
 	server_statuses = make(map[string]*server_status)
 	var srv, chn, msg string
 	closure_callback := func() {
-		if server_statuses[srv].associated_embeds == nil {
-			server_statuses[srv].associated_embeds = make(map[string]string)
+		ss, ok := server_statuses[srv]
+		if !ok {
+			ss = &server_status{}
 		}
-		server_statuses[srv].associated_embeds[chn] = msg
+		if ss.associated_embeds == nil {
+			ss.associated_embeds = make(map[string]string)
+		}
+		ss.associated_embeds[chn] = msg
 	}
 	db_template("select_dynembeds").query().parse(closure_callback, &srv, &chn, &msg)
 }
@@ -311,7 +315,11 @@ func bind_server_embed(srv, chn, msg string) bool {
 		db_template("create_dynembed").exec(srv, chn, msg)
 	}
 
-	ss := server_statuses[srv]
+	ss, ok := server_statuses[srv]
+	if !ok {
+		ss = &server_status{}
+	}
+
 	if ss.associated_embeds == nil {
 		ss.associated_embeds = make(map[string]string)
 	}
