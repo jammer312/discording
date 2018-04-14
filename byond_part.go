@@ -144,6 +144,7 @@ const SS_AUTOUPDATES_INTERVAL = 60
 
 type server_status struct {
 	server_name       string
+	server_address    string
 	status_table      map[string]string
 	associated_embeds map[string]string //channelid -> messageid, no more than one per channel (because no reason for more than one)
 	embed             discordgo.MessageEmbed
@@ -163,6 +164,22 @@ type server_status struct {
 		shuttle_timer  string*/
 }
 
+const (
+	GAME_STATE_STARTUP    = "0"
+	GAME_STATE_PREGAME    = "1"
+	GAME_STATE_SETTING_UP = "2"
+	GAME_STATE_PLAYING    = "3"
+	GAME_STATE_FINISHED   = "4"
+
+	SHUTTLE_IDLE     = "0"
+	SHUTTLE_RECALL   = "1"
+	SHUTTLE_CALL     = "2"
+	SHUTTLE_DOCKED   = "3"
+	SHUTTLE_STRANDED = "4"
+	SHUTTLE_ESCAPE   = "5"
+	SHUTTLE_ENDGAME  = "6"
+)
+
 type embed_ft struct {
 	name        string
 	value_entry string
@@ -173,7 +190,7 @@ var embed_teplate = [...]embed_ft{
 	embed_ft{"Server", "server_name", false},
 	embed_ft{"Version", "version", true},
 	embed_ft{"Map", "map_name", true},
-	embed_ft{"Address", "host", false},
+	embed_ft{"Address", "server_address", false},
 	embed_ft{"Players", "players", true},
 	embed_ft{"Admins", "admins", true},
 	embed_ft{"Security level", "security_level", false},
@@ -224,9 +241,48 @@ func (ss *server_status) entry(key string) string {
 	if key == "server_name" {
 		return ss.server_name
 	}
+	if key == "server_address" {
+		return ss.server_address
+	}
 	val, ok := ss.status_table[key]
 	if !ok {
 		return "unknown"
+	}
+	if key == "gamestate" {
+		switch val {
+		case GAME_STATE_FINISHED:
+			val = "FINISHED"
+		case GAME_STATE_PLAYING:
+			val = "PLAYING"
+		case GAME_STATE_PREGAME:
+			val = "PREGAME"
+		case GAME_STATE_STARTUP:
+			val = "STARTUP"
+		case GAME_STATE_SETTING_UP:
+			val = "SETTING UP"
+		default:
+			val = "ERR"
+		}
+	}
+	if key == "shuttle_mode" && len(val) == 1 {
+		switch val {
+		case SHUTTLE_CALL:
+			val = "CALLED"
+		case SHUTTLE_DOCKED:
+			val = "DOCKED"
+		case SHUTTLE_ENDGAME:
+			val = "DOCKED AT CENTCOMM"
+		case SHUTTLE_ESCAPE:
+			val = "ESCAPING"
+		case SHUTTLE_IDLE:
+			val = "IDLE"
+		case SHUTTLE_RECALL:
+			val = "RECALLED"
+		case SHUTTLE_STRANDED:
+			val = "STRANDED"
+		default:
+			val = "ERR"
+		}
 	}
 	return val
 }
@@ -287,11 +343,15 @@ func populate_server_embeds() {
 	}
 	defer logging_recover("pse")
 	server_statuses = make(map[string]*server_status)
-	var srv, chn, msg string
+	var srv, chn, msg, addr string
 	closure_callback := func() {
 		ss, ok := server_statuses[srv]
+		s, ok := known_servers[srv]
+		if ok {
+			addr = s.addr
+		}
 		if !ok {
-			ss = &server_status{server_name: srv}
+			ss = &server_status{server_name: srv, server_address: addr}
 			server_statuses[srv] = ss
 		}
 		if ss.associated_embeds == nil {
@@ -325,7 +385,12 @@ func bind_server_embed(srv, chn, msg string) bool {
 
 	ss, ok := server_statuses[srv]
 	if !ok {
-		ss = &server_status{server_name: srv}
+		var addr string
+		s, ok := known_servers[srv]
+		if ok {
+			addr = s.addr
+		}
+		ss = &server_status{server_name: srv, server_address: addr}
 		server_statuses[srv] = ss
 	}
 
