@@ -119,6 +119,8 @@ func main() {
 	init_time()
 	discord_init()
 	populate_servers()
+	populate_server_embeds()
+	launch_ss_tickers()
 	Dopen()              //start discord
 	srv := Http_server() //start web server
 	sc := make(chan os.Signal, 1)

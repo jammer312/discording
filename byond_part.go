@@ -296,6 +296,9 @@ func populate_server_embeds() {
 		ss.associated_embeds[chn] = msg
 	}
 	db_template("select_dynembeds").query().parse(closure_callback, &srv, &chn, &msg)
+	for _, ss := range server_statuses {
+		ss.global_update()
+	}
 }
 
 func launch_ss_tickers() {
