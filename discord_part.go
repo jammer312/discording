@@ -149,13 +149,13 @@ func discord_init() {
 	discord_ahelp_locks = make(map[string]map[string]string)
 }
 
-func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg string, temporary int) {
+func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg string, temporary int) *discordgo.Message {
 	rep, err := session.ChannelMessageSend(message.ChannelID, "<@!"+message.Author.ID+">, "+msg)
 	if err != nil {
 		log.Println("NON-PANIC ERROR: failed to send reply message to discord: ", err)
 	}
 	if temporary < 0 {
-		return
+		return rep
 	}
 	if temporary == DEL_DEFAULT {
 		temporary = 1
@@ -164,6 +164,7 @@ func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg str
 	if !is_in_private_channel(session, message) {
 		go delete_in(session, rep, temporary)
 	}
+	return rep
 }
 
 func is_in_private_channel(session *discordgo.Session, message *discordgo.MessageCreate) bool {
@@ -190,6 +191,13 @@ func delcommand(session *discordgo.Session, message *discordgo.MessageCreate) {
 	err := session.ChannelMessageDelete(message.ChannelID, message.ID)
 	if err != nil {
 		log.Println("NON-PANIC ERROR: failed to delete command message in discord: ", err)
+	}
+}
+
+func delmessage(session *discordgo.Session, message *discordgo.Message) {
+	err := session.ChannelMessageDelete(message.ChannelID, message.ID)
+	if err != nil {
+		log.Println("NON-PANIC ERROR: failed to delete message in discord: ", err)
 	}
 }
 

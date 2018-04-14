@@ -951,13 +951,15 @@ func init() {
 		Command_nodel: true,
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			srv := args[0]
+			repmsg := reply(session, message, "here be embed", DEL_NEVER)
 			chn := message.ChannelID
-			msg := message.Message.ID
+			msg := repmsg.ID
 			_, ok := known_servers[srv]
 			if !ok {
 				return "no such known server"
 			}
 			if !bind_server_embed(srv, chn, msg) {
+				delmessage(session, repmsg)
 				return "failed to bind embed"
 			}
 			return "OK"
