@@ -288,6 +288,7 @@ func populate_server_embeds() {
 		ss, ok := server_statuses[srv]
 		if !ok {
 			ss = &server_status{}
+			server_statuses[srv] = ss
 		}
 		if ss.associated_embeds == nil {
 			ss.associated_embeds = make(map[string]string)
@@ -318,6 +319,7 @@ func bind_server_embed(srv, chn, msg string) bool {
 	ss, ok := server_statuses[srv]
 	if !ok {
 		ss = &server_status{server_name: srv}
+		server_statuses[srv] = ss
 	}
 
 	if ss.associated_embeds == nil {
