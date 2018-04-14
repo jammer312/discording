@@ -192,9 +192,11 @@ func (ss *server_status) global_update() {
 	resp := Byond_query(ss.server_name, "status", true)
 	stat := resp.String()
 	if stat == "" {
+		log.Println("empty stat")
 		return //probably timeout
 	}
 	stat_split := strings.Split(stat, "&")
+	log.Println(stat_split)
 	for i := 0; i+1 < len(stat_split); i += 2 {
 		ss.status_table[stat_split[i]] = stat_split[i+1]
 	}
