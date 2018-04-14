@@ -483,7 +483,7 @@ func Discord_send_embed(servername, channel string, embed *discordgo.MessageEmbe
 
 func Discord_replace_embed(channelid, messageid string, embed *discordgo.MessageEmbed) {
 	defer logging_recover("Dre")
-	_, err := dsession.ChannelMessageEditEmbed(channelid, messageid, embed)
+	_, err := dsession.ChannelMessageEditComplex(discordgo.NewMessageEdit(channelid, messageid).SetContent("").SetEmbed(embed))
 	noerror(err)
 }
 
