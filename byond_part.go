@@ -345,11 +345,11 @@ func populate_server_embeds() {
 	server_statuses = make(map[string]*server_status)
 	var srv, chn, msg, addr string
 	closure_callback := func() {
-		ss, ok := server_statuses[srv]
 		s, ok := known_servers[srv]
 		if ok {
 			addr = s.addr
 		}
+		ss, ok := server_statuses[srv]
 		if !ok {
 			ss = &server_status{server_name: srv, server_address: addr}
 			server_statuses[srv] = ss
