@@ -22,7 +22,6 @@ type Dcommand struct {
 	functional      dcfunc
 	Temporary       int
 	Server_specific bool
-	Command_nodel   bool
 }
 
 var Known_commands map[string]Dcommand
@@ -943,12 +942,11 @@ func init() {
 	// ------------
 	// ------------
 	Register_command(Dcommand{
-		Command:       "status_bind",
-		Minargs:       1,
-		Permlevel:     PERMISSIONS_SUPERUSER,
-		Usage:         "[!server]",
-		Desc:          "bind dynamic embed for server status to this channel",
-		Command_nodel: true,
+		Command:   "status_bind",
+		Minargs:   1,
+		Permlevel: PERMISSIONS_SUPERUSER,
+		Usage:     "[!server]",
+		Desc:      "bind dynamic embed for server status to this channel",
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			srv := args[0]
 			repmsg := reply(session, message, "here be embed", DEL_NEVER)

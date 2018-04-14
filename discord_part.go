@@ -272,6 +272,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			return
 		}
 		//it's command
+		defer delcommand(session, message)
 		var server string
 		srvstr, ok := known_channels_id_t[message.ChannelID]
 		if ok {
@@ -280,7 +281,6 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		args := strings.Fields(mcontent[1:])
 		command := strings.ToLower(args[0])
 		if check_bans(message.Author, BANTYPE_COMMANDS, false) != "" && command != "baninfo" {
-			defer delcommand(session, message)
 			reply(session, message, "you're banned from this action. Try !baninfo", DEL_DEFAULT)
 			return
 		}
@@ -292,12 +292,8 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		log.Println(message.Author.String() + " c-> " + message.ContentWithMentionsReplaced())
 		dcomm, ok := Known_commands[command]
 		if !ok {
-			defer delcommand(session, message)
 			reply(session, message, "unknown command: `"+Dweaksanitize(command)+"`", DEL_DEFAULT)
 			return
-		}
-		if !dcomm.Command_nodel {
-			defer delcommand(session, message)
 		}
 		if server == "" && dcomm.Server_specific {
 			reply(session, message, "this command requires channel to be bound to server", DEL_DEFAULT)
