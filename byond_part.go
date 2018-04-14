@@ -311,7 +311,7 @@ func stop_ss_tickers() {
 func bind_server_embed(srv, chn, msg string) bool {
 	defer logging_recover("bse")
 
-	if db_template("update_dynembed").exec(srv, chn, msg).count() < 0 {
+	if db_template("update_dynembed").exec(srv, chn, msg).count() < 1 {
 		db_template("create_dynembed").exec(srv, chn, msg)
 	}
 
