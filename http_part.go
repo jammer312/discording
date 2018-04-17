@@ -105,62 +105,57 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 			Fields: []*discordgo.MessageEmbedField{},
 		}
 		ss, ok := server_statuses[servername]
-		switch parsed.Status {
-		case "lobby":
-			Discord_subsriber_message_send(servername, "bot_status", "New round is about to start (lobby)")
+		ss_glob_update := func() {
 			if ok {
 				ss.global_update()
 			}
+		}
+		switch parsed.Status {
+		case "lobby":
+			Discord_subsriber_message_send(servername, "bot_status", "New round is about to start (lobby)")
+			ss_glob_update()
+
+		case "ingame":
+			Discord_subsriber_message_send(servername, "bot_status", "New round had just started")
+			ss_glob_update()
 
 		case "shuttle called":
 			embed.Fields = []*discordgo.MessageEmbedField{&discordgo.MessageEmbedField{Name: "Code:", Value: parsed.Seclevel, Inline: true}, &discordgo.MessageEmbedField{Name: "Reason:", Value: Dsanitize(parsed.Reason), Inline: true}}
 			embed.Title = "SHUTTLE CALLED"
 			Discord_send_embed(servername, "bot_status", embed)
 			Discord_send_embed(servername, "ooc", embed)
-			if ok {
-				ss.global_update()
-			}
+			ss_glob_update()
 
 		case "shuttle recalled":
 			embed.Title = "SHUTTLE RECALLED"
 			Discord_send_embed(servername, "bot_status", embed)
 			Discord_send_embed(servername, "ooc", embed)
-			if ok {
-				ss.global_update()
-			}
+			ss_glob_update()
 
 		case "shuttle autocalled":
 			embed.Title = "SHUTTLE AUTOCALLED"
 			Discord_send_embed(servername, "bot_status", embed)
 			Discord_send_embed(servername, "ooc", embed)
-			if ok {
-				ss.global_update()
-			}
+			ss_glob_update()
 
 		case "shuttle docked":
 			embed.Title = "SHUTTLE DOCKED WITH THE STATION"
 			Discord_send_embed(servername, "bot_status", embed)
 			Discord_send_embed(servername, "ooc", embed)
-			if ok {
-				ss.global_update()
-			}
+			ss_glob_update()
 
 		case "shuttle left":
 			embed.Title = "SHUTTLE LEFT THE STATION"
 			Discord_send_embed(servername, "bot_status", embed)
 			Discord_send_embed(servername, "ooc", embed)
-			if ok {
-				ss.global_update()
-			}
+			ss_glob_update()
 
 		case "shuttle escaped":
 			embed.Title = "SHUTTLE DOCKED WITH CENTCOMM"
 			Discord_send_embed(servername, "bot_status", embed)
 			Discord_send_embed(servername, "ooc", embed)
 			Discord_subsriber_message_send(servername, "bot_status", "Current round is about to end (roundend)")
-			if ok {
-				ss.global_update()
-			}
+			ss_glob_update()
 
 		case "reboot":
 			Discord_message_send_raw(servername, "ooc", "**===REBOOT===**")
