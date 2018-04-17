@@ -243,7 +243,7 @@ func (ss *server_status) entry(key string) string {
 		return ss.server_name
 	}
 	if key == "server_address" {
-		return ss.server_address
+		return "byond://" + ss.server_address
 	}
 	val, ok := ss.status_table[key]
 	if !ok {
