@@ -10,6 +10,7 @@ import (
 	"log"
 	"net"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -282,6 +283,12 @@ func (ss *server_status) entry(key string) string {
 			val = "STRANDED"
 		default:
 			val = "ERR"
+		}
+	}
+	if key == "round_duration" {
+		num, err := strconv.Atoi(val)
+		if err == nil {
+			val = fmt.Sprintf("%v hours %v mins %v secs", num/3600, (num%3600)/60, num%60)
 		}
 	}
 	return val
