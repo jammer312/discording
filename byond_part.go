@@ -150,6 +150,8 @@ type server_status struct {
 	associated_embeds map[string]string //channelid -> messageid, no more than one per channel (because no reason for more than one)
 	embed             discordgo.MessageEmbed
 	timerchan         chan int
+	updating          bool
+	needupdate        bool
 	/*	server_name    string
 		version        string
 		mode           string
@@ -204,15 +206,20 @@ var embed_teplate = [...]embed_ft{
 
 //syncs with hub
 func (ss *server_status) global_update() {
+	if ss.updating { //concurrency workaround
+		ss.needupdate = true
+		return
+	}
+	ss.updating = true
 	if ss.status_table == nil {
 		ss.status_table = make(map[string]string)
 	}
 	resp := Byond_query(ss.server_name, "status", true)
 	stat := resp.String()
-	stat = Bquery_deconvert(stat)
 	if stat == "" {
 		return //probably timeout
 	}
+	stat = Bquery_deconvert(stat)
 	stat_split := strings.Split(stat, "&")
 	for i := 0; i < len(stat_split); i++ {
 		tmp := strings.Split(stat_split[i], "=")
@@ -221,14 +228,11 @@ func (ss *server_status) global_update() {
 		}
 	}
 	ss.update_embeds()
-}
-
-func (ss *server_status) local_update(key, value string) {
-	if ss.status_table == nil {
-		ss.status_table = make(map[string]string)
+	ss.updating = false
+	if ss.needupdate { //okay repeat
+		ss.needupdate = false
+		ss.global_update()
 	}
-	ss.status_table[key] = value
-	ss.update_embeds()
 }
 
 func (ss *server_status) update_embeds() {
