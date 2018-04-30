@@ -97,7 +97,7 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 	case "token":
 		Discord_process_token(html.UnescapeString(parsed.Token), parsed.Ckey)
 	case "runtimemessage":
-		Discord_message_send(servername, "debug", "DEBUG:", "RUNTIME", html.UnescapeString(parsed.Message))
+		Discord_message_send(servername, "debug", "DEBUG:", "", html.UnescapeString(parsed.Message))
 	case "roundstatus":
 		color := known_servers[servername].color
 		embed := &discordgo.MessageEmbed{
