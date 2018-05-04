@@ -773,7 +773,7 @@ func populate_bans() {
 	var ckey string
 	var bantype, permission int
 	closure_callback := func() {
-		_, ok = known_bans_summary[ckey]
+		_, ok := known_bans_summary[ckey]
 		if !ok {
 			known_bans_summary[ckey] = make(map[int]int)
 		}
