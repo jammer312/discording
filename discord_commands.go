@@ -756,7 +756,7 @@ func init() {
 		Usage:     "[!ckey] [!type]",
 		Desc:      "remove existing ban issued by you or lower-ranked person, if any; valid types are " + BANSTRING_OOC + " and " + BANSTRING_COMMANDS,
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
-			ckey := args[0]
+			ckey := strings.ToLower(args[0])
 			bantypestr := args[1]
 			bantype := 0
 			switch bantypestr {
