@@ -798,6 +798,7 @@ func init() {
 				bantypestring := strings.Join(bantype, ", ")
 				ret += fmt.Sprintf("%v banned from %v by %v with reason `%v`", ckey, bantypestring, admin, reason)
 			}
+			defer logging_recover("b_l")
 			db_template("select_bans").query().parse(closure_callback, &ckey, &bt, &admin, &reason)
 			if ret == "\n" {
 				ret = "no bans currently active"
