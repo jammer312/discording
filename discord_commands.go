@@ -765,7 +765,11 @@ func init() {
 			case BANSTRING_COMMANDS:
 				bantype = BANTYPE_COMMANDS
 			default:
-				return "incorrect type"
+				num, err := strconv.Atoi(bantypestr)
+				if err != nil {
+					return "incorrect type"
+				}
+				bantype = num
 			}
 			succ, st := remove_ban(ckey, bantype, message.Author)
 			if succ {
@@ -780,13 +784,33 @@ func init() {
 		Command:   "ban_list",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_ADMIN,
-		Usage:     "",
+		Usage:     "[?ckey]",
 		Desc:      "prints existing bans",
 		Temporary: DEL_NEVER,
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
+			defer logging_recover("b_l")
 			ret := "\n"
 			var ckey, admin, reason string
 			var bt int
+			if len(args) > 0 {
+				ckey = args[0]
+				closure_callback := func() {
+					bantype := make([]string, 0)
+					if bt&BANTYPE_OOC != 0 {
+						bantype = append(bantype, BANSTRING_OOC)
+					}
+					if bt&BANTYPE_COMMANDS != 0 {
+						bantype = append(bantype, BANSTRING_COMMANDS)
+					}
+					bantypestring := strings.Join(bantype, ", ")
+					ret += fmt.Sprintf("%v banned from %v by %v with reason `%v`\n", ckey, bantypestring, admin, reason)
+				}
+				db_template("select_bans_ckey").query(ckey).parse(closure_callback, &bt, &admin, &reason)
+				if ret == "\n" {
+					ret = "no bans currently active"
+				}
+				return ret
+			}
 			closure_callback := func() {
 				bantype := make([]string, 0)
 				if bt&BANTYPE_OOC != 0 {
@@ -798,7 +822,6 @@ func init() {
 				bantypestring := strings.Join(bantype, ", ")
 				ret += fmt.Sprintf("%v banned from %v by %v with reason `%v`\n", ckey, bantypestring, admin, reason)
 			}
-			defer logging_recover("b_l")
 			db_template("select_bans").query().parse(closure_callback, &ckey, &bt, &admin, &reason)
 			if ret == "\n" {
 				ret = "no bans currently active"

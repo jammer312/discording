@@ -787,7 +787,12 @@ func update_ban(ckey, reason string, user *discordgo.User, tp int) (succ bool, m
 	if permissions < PERMISSIONS_ADMIN {
 		return false, "missing permissions (how the fuck did you get there?)"
 	}
-	admin := local_users[user.ID]
+	var admin string
+	if user.ID == dsession.State.User.ID {
+		admin = "Abomination"
+	} else {
+		admin = local_users[user.ID]
+	}
 	msg = "lr"
 	if db_template("lookup_ban").exec(ckey, tp, admin).count() > 0 {
 		msg = "ur"
@@ -1038,7 +1043,7 @@ func spam_check(userid string) bool {
 		ckey := local_users[userid]
 		//		log.Println("banning")
 		if ckey != "" {
-			update_ban(ckey, "SPAM SPAM SPAM", dsession.State.User, BANTYPE_OOC|BANTYPE_COMMANDS)
+			update_ban(ckey, "spam autoban", dsession.State.User, BANTYPE_OOC|BANTYPE_COMMANDS)
 		}
 		discord_spam_prot_bans[userid] = true
 	}
