@@ -116,7 +116,7 @@ func templates_init() {
 	prepare_template("update_known_role", "update DISCORD_ROLES set ROLEID = $1 where GUILDID = $2 and ROLETYPE = $3 and SRVNAME = $4;")
 	prepare_template("create_known_role", "insert into DISCORD_ROLES values($1, $2, $3, $4);")
 	prepare_template("remove_known_role", "delete from DISCORD_ROLES where GUILDID = $1 and ROLETYPE = $2 and SRVNAME = $3;")
-	prepare_template("select_bans", "select CKEY, TYPE, ADMIN, REASON;")
+	prepare_template("select_bans", "select CKEY, TYPE, ADMIN, REASON from DISCORD_BANS;")
 	prepare_template("fetch_bans", "select CKEY, TYPE, PERMISSION from DISCORD_BANS;")
 	prepare_template("lookup_ban", "SELECT * from DISCORD_BANS where CKEY = $1 and TYPE = $2 and ADMIN = $3;")
 	prepare_template("update_ban", "update DISCORD_BANS set REASON = $1, PERMISSION = $5 where CKEY = $2 and ADMIN = $3 and TYPE = $4;")
