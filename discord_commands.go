@@ -712,9 +712,9 @@ func init() {
 		Desc:      "prints your discord bans, if any",
 		Temporary: DEL_LONG,
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
-			ret := check_bans(message.Author, ^0, true)
+			ret := check_bans_readable(message.Author, server, ^0)
 			if ret == "" {
-				return "you have no active bans"
+				return "you have no active bans here"
 			}
 			return ret
 		},
@@ -740,26 +740,38 @@ func init() {
 				return "incorrect type"
 			}
 			reason := strings.Join(args[2:], " ")
-			if update_ban(ckey, reason, message.Author, bantype) {
-				return "OK"
+			succ, st := update_ban(ckey, reason, message.Author, bantype)
+			if succ {
+				return "OK " + st
 			}
-			return "FAIL, probably because of existing reason with higher permissions"
+			return "FAIL " + st
 		},
 	})
 	// ------------
 	// ------------
 	Register_command(Dcommand{
 		Command:   "ban_lift",
-		Minargs:   1,
+		Minargs:   2,
 		Permlevel: PERMISSIONS_ADMIN,
-		Usage:     "[!ckey]",
-		Desc:      "remove existing ban, if any",
+		Usage:     "[!ckey] [!type]",
+		Desc:      "remove existing ban issued by you or lower-ranked person, if any; valid types are " + BANSTRING_OOC + " and " + BANSTRING_COMMANDS,
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			ckey := args[0]
-			if remove_ban(ckey, message.Author) {
-				return "OK"
+			bantypestr := args[1]
+			bantype := 0
+			switch bantypestr {
+			case BANSTRING_OOC:
+				bantype = BANTYPE_OOC
+			case BANSTRING_COMMANDS:
+				bantype = BANTYPE_COMMANDS
+			default:
+				return "incorrect type"
 			}
-			return "FAIL, probably because of low permissions"
+			succ, st := remove_ban(ckey, bantype, message.Author)
+			if succ {
+				return "OK " + st
+			}
+			return "FAIL " + st
 		},
 	})
 	// ------------
@@ -773,16 +785,20 @@ func init() {
 		Temporary: DEL_NEVER,
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			ret := "\n"
-			for ckey, ban := range known_bans {
-				bansarr := make([]string, 0)
-				if ban.bantype&BANTYPE_OOC != 0 {
-					bansarr = append(bansarr, BANSTRING_OOC)
+			var ckey, admin, reason string
+			var bt int
+			closure_callback := func() {
+				bantype := make([]string, 0)
+				if bt&BANTYPE_OOC != 0 {
+					bantype = append(bantype, BANSTRING_OOC)
 				}
-				if ban.bantype&BANTYPE_COMMANDS != 0 {
-					bansarr = append(bansarr, BANSTRING_COMMANDS)
+				if bt&BANTYPE_COMMANDS != 0 {
+					bantype = append(bantype, BANSTRING_COMMANDS)
 				}
-				ret += ckey + ": " + strings.Join(bansarr, ", ") + "\n"
+				bantypestring := strings.Join(bantype, ", ")
+				ret += fmt.Sprintf("%v banned from %v by %v with reason `%v`", ckey, bantypestring, admin, reason)
 			}
+			db_template("select_bans").query().parse(closure_callback, &ckey, &bt, &admin, &reason)
 			if ret == "\n" {
 				ret = "no bans currently active"
 			}

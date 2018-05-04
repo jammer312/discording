@@ -77,7 +77,7 @@ type dban struct {
 	permlevel int
 }
 
-var known_bans map[string]dban
+var known_bans_summary map[string]map[int]int
 
 var dsession, _ = discordgo.New()
 var last_ahelp map[string]string
@@ -142,7 +142,7 @@ func discord_init() {
 	discord_subscriber_roles = make(map[string]map[string]string)
 	discord_admin_roles = make(map[string]map[string]string)
 	discord_onetime_subscriptions = make(map[string]map[string]string)
-	known_bans = make(map[string]dban)
+	known_bans_summary = make(map[string]map[int]int)
 	last_ahelp = make(map[string]string)
 	discord_spam_prot_checks = make(map[string]int)
 	discord_spam_prot_bans = make(map[string]bool)
@@ -214,16 +214,7 @@ func ckey_simplier(s string) string {
 	return strings.ToLower(strings.Replace(s, "_", "", -1))
 }
 
-func get_permission_level(user *discordgo.User, server string) int {
-	if user.ID == discord_superuser_id || user.ID == discord_bot_user_id {
-		return PERMISSIONS_SUPERUSER //bot admin
-	}
-	ckey := local_users[user.ID]
-	if ckey == "" {
-		return PERMISSIONS_NONE //not registered
-	}
-
-	ckey = ckey_simplier(ckey)
+func get_permission_level_ckey(ckey, server string) int {
 	if server != "" {
 		asl, ok := Known_admins[server]
 		if !ok {
@@ -245,6 +236,19 @@ func get_permission_level(user *discordgo.User, server string) int {
 		}
 	}
 	return PERMISSIONS_REGISTERED
+}
+
+func get_permission_level(user *discordgo.User, server string) int {
+	if user.ID == discord_superuser_id || user.ID == discord_bot_user_id {
+		return PERMISSIONS_SUPERUSER //bot admin
+	}
+	ckey := local_users[user.ID]
+	if ckey == "" {
+		return PERMISSIONS_NONE //not registered
+	}
+
+	ckey = ckey_simplier(ckey)
+	return get_permission_level_ckey(ckey, server)
 }
 
 func Permissions_check(user *discordgo.User, permission_level int, server string) bool {
@@ -280,7 +284,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		}
 		args := strings.Fields(mcontent[1:])
 		command := strings.ToLower(args[0])
-		if check_bans(message.Author, BANTYPE_COMMANDS, false) != "" && command != "baninfo" {
+		if check_bans(message.Author, server, BANTYPE_COMMANDS) && command != "baninfo" {
 			reply(session, message, "you're banned from this action. Try !baninfo", DEL_DEFAULT)
 			return
 		}
@@ -351,7 +355,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 	}
 	switch srv.generic_type {
 	case "ooc":
-		if check_bans(message.Author, BANTYPE_OOC, false) != "" {
+		if check_bans(message.Author, srv.server, BANTYPE_OOC) {
 			defer delcommand(session, message)
 			reply(session, message, "you're banned from this action. Try !baninfo", DEL_DEFAULT)
 			return
@@ -763,84 +767,98 @@ func remove_known_role(gid, tp, srv string) bool {
 func populate_bans() {
 	defer logging_recover("pb")
 	//clean known
-	for k := range known_bans {
-		delete(known_bans, k)
+	for k := range known_bans_summary {
+		delete(known_bans_summary, k)
 	}
-	var ckey, reason, admin string
+	var ckey string
 	var bantype, permission int
 	closure_callback := func() {
-		known_bans[ckey] = dban{reason, admin, bantype, permission}
+		for i := permission - 1; i >= 0; i-- {
+			known_bans_summary[ckey][i] |= bantype
+		}
 	}
-	db_template("select_bans").query().parse(closure_callback, &ckey, &reason, &admin, &bantype, &permission)
+	db_template("select_bans").query().parse(closure_callback, &ckey, &bantype, &permission)
 }
 
-func update_ban(ckey, reason string, user *discordgo.User, tp int) bool {
+func update_ban(ckey, reason string, user *discordgo.User, tp int) (succ bool, msg string) {
 	defer logging_recover("ub")
 	ckey = strings.ToLower(ckey)
 	permissions := get_permission_level(user, "")
 	if permissions < PERMISSIONS_ADMIN {
-		return false
+		return false, "missing permissions (how the fuck did you get there?)"
 	}
 	admin := local_users[user.ID]
-	if db_template("select_ban").exec(ckey).count() > 0 {
-		bn, ok := known_bans[ckey]
-		if ok {
-			tp |= bn.bantype
-		}
-		if db_template("update_ban").exec(tp, permissions, ckey).count() > 0 {
+	msg = "lr"
+	if db_template("lookup_ban").exec(ckey, tp, admin).count() > 0 {
+		msg = "ur"
+		if db_template("update_ban").exec(reason, ckey, admin, tp, permissions).count() > 0 {
 			populate_bans()
-			return true
+			return true, "updated"
 		}
+		return false, "some strange shit happened"
 	} else {
-		// no such entry, create new
+		msg = "cr"
 		if db_template("create_ban").exec(ckey, admin, reason, tp, permissions).count() > 0 {
 			populate_bans()
-			return true
+			return true, "created"
 		}
+		return false, "some neat shit happened"
 	}
-	return false
 }
 
-func remove_ban(ckey string, user *discordgo.User) bool {
+func remove_ban(ckey string, tp int, user *discordgo.User) (succ bool, msg string) {
 	defer logging_recover("rb")
 	ckey = strings.ToLower(ckey)
 	permissions := get_permission_level(user, "")
 	if permissions < PERMISSIONS_ADMIN {
-		return false
+		return false, "missing permissions (how the fuck did you get there?)"
 	}
-	if db_template("remove_ban").exec(ckey, permissions).count() > 0 {
+	admin := local_users[user.ID]
+	msg = "rr"
+	cnt := db_template("remove_ban").exec(ckey, tp, permissions, admin).count()
+	if cnt > 0 {
 		populate_bans()
-		return true
+		return true, fmt.Sprintf("%v bans removed", cnt)
 	}
-	return false
+	return false, "no bans removed"
 }
 
-func check_bans(user *discordgo.User, tp int, forced bool) string {
+func check_bans(user *discordgo.User, server string, tp int) bool {
+	ckey := local_users[user.ID]
+	ckey = strings.ToLower(ckey)
+	if ckey == "" {
+		return false
+	}
+	banarr, ok := known_bans_summary[ckey]
+	if !ok {
+		return false
+	}
+	ourperms := get_permission_level_ckey(ckey, server)
+	bant := banarr[ourperms]
+	return (bant & tp) != 0
+}
+
+func check_bans_readable(user *discordgo.User, server string, tp int) string {
 	ckey := local_users[user.ID]
 	ckey = strings.ToLower(ckey)
 	if ckey == "" {
 		return ""
 	}
-	ban, ok := known_bans[ckey]
+	banarr, ok := known_bans_summary[ckey]
 	if !ok {
 		return ""
 	}
-
-	if (ban.bantype & tp) == 0 {
-		return "" //no matching ban
-	}
-	if Permissions_check(user, ban.permlevel, "") && !forced {
-		return "" //avoid bans from same level
-	}
+	ourperms := get_permission_level_ckey(ckey, server)
+	bant := banarr[ourperms]
 	bantype := make([]string, 0)
-	if ban.bantype&BANTYPE_OOC != 0 {
+	if bant&BANTYPE_OOC != 0 {
 		bantype = append(bantype, BANSTRING_OOC)
 	}
-	if ban.bantype&BANTYPE_COMMANDS != 0 {
+	if bant&BANTYPE_COMMANDS != 0 {
 		bantype = append(bantype, BANSTRING_COMMANDS)
 	}
 	bantypestring := strings.Join(bantype, ", ")
-	return "You were banned from " + bantypestring + " by " + ban.admin + " with following reason:\n" + ban.reason
+	return "Here you are banned from: " + bantypestring
 }
 
 func subscribe_user(guildid, userid, srv string) bool {
