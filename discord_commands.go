@@ -793,7 +793,7 @@ func init() {
 			var ckey, admin, reason string
 			var bt int
 			if len(args) > 0 {
-				ckey = args[0]
+				ckey := strings.ToLower(args[0])
 				closure_callback := func() {
 					bantype := make([]string, 0)
 					if bt&BANTYPE_OOC != 0 {
