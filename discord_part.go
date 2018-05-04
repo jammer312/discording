@@ -777,7 +777,7 @@ func populate_bans() {
 			known_bans_summary[ckey][i] |= bantype
 		}
 	}
-	db_template("select_bans").query().parse(closure_callback, &ckey, &bantype, &permission)
+	db_template("fetch_bans").query().parse(closure_callback, &ckey, &bantype, &permission)
 }
 
 func update_ban(ckey, reason string, user *discordgo.User, tp int) (succ bool, msg string) {
