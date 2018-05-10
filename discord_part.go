@@ -1081,6 +1081,52 @@ func spam_ticker(quit chan int) {
 	}
 }
 
+const guildslim = 100
+const userslim = 1000
+
+//iterates over all guilds over all users, stripping excess roles
+//could make it respect limits (so if there's more items than limit allows, make multiple requests) but nah
+func update_roles() {
+	defer logging_recover("u_r")
+	guilds, err := dsession.UserGuilds(guildslim, "", "")
+	noerror(err)
+	for _, guild := range guilds {
+		pl_role, pok := discord_player_roles[guild.ID] //here role
+		adm_role, aok := discord_admin_roles[guild.ID] //here server->role
+		adm_role_inv := make(map[string]string)
+		if aok {
+			for k, v := range adm_role {
+				adm_role_inv[v] = k
+			}
+		}
+		if !(pok || aok) {
+			continue //no such roles here, nothing to strip
+		}
+		users, err := dsession.GuildMembers(guild.ID, "", guildslim)
+		noerror(err)
+		for _, user := range users {
+			for _, role := range user.Roles {
+				if pok && role == pl_role {
+					if get_permission_level(user.User, "") < PERMISSIONS_REGISTERED {
+						dsession.GuildMemberRoleRemove(guild.ID, user.User.ID, role)
+						//I'd put noerror here but I'm afraid that fukken onyx circus will strike back
+						//so simply log it
+						log.Printf("stripping playerrole off %v because of missing registration", user.Nick)
+					}
+				}
+				if aok {
+					srv, ok := adm_role_inv[role]
+					if ok && get_permission_level(user.User, srv) < PERMISSIONS_ADMIN {
+						dsession.GuildMemberRoleRemove(guild.ID, user.User.ID, role)
+						//same here
+						log.Printf("stripping %v adminrole off %v because he's not admin", srv, user.Nick)
+					}
+				}
+			}
+		}
+	}
+}
+
 var spamticker chan int
 
 func set_status() {
@@ -1108,6 +1154,7 @@ func Dopen() {
 	for _, srv := range known_servers {
 		Discord_message_send(srv.name, "bot_status", "BOT", "STATUS UPDATE", "now running.")
 	}
+	update_roles()
 }
 
 func Dclose() {
