@@ -1111,7 +1111,7 @@ func update_roles() {
 						dsession.GuildMemberRoleRemove(guild.ID, user.User.ID, role)
 						//I'd put noerror here but I'm afraid that fukken onyx circus will strike back
 						//so simply log it
-						log.Printf("stripping playerrole off %v because of missing registration", user.Nick)
+						log.Printf("stripping playerrole off %v because of missing registration", user.User.Username)
 					}
 				}
 				if aok {
@@ -1119,7 +1119,7 @@ func update_roles() {
 					if ok && get_permission_level(user.User, srv) < PERMISSIONS_ADMIN {
 						dsession.GuildMemberRoleRemove(guild.ID, user.User.ID, role)
 						//same here
-						log.Printf("stripping %v adminrole off %v because he's not admin", srv, user.Nick)
+						log.Printf("stripping %v adminrole off %v because he's not admin", srv, user.User.Username)
 					}
 				}
 			}
