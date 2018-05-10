@@ -1057,30 +1057,6 @@ func spam_check(userid string) bool {
 	return true
 }
 
-func launch_spam_ticker() chan int {
-	quit := make(chan int)
-	go spam_ticker(quit)
-	return quit
-}
-
-func stop_spam_ticker(quit chan int) {
-	quit <- 0
-}
-
-func spam_ticker(quit chan int) {
-	tick := time.Tick(time.Duration(discord_spam_prot_tick) * time.Second)
-	for {
-		select {
-		case <-quit:
-			return
-		case <-tick:
-			for uid, _ := range discord_spam_prot_checks {
-				discord_spam_prot_checks[uid] = 0
-			}
-		}
-	}
-}
-
 const guildslim = 100
 const userslim = 1000
 
@@ -1127,7 +1103,7 @@ func update_roles() {
 	}
 }
 
-var spamticker chan int
+var spamticker, updateticker chan int
 
 func set_status() {
 	defer rise_error("s_s")
@@ -1149,12 +1125,19 @@ func Dopen() {
 	populate_known_roles()
 	populate_bans()
 	Load_admins()
-	spamticker = launch_spam_ticker()
+	spamticker = start_ticker(discord_spam_prot_tick, func() {
+		for uid, _ := range discord_spam_prot_checks {
+			discord_spam_prot_checks[uid] = 0
+		}
+	})
 	dsession.AddHandler(messageCreate)
 	for _, srv := range known_servers {
 		Discord_message_send(srv.name, "bot_status", "BOT", "STATUS UPDATE", "now running.")
 	}
 	update_roles()
+	updateticker = start_ticker(30, func() {
+		update_roles()
+	})
 }
 
 func Dclose() {
@@ -1162,7 +1145,8 @@ func Dclose() {
 	for _, srv := range known_servers {
 		Discord_message_send(srv.name, "bot_status", "BOT", "STATUS UPDATE", "shutting down due to host request.")
 	}
-	stop_spam_ticker(spamticker)
+	stop_ticker(spamticker)
+	stop_ticker(updateticker)
 	err := dsession.Close()
 	noerror(err)
 }

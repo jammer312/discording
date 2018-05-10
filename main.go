@@ -114,6 +114,26 @@ func init_time() {
 	}
 }
 
+func start_ticker(tick_seconds int, callback func()) chan int {
+	quit := make(chan int)
+	go func() {
+		tick := time.Tick(time.Duration(tick_seconds) * time.Second)
+		for {
+			select {
+			case <-quit:
+				return
+			case <-tick:
+				callback()
+			}
+		}
+	}()
+	return quit
+}
+
+func stop_ticker(ch chan int) {
+	ch <- 0
+}
+
 func main() {
 	db_init()
 	init_time()
