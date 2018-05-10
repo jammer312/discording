@@ -207,6 +207,7 @@ func init() {
 		Usage:           "",
 		Desc:            "list players currently on server",
 		Server_specific: true,
+		Temporary:       DEL_LONG,
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			br := Byond_query(server, "who", false)
 			preret := strings.Split(br.String(), "\n")
