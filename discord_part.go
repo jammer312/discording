@@ -800,7 +800,7 @@ func update_ban(ckey, reason string, user *discordgo.User, tp int) (succ bool, m
 	} else {
 		admin = local_users[user.ID]
 	}
-	if check_moderator(admin) {
+	if admin != "" && check_moderator(admin) {
 		permissions = MODERATOR_BAN_PERMISSION
 	}
 	if permissions < PERMISSIONS_ADMIN {
@@ -828,10 +828,13 @@ func remove_ban(ckey string, tp int, user *discordgo.User) (succ bool, msg strin
 	defer logging_recover("rb")
 	ckey = ckey_simplifier(ckey)
 	permissions := get_permission_level(user, "")
+	admin := local_users[user.ID]
+	if admin != "" && check_moderator(admin) {
+		permissions = MODERATOR_BAN_PERMISSION
+	}
 	if permissions < PERMISSIONS_ADMIN {
 		return false, "missing permissions (how the fuck did you get there?)"
 	}
-	admin := local_users[user.ID]
 	msg = "rr"
 	cnt := db_template("remove_ban").exec(ckey, tp, permissions, admin).count()
 	if cnt > 0 {
