@@ -21,6 +21,7 @@ var (
 	Discord_command_character string
 	discord_superuser_id      string
 	local_users               map[string]string  //user id -> ckey
+	local_moderators          []string           //ckeys
 	discord_player_roles      map[string]string  //guild id -> role
 	known_channels_id_t       map[string]channel //channel id -> channel
 	discord_spam_prot_bans    map[string]bool
@@ -47,6 +48,10 @@ const (
 	PERMISSIONS_REGISTERED
 	PERMISSIONS_ADMIN
 	PERMISSIONS_SUPERUSER
+)
+
+const (
+	MODERATOR_BAN_PERMISSION = PERMISSIONS_SUPERUSER
 )
 
 const (
@@ -135,6 +140,7 @@ func discord_init() {
 	}
 	emoji_stripper = regexp.MustCompile("<a?:.+?:[0-9]{18}?>")
 	local_users = make(map[string]string)
+	local_moderators = make([]string, 0)
 	discord_player_roles = make(map[string]string)
 	known_channels_id_t = make(map[string]channel)
 	Known_admins = make(map[string][]string)
@@ -210,7 +216,7 @@ func Get_guild(session *discordgo.Session, message *discordgo.MessageCreate) str
 	return channel.GuildID
 }
 
-func ckey_simplier(s string) string {
+func ckey_simplifier(s string) string {
 	return strings.ToLower(strings.Replace(s, "_", "", -1))
 }
 
@@ -247,7 +253,7 @@ func get_permission_level(user *discordgo.User, server string) int {
 		return PERMISSIONS_NONE //not registered
 	}
 
-	ckey = ckey_simplier(ckey)
+	ckey = ckey_simplifier(ckey)
 	return get_permission_level_ckey(ckey, server)
 }
 
@@ -786,16 +792,19 @@ func populate_bans() {
 
 func update_ban(ckey, reason string, user *discordgo.User, tp int) (succ bool, msg string) {
 	defer logging_recover("ub")
-	ckey = strings.ToLower(ckey)
+	ckey = ckey_simplifier(ckey)
 	permissions := get_permission_level(user, "")
-	if permissions < PERMISSIONS_ADMIN {
-		return false, "missing permissions (how the fuck did you get there?)"
-	}
 	var admin string
 	if user.ID == dsession.State.User.ID {
-		admin = "Abomination"
+		admin = dsession.State.User.Username
 	} else {
 		admin = local_users[user.ID]
+	}
+	if check_moderator(admin) {
+		permissions = MODERATOR_BAN_PERMISSION
+	}
+	if permissions < PERMISSIONS_ADMIN {
+		return false, "missing permissions (how the fuck did you get there?)"
 	}
 	msg = "lr"
 	if db_template("lookup_ban").exec(ckey, tp, admin).count() > 0 {
@@ -817,7 +826,7 @@ func update_ban(ckey, reason string, user *discordgo.User, tp int) (succ bool, m
 
 func remove_ban(ckey string, tp int, user *discordgo.User) (succ bool, msg string) {
 	defer logging_recover("rb")
-	ckey = strings.ToLower(ckey)
+	ckey = ckey_simplifier(ckey)
 	permissions := get_permission_level(user, "")
 	if permissions < PERMISSIONS_ADMIN {
 		return false, "missing permissions (how the fuck did you get there?)"
@@ -834,7 +843,7 @@ func remove_ban(ckey string, tp int, user *discordgo.User) (succ bool, msg strin
 
 func check_bans(user *discordgo.User, server string, tp int) bool {
 	ckey := local_users[user.ID]
-	ckey = strings.ToLower(ckey)
+	ckey = ckey_simplifier(ckey)
 	if ckey == "" {
 		return false
 	}
@@ -849,7 +858,7 @@ func check_bans(user *discordgo.User, server string, tp int) bool {
 
 func check_bans_readable(user *discordgo.User, server string, tp int) string {
 	ckey := local_users[user.ID]
-	ckey = strings.ToLower(ckey)
+	ckey = ckey_simplifier(ckey)
 	if ckey == "" {
 		return ""
 	}
@@ -1103,6 +1112,64 @@ func update_roles() {
 	}
 }
 
+func add_moderator(ckey string) (state bool, msg string) {
+	defer logging_recover("a_m")
+	ckey = ckey_simplifier(ckey)
+	found := false
+	for _, ck := range local_moderators {
+		if ckey == ck {
+			found = true
+			break
+		}
+	}
+	if found {
+		return false, "user is already moderator"
+	}
+	local_moderators = append(local_moderators, ckey)
+	msg = "strange db error"
+	db_template("add_moderator").exec(ckey)
+	return true, "successfully added moderator `" + ckey + "`"
+}
+
+func remove_moderator(ckey string) (state bool, msg string) {
+	defer logging_recover("r_m")
+	ckey = ckey_simplifier(ckey)
+	found := false
+	index := 0
+	for i, ck := range local_moderators {
+		if ckey == ck {
+			found = true
+			index = i
+			break
+		}
+	}
+	if !found {
+		return false, "no such moderator"
+	}
+	local_moderators = append(local_moderators[:index], local_moderators[index+1:]...)
+	msg = "strange db error"
+	count := db_template("remove_moderator").exec(ckey).count()
+	if count == 0 {
+		return false, "for some reason db didn't contain records of that moderator"
+	}
+	return true, "successfully removed moderator `" + ckey + "`"
+}
+
+func check_moderator(ckey string) bool {
+	ckey = ckey_simplifier(ckey)
+	for _, ck := range local_moderators {
+		if ck == ckey {
+			return true
+		}
+	}
+	return false
+}
+
+func initial_update_moderators() {
+	var ckey string
+	db_template("select_moderators").query().parse(func() { local_moderators = append(local_moderators, ckey) }, &ckey)
+}
+
 var spamticker, updateticker chan int
 
 func set_status() {
@@ -1125,6 +1192,7 @@ func Dopen() {
 	populate_known_roles()
 	populate_bans()
 	Load_admins()
+	initial_update_moderators()
 	spamticker = start_ticker(discord_spam_prot_tick, func() {
 		for uid, _ := range discord_spam_prot_checks {
 			discord_spam_prot_checks[uid] = 0

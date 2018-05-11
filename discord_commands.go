@@ -1026,6 +1026,54 @@ func init() {
 		},
 	})
 	// ------------
+	// ------------
+	Register_command(Dcommand{
+		Command:   "promote",
+		Minargs:   1,
+		Permlevel: PERMISSIONS_SUPERUSER,
+		Usage:     "[!ckey]",
+		Desc:      "promotes user to moderator",
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
+			ok, msg := add_moderator(args[0])
+			if ok {
+				return "OK, " + msg
+			}
+			return "FAIL, " + msg
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(Dcommand{
+		Command:   "demote",
+		Minargs:   1,
+		Permlevel: PERMISSIONS_SUPERUSER,
+		Usage:     "[!ckey]",
+		Desc:      "demotes user from moderator",
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
+			ok, msg := remove_moderator(args[0])
+			if ok {
+				return "OK, " + msg
+			}
+			return "FAIL, " + msg
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(Dcommand{
+		Command:   "list_moderators",
+		Minargs:   0,
+		Permlevel: PERMISSIONS_NONE,
+		Usage:     "",
+		Desc:      "list current moderators",
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) (ret string) {
+			defer logging_recover("dc_l_m")
+			defer recovering_callback(func() { ret = "db request fail" })
+			var ckey string
+			db_template("select_moderators").query().parse(func() { ret += " `" + ckey + "`" }, &ckey)
+			return "Current moderators: " + ret
+		},
+	})
+	// ------------
 }
 
 // --------------------------------------------------------------------
