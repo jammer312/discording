@@ -132,7 +132,7 @@ func templates_init() {
 	prepare_template("update_dynembed", "update dynamic_embeds set messageid=$3 where server=$1 and channelid=$2;")
 	prepare_template("create_dynembed", "insert into dynamic_embeds values($1,$2,$3);")
 	prepare_template("remove_dynembed", "delete from dynamic_embeds where server=$1 and channelid=$2;")
-	prepare_template("select_moderators", "select ckey,desc from discord_moderators;")
+	prepare_template("select_moderators", "select ckey from discord_moderators;")
 	prepare_template("add_moderator", "insert into discord_moderators values($1);")
 	prepare_template("remove_moderator", "delete from discord_moderators where ckey=$1;")
 }
