@@ -623,7 +623,7 @@ func List_known_channels() string {
 }
 
 func Update_known_channel(srv, t, id, gid string) bool {
-	logging_recover("ukc")
+	defer logging_recover("ukc")
 	if db_template("update_known_channel").exec(t, id, gid, srv).count() > 0 {
 		populate_known_channels() //update everything
 		return true
@@ -633,7 +633,7 @@ func Update_known_channel(srv, t, id, gid string) bool {
 }
 
 func Remove_token(ttype, data string) bool {
-	logging_recover("rt")
+	defer logging_recover("rt")
 	if db_template("remove_token").exec(ttype, data).count() > 0 {
 		return true
 	}
@@ -641,7 +641,7 @@ func Remove_token(ttype, data string) bool {
 }
 
 func remove_token_by_id(id string) bool {
-	logging_recover("rtbi")
+	defer logging_recover("rtbi")
 	if db_template("remove_token_by_id").exec(id).count() > 0 {
 		return true
 	}
@@ -649,7 +649,7 @@ func remove_token_by_id(id string) bool {
 }
 
 func Create_token(ttype, data string) string {
-	logging_recover("ct")
+	defer logging_recover("ct")
 	id := uuid.New().String()
 	if db_template("create_token").exec(id, ttype, data).count() > 0 {
 		return id
@@ -658,7 +658,7 @@ func Create_token(ttype, data string) string {
 }
 
 func expend_token(id string) (ttype, data string) {
-	logging_recover("et")
+	defer logging_recover("et")
 	db_template("select_token").row(id).parse(&ttype, &data)
 	remove_token_by_id(id)
 	return
