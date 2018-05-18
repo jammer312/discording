@@ -33,7 +33,7 @@ func category_register_command(cat string, cmd *Dcommand) {
 	if !ok {
 		known_categories[cat] = []*Dcommand{cmd}
 	} else {
-		ct = append(ct, cmd)
+		known_categories[cat] = append(ct, cmd)
 	}
 }
 
@@ -48,7 +48,7 @@ func category_printout(cat string, perms int) string {
 		if dc.Permlevel > perms {
 			continue
 		}
-		cmdstr := "\t`" + dc.Command + "`"
+		cmdstr := "	`" + dc.Command + "`"
 		if dc.Server_specific {
 			cmdstr += " *SS*"
 		}
