@@ -22,12 +22,53 @@ type Dcommand struct {
 	functional      dcfunc
 	Temporary       int
 	Server_specific bool
+	Categories      []string
 }
 
-var Known_commands map[string]Dcommand
+var known_commands map[string]*Dcommand
+var known_categories map[string][]*Dcommand
 
-func Register_command(in Dcommand) {
-	Known_commands[in.Command] = in
+func category_register_command(cat string, cmd *Dcommand) {
+	ct, ok := known_categories[cat]
+	if !ok {
+		known_categories[cat] = []*Dcommand{cmd}
+	} else {
+		ct = append(ct, cmd)
+	}
+}
+
+func category_printout(cat string, perms int) string {
+	ret := "**" + cat + "**:\n"
+	ct, ok := known_categories[cat]
+	if !ok {
+		return ret + "no such category"
+	}
+	cmds := make([]string, 0)
+	for _, dc := range ct {
+		if dc.Permlevel > perms {
+			continue
+		}
+		cmdstr := "\t`" + dc.Command + "`"
+		if dc.Server_specific {
+			cmdstr += " *SS*"
+		}
+		cmds = append(cmds, cmdstr)
+	}
+	cmdsstr := strings.Join(cmds, "\n")
+	if cmdsstr == "" {
+		cmdsstr = "no available commands"
+	}
+	return ret + cmdsstr
+}
+
+func Register_command(in *Dcommand) {
+	known_commands[in.Command] = in
+	if in.Categories == nil {
+		category_register_command("unsorted", in)
+	}
+	for _, v := range in.Categories {
+		category_register_command(v, in)
+	}
 }
 
 func (d *Dcommand) Exec(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
@@ -38,9 +79,10 @@ func (d *Dcommand) Usagestr() string {
 }
 
 func init() {
-	Known_commands = make(map[string]Dcommand)
+	known_commands = make(map[string]*Dcommand)
+	known_categories = make(map[string][]*Dcommand)
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "list_admins",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_NONE,
@@ -64,7 +106,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "check_permissions",
 		Minargs:   1,
 		Permlevel: PERMISSIONS_SUPERUSER,
@@ -91,7 +133,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "reload_admins",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_ADMIN,
@@ -108,7 +150,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "login",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_REGISTERED,
@@ -128,7 +170,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "logoff",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_REGISTERED,
@@ -148,7 +190,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "whoami",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_NONE,
@@ -164,7 +206,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "register",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_NONE,
@@ -182,7 +224,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "list_registered",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_SUPERUSER,
@@ -200,7 +242,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:         "who",
 		Minargs:         0,
 		Permlevel:       PERMISSIONS_NONE,
@@ -221,7 +263,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "channel_here",
 		Minargs:   2,
 		Permlevel: PERMISSIONS_SUPERUSER,
@@ -242,7 +284,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "channel_list",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_ADMIN,
@@ -255,7 +297,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "channel_remove",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_SUPERUSER,
@@ -283,7 +325,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:         "ah",
 		Minargs:         2,
 		Permlevel:       PERMISSIONS_ADMIN,
@@ -297,7 +339,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:         "ahr",
 		Minargs:         1,
 		Permlevel:       PERMISSIONS_ADMIN,
@@ -314,7 +356,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:         "ahl",
 		Minargs:         1,
 		Permlevel:       PERMISSIONS_ADMIN,
@@ -332,7 +374,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:         "ahlr",
 		Minargs:         0,
 		Permlevel:       PERMISSIONS_ADMIN,
@@ -353,7 +395,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:         "ahm",
 		Minargs:         1,
 		Permlevel:       PERMISSIONS_ADMIN,
@@ -375,7 +417,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:         "ahu",
 		Minargs:         0,
 		Permlevel:       PERMISSIONS_ADMIN,
@@ -393,7 +435,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:         "ahl?",
 		Minargs:         0,
 		Permlevel:       PERMISSIONS_ADMIN,
@@ -414,7 +456,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:         "toggle_ooc",
 		Minargs:         0,
 		Permlevel:       PERMISSIONS_ADMIN,
@@ -429,7 +471,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "help",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_NONE,
@@ -437,44 +479,30 @@ func init() {
 		Desc:      "print list of commands available to you",
 		Temporary: DEL_LONG,
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
-			call, creg, cadm, csup := make([]string, 0), make([]string, 0), make([]string, 0), make([]string, 0)
-			ret := ""
-			user := message.Author
-			for comm, dcomm := range Known_commands {
-				switch dcomm.Permlevel {
-				case PERMISSIONS_NONE:
-					call = append(call, comm)
-				case PERMISSIONS_REGISTERED:
-					creg = append(creg, comm)
-				case PERMISSIONS_ADMIN:
-					cadm = append(cadm, comm)
-				case PERMISSIONS_SUPERUSER:
-					csup = append(csup, comm)
+			if len(args) < 1 {
+				cats := make([]string, 0)
+				for k, _ := range known_categories {
+					cats = append(cats, k)
 				}
+				return "Type `!help [category]` to print available commands fitting in provided category\nor `!help all` to print all available commands\nValid categories are: `" + strings.Join(cats, "` `") + "`\nSS means that command requires channel to be bound to game server"
 			}
-			//sort it in alphabetical, because otherwise order is random which is no good
-			sort.Strings(call)
-			sort.Strings(creg)
-			sort.Strings(cadm)
-			sort.Strings(csup)
-			if Permissions_check(user, PERMISSIONS_NONE, "") {
-				ret += "\n**Generic commands:**\n" + strings.Join(call, "\n")
-			}
-			if Permissions_check(user, PERMISSIONS_REGISTERED, "") {
-				ret += "\n**Commands, available to registered users:**\n" + strings.Join(creg, "\n")
-			}
-			if Permissions_check(user, PERMISSIONS_ADMIN, "") {
-				ret += "\n**Admin commands:**\n" + strings.Join(cadm, "\n")
-			}
-			if Permissions_check(user, PERMISSIONS_SUPERUSER, "") {
-				ret += "\n**Superuser commands:**\n" + strings.Join(csup, "\n")
+			perms := get_permission_level(message.Author, server)
+			ret := ""
+			if args[0] == "all" {
+				strs := make([]string, 0)
+				for cat, _ := range known_categories {
+					strs = append(strs, category_printout(cat, perms))
+				}
+				ret = strings.Join(strs, "\n")
+			} else {
+				ret = category_printout(args[0], perms)
 			}
 			return ret
 		},
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "help_pm",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_NONE,
@@ -485,7 +513,7 @@ func init() {
 			call, creg, cadm, csup := make([]string, 0), make([]string, 0), make([]string, 0), make([]string, 0)
 			ret := ""
 			user := message.Author
-			for comm, dcomm := range Known_commands {
+			for comm, dcomm := range known_commands {
 				switch dcomm.Permlevel {
 				case PERMISSIONS_NONE:
 					call = append(call, comm)
@@ -520,7 +548,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "usage",
 		Minargs:   1,
 		Permlevel: PERMISSIONS_NONE,
@@ -529,7 +557,7 @@ func init() {
 		Temporary: DEL_LONG,
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			cmd_name := args[0]
-			dcmd, ok := Known_commands[cmd_name]
+			dcmd, ok := known_commands[cmd_name]
 			if !ok {
 				return "no such command"
 			}
@@ -541,7 +569,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:         "adminwho",
 		Minargs:         0,
 		Permlevel:       PERMISSIONS_NONE,
@@ -560,7 +588,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "role_update",
 		Minargs:   2,
 		Permlevel: PERMISSIONS_SUPERUSER,
@@ -589,7 +617,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "role_remove",
 		Minargs:   1,
 		Permlevel: PERMISSIONS_SUPERUSER,
@@ -618,7 +646,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "role_list",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_SUPERUSER,
@@ -678,7 +706,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "ckey",
 		Minargs:   1,
 		Permlevel: PERMISSIONS_REGISTERED,
@@ -705,7 +733,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "baninfo",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_REGISTERED,
@@ -722,7 +750,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "ban_apply",
 		Minargs:   3,
 		Permlevel: PERMISSIONS_ADMIN,
@@ -750,7 +778,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "ban_lift",
 		Minargs:   2,
 		Permlevel: PERMISSIONS_ADMIN,
@@ -781,7 +809,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "ban_list",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_ADMIN,
@@ -832,7 +860,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:         "sub",
 		Minargs:         0,
 		Permlevel:       PERMISSIONS_REGISTERED,
@@ -853,7 +881,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:         "sub_once",
 		Minargs:         0,
 		Permlevel:       PERMISSIONS_REGISTERED,
@@ -874,7 +902,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:         "unsub",
 		Minargs:         0,
 		Permlevel:       PERMISSIONS_REGISTERED,
@@ -895,7 +923,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "info",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_NONE,
@@ -913,7 +941,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "dice",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_NONE,
@@ -982,7 +1010,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "status_bind",
 		Minargs:   1,
 		Permlevel: PERMISSIONS_SUPERUSER,
@@ -1006,7 +1034,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "status_unbind",
 		Minargs:   1,
 		Permlevel: PERMISSIONS_SUPERUSER,
@@ -1027,7 +1055,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "promote",
 		Minargs:   1,
 		Permlevel: PERMISSIONS_SUPERUSER,
@@ -1043,7 +1071,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "demote",
 		Minargs:   1,
 		Permlevel: PERMISSIONS_SUPERUSER,
@@ -1059,7 +1087,7 @@ func init() {
 	})
 	// ------------
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "list_moderators",
 		Minargs:   0,
 		Permlevel: PERMISSIONS_NONE,
@@ -1080,7 +1108,7 @@ func init() {
 /*
 Dcommand register template below
 	// ------------
-	Register_command(Dcommand{
+	Register_command(&Dcommand{
 		Command:   "",
 		Minargs:   ,
 		Permlevel: ,

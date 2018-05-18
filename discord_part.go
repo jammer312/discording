@@ -300,7 +300,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			args = make([]string, 0) //empty slice
 		}
 		log.Println(message.Author.String() + " c-> " + message.ContentWithMentionsReplaced())
-		dcomm, ok := Known_commands[command]
+		dcomm, ok := known_commands[command]
 		if !ok {
 			reply(session, message, "unknown command: `"+Dweaksanitize(command)+"`", DEL_DEFAULT)
 			return
