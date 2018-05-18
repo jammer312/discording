@@ -37,11 +37,11 @@ func category_register_command(cat string, cmd *Dcommand) {
 	}
 }
 
-func category_printout(cat string, perms int) string {
+func category_printout(cat string, perms int) (string, bool) {
 	ret := "**" + cat + "**:\n"
 	ct, ok := known_categories[cat]
 	if !ok {
-		return ret + "no such category"
+		return ret + "no such category", false
 	}
 	cmds := make([]string, 0)
 	for _, dc := range ct {
@@ -56,10 +56,12 @@ func category_printout(cat string, perms int) string {
 	}
 	sort.Strings(cmds)
 	cmdsstr := strings.Join(cmds, "\n")
+	succ := true
 	if cmdsstr == "" {
 		cmdsstr = "no available commands"
+		succ = false
 	}
-	return ret + cmdsstr
+	return ret + cmdsstr, succ
 }
 
 func Register_command(in *Dcommand) {
@@ -514,12 +516,16 @@ func init() {
 			if args[0] == "all" {
 				strs := make([]string, 0)
 				for cat, _ := range known_categories {
-					strs = append(strs, category_printout(cat, perms))
+					ctp, ok := category_printout(cat, perms)
+					if ok {
+						strs = append(strs, ctp)
+					}
 				}
 				sort.Strings(strs)
 				ret += strings.Join(strs, "\n")
 			} else {
-				ret += category_printout(args[0], perms)
+				ctp, _ := category_printout(args[0], perms)
+				ret += ctp
 			}
 			return ret
 		},
