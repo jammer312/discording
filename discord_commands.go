@@ -1106,6 +1106,88 @@ func init() {
 		},
 	})
 	// ------------
+	// ------------
+	Register_command(&Dcommand{
+		Command:    "config_set",
+		Minargs:    2,
+		Permlevel:  PERMISSIONS_SUPERUSER,
+		Usage:      "[!entry] [!value]",
+		Desc:       "sets db app_config entry",
+		Categories: []string{"debug", "configuration"},
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
+			ok, ms := update_config(args[0], args[1])
+			if ok {
+				return "OK, " + ms
+			}
+			return "FAIL, " + ms
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(&Dcommand{
+		Command:    "config_delete",
+		Minargs:    1,
+		Permlevel:  PERMISSIONS_SUPERUSER,
+		Usage:      "[!entry]",
+		Desc:       "removes db app_config entry",
+		Categories: []string{"debug", "configuration"},
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
+			ok, ms := remove_config(args[0])
+			if ok {
+				return "OK, " + ms
+			}
+			return "FAIL, " + ms
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(&Dcommand{
+		Command:    "config_delete",
+		Minargs:    1,
+		Permlevel:  PERMISSIONS_SUPERUSER,
+		Usage:      "[!entry]",
+		Desc:       "removes db app_config entry",
+		Categories: []string{"debug", "configuration"},
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
+			ok, ms := remove_config(args[0])
+			if ok {
+				return "OK, " + ms
+			}
+			return "FAIL, " + ms
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(&Dcommand{
+		Command:    "meme_init",
+		Minargs:    0,
+		Permlevel:  PERMISSIONS_SUPERUSER,
+		Usage:      "",
+		Desc:       "re-inits meme",
+		Categories: []string{"debug", "memes"},
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
+			ok := meme_init()
+			if ok {
+				return "OK"
+			}
+			return "FAIL"
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(&Dcommand{
+		Command:    "meme_prime",
+		Minargs:    0,
+		Permlevel:  PERMISSIONS_SUPERUSER,
+		Usage:      "",
+		Desc:       "prepares meme for embed",
+		Categories: []string{"debug", "memes"},
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
+			meme_stealthmode = true
+			return "READY"
+		},
+	})
+	// ------------
 }
 
 // --------------------------------------------------------------------

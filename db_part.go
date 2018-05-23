@@ -128,6 +128,9 @@ func templates_init() {
 	prepare_template("create_onetime_sub", "insert into DISCORD_ONETIME_SUBSCRIPTIONS values($1,$2,$3);")
 	prepare_template("remove_onetime_subs", "delete from DISCORD_ONETIME_SUBSCRIPTIONS where SRVNAME = $1;")
 	prepare_template("select_configs", "select KEY, VALUE from app_config;")
+	prepare_template("update_config", "update app_config set value=$1 where key=$2;")
+	prepare_template("add_config", "insert into app_config values($1,$2);")
+	prepare_template("remove_config", "delete from app_config where key=$1;")
 	prepare_template("select_dynembeds", "select server, channelid, messageid from dynamic_embeds;")
 	prepare_template("update_dynembed", "update dynamic_embeds set messageid=$3 where server=$1 and channelid=$2;")
 	prepare_template("create_dynembed", "insert into dynamic_embeds values($1,$2,$3);")
@@ -279,4 +282,55 @@ func (tbs *table_schema) typestring() string {
 	}
 	ret += ")"
 	return ret
+}
+
+// db table app_config {key<->value}
+var config_entries map[string]string
+
+func populate_configs() {
+	defer logging_recover("p_c")
+	config_entries = make(map[string]string)
+
+	var key, val string
+	closure_callback := func() {
+		config_entries[key] = val
+	}
+	db_template("select_configs").query().parse(closure_callback, &key, &val)
+}
+
+func check_config(entry string) bool {
+	_, ok := config_entries[entry]
+	return ok
+}
+
+func get_config(entry string) string {
+	return config_entries[entry]
+}
+
+func get_config_must(entry string) string {
+	val, ok := config_entries[entry]
+	if !ok {
+		panic("Failed to retrieve '" + entry + "' config entry")
+	}
+	return val
+}
+func update_config(entry, value string) (sc bool, msg string) {
+	defer logging_recover("a_c")
+	msg = "some code shit happened"
+	if db_template("update_config").exec(entry, value).count() < 1 {
+		if db_template("add_config").exec(entry, value).count() < 1 {
+			return false, "some db shit happened"
+		}
+		return true, "created"
+	}
+	return true, "updated"
+}
+
+func remove_config(entry string) (sc bool, msg string) {
+	defer logging_recover("r_c")
+	msg = "some code shit happened"
+	if db_template("remove_config").exec(entry).count() < 1 {
+		return false, "no such entry"
+	}
+	return true, "removed"
 }

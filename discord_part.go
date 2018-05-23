@@ -89,37 +89,6 @@ var last_ahelp map[string]string
 
 var emoji_stripper *regexp.Regexp
 
-// db table app_config {key<->value}
-var config_entries map[string]string
-
-func populate_configs() {
-	defer logging_recover("p_c")
-	config_entries = make(map[string]string)
-
-	var key, val string
-	closure_callback := func() {
-		config_entries[key] = val
-	}
-	db_template("select_configs").query().parse(closure_callback, &key, &val)
-}
-
-func check_config(entry string) bool {
-	_, ok := config_entries[entry]
-	return ok
-}
-
-func get_config(entry string) string {
-	return config_entries[entry]
-}
-
-func get_config_must(entry string) string {
-	val, ok := config_entries[entry]
-	if !ok {
-		panic("Failed to retrieve '" + entry + "' config entry")
-	}
-	return val
-}
-
 func discord_init() {
 	populate_configs()
 	discord_bot_token = get_config_must("discord_bot_token")
