@@ -1142,23 +1142,6 @@ func init() {
 	// ------------
 	// ------------
 	Register_command(&Dcommand{
-		Command:    "config_delete",
-		Minargs:    1,
-		Permlevel:  PERMISSIONS_SUPERUSER,
-		Usage:      "[!entry]",
-		Desc:       "removes db app_config entry",
-		Categories: []string{"debug", "configuration"},
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
-			ok, ms := remove_config(args[0])
-			if ok {
-				return "OK, " + ms
-			}
-			return "FAIL, " + ms
-		},
-	})
-	// ------------
-	// ------------
-	Register_command(&Dcommand{
 		Command:    "meme_init",
 		Minargs:    0,
 		Permlevel:  PERMISSIONS_SUPERUSER,
