@@ -17,13 +17,9 @@ const (
 	<html>
 	<head>
 	<title>regular dank meme</title>
-	<style>iframe {
-    margin-left: auto;
-    margin-right: auto;
-	}
 	%v
 	</head>
-	<body><iframe width="854" height="480" src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe></body>
+	<body><iframe width="854" height="480" src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1" frameborder="0" allow="autoplay; encrypted-media" style="margin-left: auto; margin-right: auto;" allowfullscreen></iframe></body>
 	</html>`
 )
 
