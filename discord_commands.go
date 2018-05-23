@@ -1115,7 +1115,7 @@ func init() {
 		Desc:       "sets db app_config entry",
 		Categories: []string{"debug", "configuration"},
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
-			ok, ms := update_config(args[0], args[1])
+			ok, ms := update_config(args[0], strings.Join(args[1:], " "))
 			if ok {
 				return "OK, " + ms
 			}
