@@ -16,10 +16,14 @@ const (
 	<!DOCTYPE html>
 	<html>
 	<head>
+	<style>iframe {
+	display: block;
+	margin: 0 auto;
+	}</style>
 	<title>regular dank meme</title>
 	%v
 	</head>
-	<body><iframe width="854" height="480" src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1" frameborder="0" allow="autoplay; encrypted-media" style="margin-left: auto; margin-right: auto;" allowfullscreen></iframe></body>
+	<body><iframe width="854" height="480" src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe></body>
 	</html>`
 )
 
