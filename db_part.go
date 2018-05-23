@@ -314,6 +314,12 @@ func get_config_must(entry string) string {
 	}
 	return val
 }
+func local_update_config(entry, value string) {
+	config_entries[entry] = value
+}
+func local_remove_config(entry string) {
+	delete(config_entries, entry)
+}
 func update_config(entry, value string) (sc bool, msg string) {
 	defer logging_recover("a_c")
 	msg = "some code shit happened"
@@ -321,8 +327,10 @@ func update_config(entry, value string) (sc bool, msg string) {
 		if db_template("add_config").exec(entry, value).count() < 1 {
 			return false, "some db shit happened"
 		}
+		local_update_config(entry, value)
 		return true, "created"
 	}
+	local_update_config(entry, value)
 	return true, "updated"
 }
 
@@ -332,5 +340,6 @@ func remove_config(entry string) (sc bool, msg string) {
 	if db_template("remove_config").exec(entry).count() < 1 {
 		return false, "no such entry"
 	}
+	local_remove_config(entry)
 	return true, "removed"
 }
