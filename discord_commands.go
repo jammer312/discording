@@ -1157,20 +1157,6 @@ func init() {
 		},
 	})
 	// ------------
-	// ------------
-	Register_command(&Dcommand{
-		Command:    "meme_prime",
-		Minargs:    0,
-		Permlevel:  PERMISSIONS_SUPERUSER,
-		Usage:      "",
-		Desc:       "prepares meme for embed",
-		Categories: []string{"debug", "memes"},
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
-			meme_stealthmode = true
-			return "READY"
-		},
-	})
-	// ------------
 }
 
 // --------------------------------------------------------------------
