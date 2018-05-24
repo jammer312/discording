@@ -143,7 +143,6 @@ func main() {
 	launch_ss_tickers()
 	Dopen()              //start discord
 	srv := Http_server() //start web server
-	meme_init()          //memes
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc        //wait for SIGINT or kinda it

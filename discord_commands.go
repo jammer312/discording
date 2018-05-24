@@ -1140,23 +1140,6 @@ func init() {
 		},
 	})
 	// ------------
-	// ------------
-	Register_command(&Dcommand{
-		Command:    "meme_init",
-		Minargs:    0,
-		Permlevel:  PERMISSIONS_SUPERUSER,
-		Usage:      "",
-		Desc:       "re-inits meme",
-		Categories: []string{"debug", "memes"},
-		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
-			ok := meme_init()
-			if ok {
-				return "OK"
-			}
-			return "FAIL"
-		},
-	})
-	// ------------
 }
 
 // --------------------------------------------------------------------
