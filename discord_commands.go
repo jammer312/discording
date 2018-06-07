@@ -758,7 +758,11 @@ func init() {
 			case BANSTRING_COMMANDS:
 				bantype = BANTYPE_COMMANDS
 			default:
-				return "incorrect type"
+				num, err := strconv.Atoi(bantypestr)
+				if err != nil {
+					return "incorrect type"
+				}
+				bantype = num
 			}
 			reason := strings.Join(args[2:], " ")
 			succ, st := update_ban(ckey, reason, message.Author, bantype)
