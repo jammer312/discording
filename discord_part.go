@@ -214,7 +214,7 @@ func get_permission_level_ckey(ckey, server string) int {
 }
 func get_permission_level_ckey_sp(ckey, server string) int {
 	su, ok := local_users[discord_superuser_id]
-	if ok && su == ckey {
+	if ok && ckey_simplifier(su) == ckey {
 		return PERMISSIONS_SUPERUSER
 	}
 	return get_permission_level_ckey(ckey, server)
