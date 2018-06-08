@@ -212,7 +212,13 @@ func get_permission_level_ckey(ckey, server string) int {
 	}
 	return PERMISSIONS_REGISTERED
 }
-
+func get_permission_level_ckey_sp(ckey, server string) int {
+	su, ok := local_users[discord_superuser_id]
+	if ok && su == ckey {
+		return PERMISSIONS_SUPERUSER
+	}
+	return get_permission_level_ckey(ckey, server)
+}
 func get_permission_level(user *discordgo.User, server string) int {
 	if user.ID == discord_superuser_id || user.ID == discord_bot_user_id {
 		return PERMISSIONS_SUPERUSER //bot admin
@@ -823,7 +829,7 @@ func check_bans(user *discordgo.User, server string, tp int) bool {
 	if !ok {
 		return false
 	}
-	ourperms := get_permission_level_ckey(ckey, server)
+	ourperms := get_permission_level_ckey_sp(ckey, server)
 	bant := banarr[ourperms]
 	return (bant & tp) != 0
 }
@@ -838,7 +844,7 @@ func check_bans_readable(user *discordgo.User, server string, tp int) string {
 	if !ok {
 		return ""
 	}
-	ourperms := get_permission_level_ckey(ckey, server)
+	ourperms := get_permission_level_ckey_sp(ckey, server)
 	bant := banarr[ourperms]
 	bantype := make([]string, 0)
 	if bant&BANTYPE_OOC != 0 {
