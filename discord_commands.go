@@ -1144,6 +1144,24 @@ func init() {
 		},
 	})
 	// ------------
+	// ------------
+	Register_command(&Dcommand{
+		Command:    "bot_rename",
+		Minargs:    1,
+		Permlevel:  PERMISSIONS_SUPERUSER,
+		Usage:      "[!nickname]",
+		Desc:       "renames bot in given guild",
+		Categories: []string{"debug", "configuration"},
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) (ret string) {
+			defer logging_recover("b_r")
+			ret = "FAIL"
+			channel, err := session.Channel(message.Message.ChannelID)
+			noerror(err)
+			noerror(session.GuildMemberNickname(channel.GuildID, session.State.User.ID, args[0]))
+			return "OK"
+		},
+	})
+	// ------------
 }
 
 // --------------------------------------------------------------------

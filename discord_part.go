@@ -63,6 +63,7 @@ const (
 const (
 	BANTYPE_OOC = 1 << iota
 	BANTYPE_COMMANDS
+	BANTYPE_SPAM
 )
 const (
 	BANSTRING_OOC      = "OOC"
