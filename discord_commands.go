@@ -1157,7 +1157,7 @@ func init() {
 			ret = "FAIL"
 			channel, err := session.Channel(message.Message.ChannelID)
 			noerror(err)
-			noerror(session.GuildMemberNickname(channel.GuildID, session.State.User.ID, strings.Join(args, " ")))
+			noerror(session.GuildMemberNickname(channel.GuildID, "@me", strings.Join(args, " ")))
 			return "OK"
 		},
 	})
