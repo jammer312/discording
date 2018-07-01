@@ -173,7 +173,10 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 		default:
 			log.Print(form)
 		}
-
+	case "data_request":
+		if parsed.Data == "shitspawn_list" {
+			Byond_query(servername, "callback_shitspawn="+Bquery_convert("agnostion noname14881337"), true)
+		}
 	default:
 		log.Print(form)
 	}
