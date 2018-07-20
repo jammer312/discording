@@ -1174,7 +1174,7 @@ func init() {
 			defer logging_recover("c_a")
 			cnt := 0
 			for chid, ch := range known_channels_id_t {
-				_, err := session.ChannelMessage(chid, "probing "+ch.server+"@"+ch.generic_type)
+				_, err := session.ChannelMessageSend(chid, "probing "+ch.server+"@"+ch.generic_type)
 				if err != nil {
 					log.Println("probing "+ch.server+"@"+ch.generic_type+" ("+chid+") failed: ", err)
 					cnt++
