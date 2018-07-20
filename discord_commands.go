@@ -1162,6 +1162,28 @@ func init() {
 		},
 	})
 	// ------------
+	// ------------
+	Register_command(&Dcommand{
+		Command:    "channels_autopurge",
+		Minargs:    0,
+		Permlevel:  PERMISSIONS_SUPERUSER,
+		Usage:      "",
+		Desc:       "autodeletes broken channel links",
+		Categories: []string{"configuration"},
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) (ret string) {
+			defer logging_recover("c_a")
+			cnt := 0
+			for chid, ch := range known_channels_id_t {
+				_, err := session.ChannelMessage(chid, "probing "+ch.server+"@"+ch.generic_type)
+				if err != nil {
+					log.Println("probing "+ch.server+"@"+ch.generic_type+" ("+chid+") failed: ", err)
+					cnt++
+				}
+			}
+			return string(cnt)
+		},
+	})
+	// ------------
 }
 
 // --------------------------------------------------------------------
