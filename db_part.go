@@ -102,6 +102,7 @@ func templates_init() {
 	prepare_template("add_known_channel", "insert into DISCORD_CHANNELS values ($1, $2, $3, $4);")
 	prepare_template("remove_known_channels", "delete from DISCORD_CHANNELS where CHANTYPE = $1 and SRVNAME = $2;")
 	prepare_template("remove_known_channels_guild", "delete from DISCORD_CHANNELS where CHANTYPE = $1 and GUILDID = $2 and SRVNAME = $3;")
+	prepare_template("remove_known_channels_id", "delete from DISCORD_CHANNELS where CHANID = $1;")
 	prepare_template("update_known_channel", "update DISCORD_CHANNELS set CHANID = $2 where CHANTYPE = $1 and GUILDID = $3 and SRVNAME = $4;")
 	prepare_template("create_token", "insert into DISCORD_TOKENS values ($1, $2, $3);")
 	prepare_template("remove_token", "delete from DISCORD_TOKENS where TYPE = $1 and DATA = $2;")

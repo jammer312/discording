@@ -1178,9 +1178,13 @@ func init() {
 				if err != nil {
 					log.Println("probing "+ch.server+"@"+ch.generic_type+" ("+chid+") failed: ", err)
 					cnt++
+					db_template("remove_known_channels_id").exec(chid)
 				}
 			}
-			return string(cnt)
+			if cnt > 0 {
+				populate_known_channels()
+			}
+			return fmt.Sprintf("purged %v channels", cnt)
 		},
 	})
 	// ------------
