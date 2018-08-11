@@ -198,7 +198,7 @@ func Load_admins() {
 }
 
 func Load_admins_for_server(server string) {
-	logging_recover("ADM " + server)
+	defer logging_recover("ADM " + server)
 	servstruct, ok := known_servers[server]
 	if !ok {
 		panic("can't find server")
