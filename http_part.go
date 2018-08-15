@@ -175,7 +175,7 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 		}
 	case "data_request":
 		if parsed.Data == "shitspawn_list" {
-			str := "agnostion noname14881337"
+			str := "jammer312"
 			fmt.Fprint(w, str)
 			log.Println("shitspawn ->" + str)
 		}
