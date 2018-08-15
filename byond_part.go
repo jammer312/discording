@@ -214,7 +214,7 @@ func (ss *server_status) global_update() {
 	if ss.status_table == nil {
 		ss.status_table = make(map[string]string)
 	}
-	resp := Byond_query(ss.server_name, "status", true)
+	resp := Byond_query_fast(ss.server_name, "status", true)
 	stat := resp.String()
 	if stat == "NULL" {
 		//probably timeout
