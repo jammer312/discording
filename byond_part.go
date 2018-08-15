@@ -216,8 +216,10 @@ func (ss *server_status) global_update() {
 	}
 	resp := Byond_query(ss.server_name, "status", true)
 	stat := resp.String()
-	if stat == "" {
-		return //probably timeout
+	if stat == "NULL" {
+		//probably timeout
+		ss.updating = false
+		return
 	}
 	stat = Bquery_deconvert(stat)
 	stat_split := strings.Split(stat, "&")
