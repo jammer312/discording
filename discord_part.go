@@ -380,6 +380,7 @@ func send_message(channel, message string) {
 		channel_buffers[channel] = append(channel_buffers[channel], message)
 	}
 	if channel_message_send_loops_online[channel] {
+		send_message_mutex.Unlock() //doublelol
 		return
 	}
 	channel_message_send_loops_online[channel] = true
