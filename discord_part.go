@@ -383,6 +383,7 @@ func send_message(channel, message string) {
 		return
 	}
 	channel_message_send_loops_online[channel] = true
+	send_message_mutex.Unlock() //lol
 	go func() {
 		for len(channel_buffers[channel]) > 0 {
 			send_message_mutex.Lock()
@@ -408,7 +409,6 @@ func send_message(channel, message string) {
 		}
 		channel_message_send_loops_online[channel] = false
 	}()
-	send_message_mutex.Unlock()
 }
 
 func Discord_subsriber_message_send(servername, channel, message string) {
