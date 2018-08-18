@@ -139,6 +139,12 @@ func templates_init() {
 	prepare_template("select_moderators", "select ckey from discord_moderators;")
 	prepare_template("add_moderator", "insert into discord_moderators values($1);")
 	prepare_template("remove_moderator", "delete from discord_moderators where ckey=$1;")
+
+	//station donatery
+	prepare_template("cleanup_station_donators", "delete from station_donators where uptotime<$1;")
+	prepare_template("check_station_donators", "select ckey from station_donators where server=$1 and next_round<=$2;")
+	prepare_template("update_station_donators", "update station_donators set uptotime=(uptotime+$3) where server=$1 and ckey=$2;")
+	prepare_template("insert_station_donators", "insert into station_donators values($1,$2,$3,-1);")
 }
 
 func prepare_template(name, query string) {
@@ -249,7 +255,14 @@ func schema_init() {
 		fields: map[string]string{
 			"ckey": text_db_type,
 		}})
-
+	add_table(table_schema{
+		name: "station_donators",
+		fields: map[string]string{
+			"server":     text_db_type,
+			"ckey":       text_db_type,
+			"uptotime":   int_bd_type,
+			"next_round": int_bd_type,
+		}})
 	/*
 		add_table(table_schema{
 			name:"",

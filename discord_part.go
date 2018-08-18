@@ -76,6 +76,8 @@ const (
 	DEL_LONG    = 3
 )
 
+const max_message_size = 2000
+
 type dban struct {
 	reason    string
 	admin     string
@@ -89,6 +91,9 @@ var dsession, _ = discordgo.New()
 var last_ahelp map[string]string
 
 var emoji_stripper *regexp.Regexp
+
+var channel_message_send_loops_online map[string]bool
+var channel_buffers map[string][]string
 
 func discord_init() {
 	populate_configs()
@@ -123,6 +128,9 @@ func discord_init() {
 	discord_spam_prot_checks = make(map[string]int)
 	discord_spam_prot_bans = make(map[string]bool)
 	discord_ahelp_locks = make(map[string]map[string]string)
+
+	channel_message_send_loops_online = make(map[string]bool)
+	channel_buffers = make(map[string][]string)
 }
 
 func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg string, temporary int) *discordgo.Message {
@@ -361,6 +369,44 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 	}
 }
 
+//this one uses timed loops to try to handle spam
+func send_message(channel, message string) {
+	if channel_buffers[channel] == nil {
+		channel_buffers[channel] = make([]string, 1)
+		channel_buffers[channel][0] = message
+	} else {
+		channel_buffers[channel] = append(channel_buffers[channel], message)
+	}
+	if channel_message_send_loops_online[channel] {
+		return
+	}
+	channel_message_send_loops_online[channel] = true
+	go func() {
+		for len(channel_buffers[channel]) > 0 {
+			condensed := strings.Join(channel_buffers[channel], "\n")
+			var chunk string
+			if len(condensed) <= max_message_size {
+				chunk = condensed
+				channel_buffers[channel] = nil
+			} else {
+				li := strings.LastIndexByte(condensed[:max_message_size], '\n')
+				if li < 0 {
+					channel_message_send_loops_online[channel] = false
+					panic("send message WTF li<0: `" + condensed[:max_message_size] + "`")
+				}
+				chunk = condensed[:li]
+				channel_buffers[channel] = []string{condensed[li+1:]}
+			}
+			_, err := dsession.ChannelMessageSend(channel, chunk)
+			if err != nil {
+				log.Println("DISCORD ERROR: failed to send message to discord: ", err)
+			}
+			time.Sleep(time.Microsecond * 300) //0.3 seconds
+		}
+		channel_message_send_loops_online[channel] = false
+	}()
+}
+
 func Discord_subsriber_message_send(servername, channel, message string) {
 	defer logging_recover("Dsms")
 	srvchans, ok := known_channels_s_t_id_m[servername]
@@ -403,13 +449,9 @@ func Discord_subsriber_message_send(servername, channel, message string) {
 				subs += ", "
 			}
 		}
-		_, err := dsession.ChannelMessageSend(id, rid+subs+Dsanitize(message))
-		if err != nil {
-			log.Println("DISCORD ERROR: failed to send message to discord: ", err)
-		}
+		send_message(id, rid+subs+Dsanitize(message))
 	}
 }
-
 func Discord_message_send(servername, channel, prefix, ckey, message string) {
 	defer logging_recover("Dms")
 	srvchans, ok := known_channels_s_t_id_m[servername]
@@ -425,10 +467,7 @@ func Discord_message_send(servername, channel, prefix, ckey, message string) {
 		delim = " "
 	}
 	for _, id := range channels {
-		_, err := dsession.ChannelMessageSend(id, "**"+Dsanitize(prefix+delim+ckey)+":** "+Dsanitize(message))
-		if err != nil {
-			log.Println("DISCORD ERROR: failed to send message to discord: ", err)
-		}
+		send_message(id, "**"+Dsanitize(prefix+delim+ckey)+":** "+Dsanitize(message))
 	}
 }
 func Discord_message_send_raw(servername, channel, message string) {
@@ -442,10 +481,7 @@ func Discord_message_send_raw(servername, channel, message string) {
 		return //no bound channels
 	}
 	for _, id := range channels {
-		_, err := dsession.ChannelMessageSend(id, message)
-		if err != nil {
-			log.Println("DISCORD ERROR: failed to send message to discord: ", err)
-		}
+		send_message(id, message)
 	}
 }
 
@@ -492,10 +528,7 @@ func Discord_message_propagate(servername, channel, prefix, ckey, message, chani
 		if id == chanid {
 			continue
 		}
-		_, err := dsession.ChannelMessageSend(id, "**"+Dsanitize(prefix+delim+ckey)+":** "+Dsanitize(message))
-		if err != nil {
-			log.Println("DISCORD ERROR: failed to send message to discord: ", err)
-		}
+		send_message(id, "**"+Dsanitize(prefix+delim+ckey)+":** "+Dsanitize(message))
 	}
 }
 
