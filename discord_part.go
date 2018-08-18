@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -313,12 +314,12 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		return
 	}
 	if !spam_check(message.Author.ID) {
-		delete_in(session, message.Message, 1)
+		delete_in(session, message.Message, 0)
 		return
 	}
 	shown_nick := local_users[message.Author.ID]
+	defer delcommand(session, message)
 	if shown_nick == "" {
-		defer delcommand(session, message)
 		channel, err := session.Channel(message.ChannelID)
 		if err != nil {
 			log.Println("Shiet: ", err)
@@ -346,31 +347,32 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 	switch srv.generic_type {
 	case "ooc":
 		if check_bans(message.Author, srv.server, BANTYPE_OOC) {
-			defer delcommand(session, message)
 			reply(session, message, "you're banned from this action. Try !baninfo", DEL_DEFAULT)
 			return
 		}
 		br := Byond_query(srv.server, "ckey="+Bquery_convert(shown_nick)+"&ooc="+Bquery_convert(byondmcontent)+addstr, true)
 		if br.String() == "muted" {
-			defer delcommand(session, message)
 			reply(session, message, "your ckey is muted from OOC", DEL_DEFAULT)
 			return
 		}
 		if br.String() == "globally muted" {
-			defer delcommand(session, message)
 			reply(session, message, "OOC is globally muted", DEL_DEFAULT)
 			return
 		}
-		Discord_message_propagate(srv.server, "ooc", "DISCORD OOC:", shown_nick, strip.StripTags(mcontent), message.ChannelID)
+		Discord_message_send(srv.server, "ooc", "DISCORD OOC:", shown_nick, strip.StripTags(mcontent))
 	case "admin":
 		Byond_query(srv.server, "admin="+Bquery_convert(shown_nick)+"&asay="+Bquery_convert(byondmcontent), true)
-		Discord_message_propagate(srv.server, "admin", "DISCORD ASAY:", shown_nick, strip.StripTags(mcontent), message.ChannelID)
+		Discord_message_send(srv.server, "admin", "DISCORD ASAY:", shown_nick, strip.StripTags(mcontent))
 	default:
 	}
 }
 
-//this one uses timed loops to try to handle spam
+//this one uses loops to try to handle spam
+//it hangs on attempting to send message if rate limit is exceeded, so it queues more chunks
+var send_message_mutex sync.Mutex
+
 func send_message(channel, message string) {
+	send_message_mutex.Lock()
 	if channel_buffers[channel] == nil {
 		channel_buffers[channel] = make([]string, 1)
 		channel_buffers[channel][0] = message
@@ -383,6 +385,7 @@ func send_message(channel, message string) {
 	channel_message_send_loops_online[channel] = true
 	go func() {
 		for len(channel_buffers[channel]) > 0 {
+			send_message_mutex.Lock()
 			condensed := strings.Join(channel_buffers[channel], "\n")
 			var chunk string
 			if len(condensed) <= max_message_size {
@@ -397,14 +400,15 @@ func send_message(channel, message string) {
 				chunk = condensed[:li]
 				channel_buffers[channel] = []string{condensed[li+1:]}
 			}
+			send_message_mutex.Unlock()
 			_, err := dsession.ChannelMessageSend(channel, chunk)
 			if err != nil {
 				log.Println("DISCORD ERROR: failed to send message to discord: ", err)
 			}
-			time.Sleep(300 * time.Millisecond) //0.3 seconds
 		}
 		channel_message_send_loops_online[channel] = false
 	}()
+	send_message_mutex.Unlock()
 }
 
 func Discord_subsriber_message_send(servername, channel, message string) {
