@@ -401,7 +401,7 @@ func send_message(channel, message string) {
 			if err != nil {
 				log.Println("DISCORD ERROR: failed to send message to discord: ", err)
 			}
-			time.Sleep(time.Microsecond * 300) //0.3 seconds
+			time.Sleep(300 * time.Millisecond) //0.3 seconds
 		}
 		channel_message_send_loops_online[channel] = false
 	}()
