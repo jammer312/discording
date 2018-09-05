@@ -175,7 +175,8 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 		}
 	case "data_request":
 		if parsed.Data == "shitspawn_list" {
-			str := "jammer312 NoName14881337"
+			//CKEYS (ckey_simplifier)
+			str := "jammer312 noname14881337"
 			fmt.Fprint(w, str)
 			log.Println("shitspawn ->" + str)
 		}
