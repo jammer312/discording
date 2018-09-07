@@ -240,7 +240,10 @@ func (ss *server_status) global_update() {
 func (ss *server_status) update_embeds() {
 	ss.update_embed()
 	for ch, msg := range ss.associated_embeds {
-		Discord_replace_embed(ch, msg, &(ss.embed))
+		if !Discord_replace_embed(ch, msg, &(ss.embed)) {
+			unbind_server_embed(ss.server_name, ch)
+			log_line_runtime("unbound embed from server" + ss.server_name + " channel " + ch)
+		}
 	}
 }
 

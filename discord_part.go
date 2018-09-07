@@ -510,10 +510,15 @@ func Discord_send_embed(servername, channel string, embed *discordgo.MessageEmbe
 	}
 }
 
-func Discord_replace_embed(channelid, messageid string, embed *discordgo.MessageEmbed) {
+func Discord_replace_embed(channelid, messageid string, embed *discordgo.MessageEmbed) (ret bool) {
 	defer logging_recover("Dre")
 	_, err := dsession.ChannelMessageEditComplex(discordgo.NewMessageEdit(channelid, messageid).SetContent(fmt.Sprintf("Last status update: %v UTC+3(Moscow)", get_time())).SetEmbed(embed))
+	if fmt.Sprint(err) == "HTTP 404 Not Found, {\"code\": 10003, \"message\": \"Unknown Channel\"}" {
+		return false
+	}
+	ret = true
 	noerror(err)
+	return
 }
 
 func Discord_message_propagate(servername, channel, prefix, ckey, message, chanid string) {
