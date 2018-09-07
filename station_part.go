@@ -81,7 +81,7 @@ func list_donators(server string) string {
 		time_secs := uptotime - time.Now().Unix()
 		time_minutes := time_secs / 60
 		time_hours := time_minutes / 60
-		time_days := time_hours / 60
+		time_days := time_hours / 24
 		time_secs %= 60
 		time_minutes %= 60
 		time_hours %= 24
