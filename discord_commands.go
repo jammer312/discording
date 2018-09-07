@@ -1213,11 +1213,11 @@ func init() {
 				switch args[2] {
 				case "s":
 				case "m":
-					dur /= 60
+					dur *= 60
 				case "h":
-					dur /= 60 * 60
+					dur *= 60 * 60
 				case "d":
-					dur /= 60 * 60 * 24
+					dur *= 60 * 60 * 24
 				}
 			}
 			update_sdonator(server, ckey, time.Duration(dur)*time.Second)
