@@ -18,7 +18,7 @@ func log_line_runtime(in string) {
 }
 
 func log_line(in, ch string) {
-	if strings.HasPrefix(in, "connect: connection refused") {
+	if strings.HasSuffix(in, "connect: connection refused") {
 		return //don't want to log it
 	}
 	if discord_up {
