@@ -78,7 +78,14 @@ func list_donators(server string) string {
 	var ckey string
 	var uptotime int64
 	closure_callback := func() {
-		ret += fmt.Sprintf("`%v` -> **%v**\n", ckey, uptotime-time.Now().Unix())
+		time_secs := uptotime - time.Now().Unix()
+		time_minutes := time_secs / 60
+		time_hours := time_minutes / 60
+		time_days := time_hours / 60
+		time_secs %= 60
+		time_minutes %= 60
+		time_hours %= 24
+		ret += fmt.Sprintf("`%v` -> **%vd %vh %vm %vs**\n", ckey, time_days, time_hours, time_minutes, time_secs)
 	}
 	db_template("list_station_donators").query(server).parse(closure_callback, &ckey, &uptotime)
 	return ret
