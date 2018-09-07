@@ -1203,18 +1203,9 @@ func init() {
 				return "nope"
 			}
 			ckey := ckey_simplifier(args[0])
-			time_str := args[1]
-			negative := false
-			if time_str[0] == '-' {
-				negative = true
-				time_str = time_str[1:]
-			}
-			dur, err := strconv.Atoi(time_str)
+			dur, err := strconv.Atoi(args[1])
 			if err != nil {
 				return "failed to parse time"
-			}
-			if negative {
-				dur *= -1
 			}
 			if len(args) > 2 {
 				switch args[2] {
