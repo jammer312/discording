@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -17,6 +18,9 @@ func log_line_runtime(in string) {
 }
 
 func log_line(in, ch string) {
+	if strings.HasPrefix(in, "connect: connection refused") {
+		return //don't want to log it
+	}
 	if discord_up {
 		chans, ok := known_channels_s_t_id_m["generic"]
 		if !ok {
