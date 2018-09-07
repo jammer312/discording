@@ -1201,9 +1201,6 @@ func init() {
 			if key, ok := local_users[message.Author.ID]; !ok || (key != "Jammer312" && key != "NoName14881337") {
 				return "nope"
 			}
-			if _, ok := local_users[args[0]]; !ok {
-				return "no such player registered `" + args[0] + "`"
-			}
 			ckey := ckey_simplifier(args[0])
 			dur, err := strconv.Atoi(args[1])
 			if err != nil {
