@@ -9,6 +9,29 @@ import (
 	"time"
 )
 
+var discord_up bool
+
+func log_line_runtime(in string) {
+	log.Println(in) // usual logging
+	log_line(in, "runtimes")
+}
+
+func log_line(in, ch string) {
+	if discord_up {
+		chans, ok := known_channels_s_t_id_m["generic"]
+		if !ok {
+			return
+		}
+		channels, ok := chans[ch]
+		if !ok || len(channels) < 1 {
+			return //no bound channels
+		}
+		for _, id := range channels {
+			send_message(id, in)
+		}
+	}
+}
+
 func logging_crash(ctx string) {
 	if r := recover(); r != nil {
 		log.Fatalln("ERRF: ["+ctx+"]:", r)
@@ -17,7 +40,7 @@ func logging_crash(ctx string) {
 
 func logging_recover(ctx string) {
 	if r := recover(); r != nil {
-		log.Println("ERR: ["+ctx+"]:", r)
+		log_line_runtime("ERR: [" + ctx + "]: " + fmt.Sprint(r))
 	}
 }
 
@@ -29,7 +52,7 @@ func recovering_callback(callback func()) {
 
 func logging_pass(ctx string) {
 	if r := recover(); r != nil {
-		log.Println("ERR: ["+ctx+"]:", r)
+		log_line_runtime("ERR: [" + ctx + "]: " + fmt.Sprint(r))
 		panic(r)
 	}
 }
@@ -141,11 +164,13 @@ func main() {
 	populate_servers()
 	populate_server_embeds()
 	launch_ss_tickers()
-	Dopen()              //start discord
+	Dopen() //start discord
+	discord_up = true
 	srv := Http_server() //start web server
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
-	<-sc        //wait for SIGINT or kinda it
+	<-sc //wait for SIGINT or kinda it
+	discord_up = false
 	Dclose()    //stop discord
 	db_deinit() //clean db templates
 	//graceful shutdown for web server

@@ -42,14 +42,19 @@ func safe_param(m *url.Values, param string) string {
 }
 
 type universal_parse struct {
-	Ckey     string
-	Message  string
-	Token    string
-	Status   string
-	Reason   string
-	Seclevel string
-	Event    string
-	Data     string
+	Ckey         string
+	Message      string
+	Token        string
+	Status       string
+	Reason       string
+	Seclevel     string
+	Event        string
+	Data         string
+	Round        int
+	Keyname      string
+	Role         string
+	Add_num      int
+	Has_follower int
 }
 
 func webhook_handler(w http.ResponseWriter, r *http.Request) {
@@ -176,10 +181,13 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 	case "data_request":
 		if parsed.Data == "shitspawn_list" {
 			//CKEYS (ckey_simplifier)
-			str := "jammer312 noname14881337"
+			str := check_donators(servername, parsed.Round)
 			fmt.Fprint(w, str)
-			log.Println("shitspawn ->" + str)
+			log_line("shitspawn list -> "+str, "shitspawn_debug")
 		}
+	case "rolespawn":
+		expend_donator(servername, parsed.Keyname, parsed.Round, parsed.Role, parsed.Add_num, parsed.Has_follower > 0)
+		log_line(fmt.Sprintf("shitspawn role -> %v %v %v %v %v %v", servername, parsed.Keyname, parsed.Round, parsed.Role, parsed.Add_num, parsed.Has_follower), "shitspawn_debug")
 	default:
 		log.Print(form)
 	}

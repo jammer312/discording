@@ -143,8 +143,11 @@ func templates_init() {
 	//station donatery
 	prepare_template("cleanup_station_donators", "delete from station_donators where uptotime<$1;")
 	prepare_template("check_station_donators", "select ckey from station_donators where server=$1 and next_round<=$2;")
+	prepare_template("check_station_donator_next_round", "select next_round from station_donators where server=$1 and ckey=$2;")
+	prepare_template("expend_station_donator", "update station_donators set next_round=$3 where server=$1 and ckey=$2;")
 	prepare_template("update_station_donators", "update station_donators set uptotime=(uptotime+$3) where server=$1 and ckey=$2;")
 	prepare_template("insert_station_donators", "insert into station_donators values($1,$2,$3,-1);")
+	prepare_template("list_station_donators", "select ckey,uptotime from station_donators where server=$1;")
 }
 
 func prepare_template(name, query string) {
@@ -301,14 +304,23 @@ func (tbs *table_schema) typestring() string {
 // db table app_config {key<->value}
 var config_entries map[string]string
 
+func def_config_init() {
+	local_soft_update_config("st_d_traitor_cooldown", "4")
+	local_soft_update_config("st_d_changeling_cooldown", "4")
+	local_soft_update_config("st_d_wizard_cooldown", "5")
+	local_soft_update_config("st_d_devil_cooldown", "3")
+	local_soft_update_config("st_d_revenant_cooldown", "3")
+
+}
+
 func populate_configs() {
 	defer logging_recover("p_c")
 	config_entries = make(map[string]string)
-
 	var key, val string
 	closure_callback := func() {
 		config_entries[key] = val
 	}
+	def_config_init()
 	db_template("select_configs").query().parse(closure_callback, &key, &val)
 }
 
@@ -333,6 +345,11 @@ func local_update_config(entry, value string) {
 }
 func local_remove_config(entry string) {
 	delete(config_entries, entry)
+}
+func local_soft_update_config(entry, value string) {
+	if _, ok := config_entries[entry]; !ok {
+		config_entries[entry] = value
+	}
 }
 func update_config(entry, value string) (sc bool, msg string) {
 	defer logging_recover("a_c")
