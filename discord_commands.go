@@ -1229,6 +1229,7 @@ func init() {
 		Minargs:         0,
 		Permlevel:       PERMISSIONS_REGISTERED,
 		Server_specific: true,
+		Temporary:       DEL_LONG,
 		Usage:           "",
 		Desc:            "gives/takes donated time from player; time format is **s**econds, **m**inutes,**h**ours **d**ays, seconds by default, **integer**",
 		Categories:      []string{"donatery"},
