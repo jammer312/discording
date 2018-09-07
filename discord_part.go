@@ -51,6 +51,8 @@ const (
 	PERMISSIONS_SUPERUSER
 )
 
+const PERMISSIONS_SPECIAL = -1
+
 const (
 	MODERATOR_BAN_PERMISSION = PERMISSIONS_SUPERUSER
 )
@@ -284,7 +286,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		} else {
 			args = make([]string, 0) //empty slice
 		}
-		log.Println(message.Author.String() + " c-> " + message.ContentWithMentionsReplaced())
+		log_line(message.Author.String()+" c-> "+message.ContentWithMentionsReplaced(), "commands")
 		dcomm, ok := known_commands[command]
 		if !ok {
 			reply(session, message, "unknown command: `"+Dweaksanitize(command)+"`", DEL_DEFAULT)
@@ -543,10 +545,7 @@ func Discord_private_message_send(user *discordgo.User, message string) bool {
 		log.Println("Failed to create private channel: ", err)
 		return false
 	}
-	_, err = dsession.ChannelMessageSend(channel.ID, message)
-	if err != nil {
-		log.Println("DISCORD ERROR: failed to send message to discord: ", err)
-	}
+	send_message(channel.ID, message)
 	return true
 }
 

@@ -1188,6 +1188,57 @@ func init() {
 		},
 	})
 	// ------------
+	// ------------
+	Register_command(&Dcommand{
+		Command:    "st_d_update",
+		Minargs:    2,
+		Permlevel:  PERMISSIONS_SPECIAL,
+		Usage:      "[!key] [!time] [?time_format]",
+		Desc:       "gives/takes donated time from player; time format is **s**econds, **m**inutes,**h**ours **d**ays, seconds by default, **integer**",
+		Categories: []string{"donatery"},
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) (ret string) {
+			defer logging_recover("st_d_update")
+			if key, ok := local_users[message.Author.ID]; !ok || (key != "Jammer312" && key != "NoName14881337") {
+				return "nope"
+			}
+			if _, ok := local_users[args[0]]; !ok {
+				return "no such player registered `" + args[0] + "`"
+			}
+			ckey := ckey_simplifier(args[0])
+			dur, err := strconv.Atoi(args[1])
+			if err != nil {
+				return "failed to parse time"
+			}
+			if len(args) > 2 {
+				switch args[2] {
+				case "s":
+				case "m":
+					dur /= 60
+				case "h":
+					dur /= 60 * 60
+				case "d":
+					dur /= 60 * 60 * 24
+				}
+			}
+			update_sdonator(server, ckey, time.Duration(dur)*time.Second)
+			return "OK"
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(&Dcommand{
+		Command:    "st_d_list",
+		Minargs:    0,
+		Permlevel:  PERMISSIONS_REGISTERED,
+		Usage:      "",
+		Desc:       "gives/takes donated time from player; time format is **s**econds, **m**inutes,**h**ours **d**ays, seconds by default, **integer**",
+		Categories: []string{"donatery"},
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) (ret string) {
+			return "\n" + list_donators(server)
+		},
+	})
+	// ------------
+
 }
 
 // --------------------------------------------------------------------
