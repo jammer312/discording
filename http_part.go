@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -50,11 +51,11 @@ type universal_parse struct {
 	Seclevel     string
 	Event        string
 	Data         string
-	Round        int
+	Round        string
 	Keyname      string
 	Role         string
-	Add_num      int
-	Has_follower int
+	Add_num      string
+	Has_follower string
 }
 
 func webhook_handler(w http.ResponseWriter, r *http.Request) {
@@ -181,12 +182,20 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 	case "data_request":
 		if parsed.Data == "shitspawn_list" {
 			//CKEYS (ckey_simplifier)
-			str := check_donators(servername, parsed.Round)
+			round, err := strconv.Atoi(parsed.Round)
+			noerror(err)
+			str := check_donators(servername, round)
 			fmt.Fprint(w, str)
 			log_line("shitspawn list -> "+str, "shitspawn_debug")
 		}
 	case "rolespawn":
-		expend_donator(servername, parsed.Keyname, parsed.Round, parsed.Role, parsed.Add_num, parsed.Has_follower > 0)
+		round, err := strconv.Atoi(parsed.Round)
+		noerror(err)
+		add_num, err := strconv.Atoi(parsed.Add_num)
+		noerror(err)
+		has_follower, err := strconv.Atoi(parsed.Has_follower)
+		noerror(err)
+		expend_donator(servername, parsed.Keyname, round, parsed.Role, add_num, has_follower > 0)
 		log_line(fmt.Sprintf("shitspawn role -> %v %v %v %v %v %v", servername, parsed.Keyname, parsed.Round, parsed.Role, parsed.Add_num, parsed.Has_follower), "shitspawn_debug")
 	default:
 		log.Print(form)
