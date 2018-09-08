@@ -94,7 +94,7 @@ var dsession, _ = discordgo.New()
 var last_ahelp map[string]string
 
 var emoji_stripper *regexp.Regexp
-
+var url_embedder *regexp.Regexp
 var channel_message_send_loops_online map[string]bool
 var channel_buffers map[string][]string
 
@@ -117,6 +117,7 @@ func discord_init() {
 		log.Fatalln("Failed to parse 'discord_spam_prot_tick'")
 	}
 	emoji_stripper = regexp.MustCompile("<a?:.+?:[0-9]{18}?>")
+	url_embedder = regexp.MustCompile("https?://[\\w.]+/?[^ ]")
 	local_users = make(map[string]string)
 	local_moderators = make([]string, 0)
 	discord_player_roles = make(map[string]string)
@@ -563,6 +564,8 @@ func Dsanitize(m string) string {
 	out = strings.Replace(out, "@everyone", "[я долбоеб]", -1)
 	out = strings.Replace(out, "@here", "[я долбоеб]", -1)
 	out = strings.Replace(out, "@", "\\@", -1)
+	// mcontent = emoji_stripper.ReplaceAllString(mcontent, "")
+	out = url_embedder.ReplaceAllString(out, "<\\0>")
 	return out
 }
 
