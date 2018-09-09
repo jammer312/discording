@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -180,12 +181,16 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 		}
 	case "data_request":
 		if parsed.Data == "shitspawn_list" {
-			str := check_donators(servername, parsed.Round)
+			round, err := strconv.Atoi(parsed.Round)
+			noerror(err)
+			str := check_donators(servername, round)
 			fmt.Fprint(w, str)
 			log_line("shitspawn list -> "+str, "shitspawn_debug")
 		}
 	case "rolespawn":
-		expend_donator(servername, parsed.Keyname, parsed.Round, parsed.Role, parsed.Add_num, parsed.Has_follower > 0)
+		round, err := strconv.Atoi(parsed.Round)
+		noerror(err)
+		expend_donator(servername, parsed.Keyname, round, parsed.Role, parsed.Add_num, parsed.Has_follower > 0)
 		log_line(fmt.Sprintf("shitspawn role -> %v %v %v %v %v %v", servername, parsed.Keyname, parsed.Round, parsed.Role, parsed.Add_num, parsed.Has_follower), "shitspawn_debug")
 	default:
 		log.Print(form)
