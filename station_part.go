@@ -58,7 +58,7 @@ func expend_donator(server, keyname string, curround int, role string, friends i
 		}
 	}
 	cur_next_round += cooldown
-	db_template("expend_donator").exec(server, ckey, cur_next_round)
+	db_template("expend_station_donator").exec(server, ckey, cur_next_round)
 }
 
 func check_donators(server string, round int) string {
