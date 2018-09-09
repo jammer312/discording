@@ -53,7 +53,7 @@ type universal_parse struct {
 	Data         string
 	Keyname      string
 	Role         string
-	Round        int
+	Round        string
 	Add_num      int
 	Has_follower int
 }
