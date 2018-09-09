@@ -78,6 +78,7 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json_data := []byte(Bquery_deconvert(safe_param(form, "data")))
+	defer rise_error(string(json_data))
 	var parsed universal_parse
 	err := json.Unmarshal(json_data, &parsed)
 	if err != nil {
