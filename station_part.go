@@ -26,8 +26,9 @@ func cleanup_sdonators() {
 
 func expend_donator(server, keyname string, curround int, role string, friends int, hunter bool) {
 	defer logging_recover("expend_donator")
+	ckey := ckey_simplifier(keyname)
 	cur_next_round := 0
-	db_template("check_station_donator_next_round").row(server, keyname).parse(&cur_next_round)
+	db_template("check_station_donator_next_round").row(server, ckey).parse(&cur_next_round)
 	if curround > cur_next_round {
 		cur_next_round = curround
 	}
@@ -57,7 +58,7 @@ func expend_donator(server, keyname string, curround int, role string, friends i
 		}
 	}
 	cur_next_round += cooldown
-	db_template("expend_donator").exec(server, keyname, cur_next_round)
+	db_template("expend_donator").exec(server, ckey, cur_next_round)
 }
 
 func check_donators(server string, round int) string {
