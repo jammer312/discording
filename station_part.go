@@ -78,6 +78,7 @@ func list_donators(server string) string {
 	ret := ""
 	var ckey string
 	var uptotime int64
+	var next_round int
 	closure_callback := func() {
 		time_secs := uptotime - time.Now().Unix()
 		time_minutes := time_secs / 60
@@ -86,8 +87,8 @@ func list_donators(server string) string {
 		time_secs %= 60
 		time_minutes %= 60
 		time_hours %= 24
-		ret += fmt.Sprintf("`%v` -> **%vd %vh %vm %vs**\n", ckey, time_days, time_hours, time_minutes, time_secs)
+		ret += fmt.Sprintf("`%v` -> **%vd %vh %vm %vs** *%v*\n", ckey, time_days, time_hours, time_minutes, time_secs, next_round)
 	}
-	db_template("list_station_donators").query(server).parse(closure_callback, &ckey, &uptotime)
+	db_template("list_station_donators").query(server).parse(closure_callback, &ckey, &uptotime, &next_round)
 	return ret
 }

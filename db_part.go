@@ -147,7 +147,7 @@ func templates_init() {
 	prepare_template("expend_station_donator", "update station_donators set next_round=$3 where server=$1 and ckey=$2;")
 	prepare_template("update_station_donators", "update station_donators set uptotime=(uptotime+$3) where server=$1 and ckey=$2;")
 	prepare_template("insert_station_donators", "insert into station_donators values($1,$2,$3,-1);")
-	prepare_template("list_station_donators", "select ckey,uptotime from station_donators where server=$1;")
+	prepare_template("list_station_donators", "select ckey,uptotime,next_round from station_donators where server=$1;")
 }
 
 func prepare_template(name, query string) {
