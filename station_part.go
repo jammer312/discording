@@ -75,6 +75,7 @@ func check_donators(server string, round int) string {
 
 func list_donators(server string) string {
 	defer logging_recover("list_donators")
+	cleanup_sdonators()
 	ret := ""
 	var ckey string
 	var uptotime int64
