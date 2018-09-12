@@ -1255,7 +1255,11 @@ func init() {
 			userid := mention[2 : len(mention)-1]
 			_, ok := local_users[userid]
 			if !ok {
-				return "user is not registered"
+				userid = userid[1:]
+				_, ok = local_users[userid]
+				if !ok {
+					return "user is not registered"
+				}
 			}
 			return deregister_user(userid)
 		},
