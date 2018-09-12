@@ -696,6 +696,15 @@ func Discord_process_token(id, ckey string) {
 	}
 }
 
+func deregister_user(login string) string {
+	defer logging_recover("dru")
+	if db_template("delete_user_did").exec(login).count() > 0 {
+		delete(local_users, login)
+		return "OK"
+	}
+	return "FAIL"
+}
+
 func register_user(login, ckey string) {
 	defer logging_recover("ru")
 	db_template("delete_user_did").exec(login)

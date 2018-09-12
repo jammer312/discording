@@ -1238,6 +1238,29 @@ func init() {
 		},
 	})
 	// ------------
+	// ------------
+	Register_command(&Dcommand{
+		Command:    "deregister",
+		Minargs:    1,
+		Permlevel:  PERMISSIONS_SUPERUSER,
+		Usage:      "[!ckey]",
+		Desc:       "deregisters specified user",
+		Categories: []string{"account"},
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) (ret string) {
+			args = strings.Fields(message.Content[1:])
+			mention := args[1]
+			if len(mention) < 4 {
+				return "incorrect input"
+			}
+			userid := mention[2 : len(mention)-1]
+			_, ok := local_users[userid]
+			if !ok {
+				return "user is not registered"
+			}
+			return deregister_user(userid)
+		},
+	})
+	// ------------
 
 }
 
