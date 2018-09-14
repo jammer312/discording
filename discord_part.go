@@ -292,7 +292,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			reply(session, message, "unknown command: `"+Dweaksanitize(command)+"`", DEL_DEFAULT)
 			return
 		}
-		log_line(message.Author.String()+"->"+message.ContentWithMentionsReplaced(), "commands")
+		log_line(fmt.Sprintf("<@%v>(%v)->`%v`", message.Author.ID, local_users[message.Author.ID], message.Content), "commands")
 		if server == "" && dcomm.Server_specific {
 			reply(session, message, "this command requires channel to be bound to server", DEL_DEFAULT)
 			return
