@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -150,8 +151,6 @@ type server_status struct {
 	associated_embeds map[string]string //channelid -> messageid, no more than one per channel (because no reason for more than one)
 	embed             discordgo.MessageEmbed
 	timerchan         chan int
-	updating          bool
-	needupdate        bool
 	/*	server_name    string
 		version        string
 		mode           string
@@ -205,12 +204,11 @@ var embed_teplate = [...]embed_ft{
 }
 
 //syncs with hub
+var global_update_mutex sync.Mutex
+
 func (ss *server_status) global_update() {
-	if ss.updating { //concurrency workaround
-		ss.needupdate = true
-		return
-	}
-	ss.updating = true
+	global_update_mutex.Lock()
+	defer global_update_mutex.Unlock()
 	if ss.status_table == nil {
 		ss.status_table = make(map[string]string)
 	}
@@ -218,7 +216,6 @@ func (ss *server_status) global_update() {
 	stat := resp.String()
 	if stat == "NULL" {
 		//probably timeout
-		ss.updating = false
 		return
 	}
 	stat = Bquery_deconvert(stat)
@@ -230,11 +227,6 @@ func (ss *server_status) global_update() {
 		}
 	}
 	ss.update_embeds()
-	ss.updating = false
-	if ss.needupdate { //okay repeat
-		ss.needupdate = false
-		ss.global_update()
-	}
 }
 
 func (ss *server_status) update_embeds() {
