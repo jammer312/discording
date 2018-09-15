@@ -175,8 +175,9 @@ func main() {
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc //wait for SIGINT or kinda it
 	discord_up = false
-	Dclose()    //stop discord
-	db_deinit() //clean db templates
+	Dclose()              //stop discord
+	db_deinit()           //clean db templates
+	http_server_stop <- 1 //stop server ticker
 	//graceful shutdown for web server
 	if err := srv.Shutdown(nil); err != nil {
 		log.Fatal("Failed to shutdown webserver: ", err)

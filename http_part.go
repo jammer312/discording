@@ -13,6 +13,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var (
@@ -241,6 +242,8 @@ func Load_admins_for_server(server string) {
 	log.Println(adminssl)
 }
 
+var http_server_stop chan int
+
 func Http_server() *http.Server {
 	srv := &http.Server{Addr: ":" + port}
 	http.HandleFunc("/", index_handler)
@@ -249,6 +252,18 @@ func Http_server() *http.Server {
 		err := srv.ListenAndServe()
 		if err != nil {
 			log.Print("Http server error: ", err)
+		}
+	}()
+	http_server_ticker := time.NewTicker(30 * time.Minute)
+	go func() {
+		for {
+			select {
+			case <-http_server_stop:
+				http_server_ticker.Stop()
+				return
+			case <-http_server_ticker.C:
+				_, _ = http.Get("http://discording312.herokuapp.com")
+			}
 		}
 	}()
 	return srv
