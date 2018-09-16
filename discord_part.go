@@ -1214,6 +1214,7 @@ func nickchange_guard(s *discordgo.Session, up *discordgo.GuildMemberUpdate) {
 		//it's our bot
 		nick := config_entries[up.GuildID+"nick"]
 		if nick == "" {
+			log_line("Nick changed in <#"+up.GuildID+"> from "+nick+" to "+up.Nick+"", "nick_guard")
 			return
 		}
 		if up.Nick != nick {
