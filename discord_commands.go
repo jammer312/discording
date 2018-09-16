@@ -269,7 +269,7 @@ func init() {
 				return strings.Join(preret, "\n")
 			}
 			sort.Strings(preret[1 : len(preret)-1])
-			return strings.Join(preret, "\n")
+			return Dsanitize(strings.Join(preret, "\n"))
 
 		},
 	})
