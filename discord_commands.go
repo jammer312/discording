@@ -1156,8 +1156,15 @@ func init() {
 			defer logging_recover("b_r")
 			ret = "FAIL"
 			new_nick := strings.Join(args, " ")
+			new_nick = strings.TrimSpace(new_nick)
 			if len(new_nick) > 32 {
-				return "too long nick (must be below 32 characters)"
+				return "FAIL, too long nick (must be below 32 characters)"
+			}
+			if len(new_nick) < 2 {
+				return "FAIL, too short nick (must be above 2 characters)"
+			}
+			if strings.IndexAny(new_nick, "@#:`") != -1 {
+				return "FAIL, nick contains bad characters"
 			}
 			channel, err := session.Channel(message.Message.ChannelID)
 			noerror(err)
