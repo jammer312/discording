@@ -1213,6 +1213,10 @@ func nickchange_guard(s *discordgo.Session, up *discordgo.GuildMemberUpdate) {
 	if up.User.ID == dsession.State.User.ID {
 		//it's our bot
 		nick := config_entries[up.GuildID+"nick"]
+		if up.Nick == "" {
+			log_line("Restored nick in "+up.GuildID, "nick_guard")
+			return
+		}
 		if nick == "" {
 			log_line("Nick changed in "+up.GuildID+" from "+nick+" to "+up.Nick+"", "nick_guard")
 			return
