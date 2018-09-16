@@ -1209,6 +1209,21 @@ func set_status() {
 	noerror(dsession.UpdateStatus(0, "!info"))
 }
 
+func nickchange_guard(s *discordgo.Session, up *discordgo.GuildMemberUpdate) {
+	if up.User.ID == dsession.State.User.ID {
+		//it's our bot
+		nick := config_entries[up.GuildID+"nick"]
+		if nick == "" {
+			return
+		}
+		if up.Nick != nick {
+			log_line("Nick changed in <#"+up.GuildID+"> from "+nick+" to "+up.Nick+"; reverting", "nick_guard")
+			defer logging_recover("nickchange_guard")
+			noerror(s.GuildMemberNickname(up.GuildID, "@me", nick))
+		}
+	}
+}
+
 func Dopen() {
 	defer logging_crash("Do")
 	var err error
@@ -1231,6 +1246,7 @@ func Dopen() {
 		}
 	})
 	dsession.AddHandler(messageCreate)
+	dsession.AddHandler(nickchange_guard)
 	for _, srv := range known_servers {
 		Discord_message_send(srv.name, "bot_status", "BOT", "STATUS UPDATE", "now running.")
 	}

@@ -1155,9 +1155,14 @@ func init() {
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) (ret string) {
 			defer logging_recover("b_r")
 			ret = "FAIL"
+			new_nick := strings.Join(args, " ")
+			if len(new_nick) > 32 {
+				return "too long nick (must be below 32 characters)"
+			}
 			channel, err := session.Channel(message.Message.ChannelID)
 			noerror(err)
-			noerror(session.GuildMemberNickname(channel.GuildID, "@me", strings.Join(args, " ")))
+			_, _ = update_config(channel.GuildID+"nick", new_nick)
+			noerror(session.GuildMemberNickname(channel.GuildID, "@me", new_nick))
 			return "OK"
 		},
 	})
