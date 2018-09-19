@@ -1277,7 +1277,7 @@ func init() {
 		},
 	})
 	// ------------
-	letterRunes := []rune("abcdefghijklmnopqrstuvwxyz")
+	letterRunes := []rune("abcdefghijklmnopqrstuvwxyz0123456789")
 	// ------------
 	Register_command(&Dcommand{
 		Command:    "prnt",
@@ -1290,7 +1290,8 @@ func init() {
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) (ret string) {
 			r := make([]rune, 6)
 			for i := range r {
-				r[i] = letterRunes[rand.Intn(len(letterRunes))]
+				random := rand.New(rand.NewSource(time.Now().UnixNano()))
+				r[i] = letterRunes[random.Intn(len(letterRunes))]
 			}
 			return "https://prnt.sc/" + string(r) //strings.Join(r, "")
 		},
