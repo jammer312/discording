@@ -1277,6 +1277,25 @@ func init() {
 		},
 	})
 	// ------------
+	letterRunes := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	// ------------
+	Register_command(&Dcommand{
+		Command:    "prnt",
+		Minargs:    0,
+		Permlevel:  PERMISSIONS_REGISTERED,
+		Temporary:  DEL_LONG,
+		Usage:      "",
+		Desc:       "puts random prnt link",
+		Categories: []string{"misc"},
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) (ret string) {
+			r := make([]rune, 5)
+			for i := range r {
+				r[i] = letterRunes[rand.Intn(len(letterRunes))]
+			}
+			return "https://prnt.sc/" + string(r) //strings.Join(r, "")
+		},
+	})
+	// ------------
 
 }
 
