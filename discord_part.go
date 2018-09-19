@@ -340,12 +340,13 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 	srv := known_channels_id_t[message.ChannelID]
 	mcontent = emoji_stripper.ReplaceAllString(mcontent, "")
 	var byondmcontent string //sent to byond
-	if !Permissions_check(message.Author, PERMISSIONS_ADMIN, srv.server) {
-		byondmcontent = strings.Replace(mcontent, "\n", "#", -1)
-		byondmcontent = html.EscapeString(byondmcontent)
-	} else {
+	isadminhere := Permissions_check(message.Author, PERMISSIONS_ADMIN, srv.server)
+	if isadminhere {
 		byondmcontent = "<font color='#39034f'>" + mcontent + "</font>"
 		addstr = "&isadmin=1"
+	} else {
+		byondmcontent = strings.Replace(mcontent, "\n", "#", -1)
+		byondmcontent = html.EscapeString(byondmcontent)
 	}
 	switch srv.generic_type {
 	case "ooc":
@@ -364,6 +365,9 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		}
 		Discord_message_send(srv.server, "ooc", "DISCORD OOC:", shown_nick, strip.StripTags(mcontent))
 	case "admin":
+		if !isadminhere {
+			reply(session, message, "You have no privilegies to write here", DEL_DEFAULT)
+		}
 		Byond_query(srv.server, "admin="+Bquery_convert(shown_nick)+"&asay="+Bquery_convert(byondmcontent), true)
 		Discord_message_send(srv.server, "admin", "DISCORD ASAY:", shown_nick, strip.StripTags(mcontent))
 	default:
