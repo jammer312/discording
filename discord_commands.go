@@ -1283,7 +1283,7 @@ func init() {
 		Command:    "prnt",
 		Minargs:    0,
 		Permlevel:  PERMISSIONS_REGISTERED,
-		Temporary:  DEL_LONG,
+		Temporary:  DEL_EXTRA_LONG,
 		Usage:      "",
 		Desc:       "puts random prnt link",
 		Categories: []string{"misc"},

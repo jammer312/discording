@@ -74,9 +74,10 @@ const (
 )
 
 const (
-	DEL_NEVER   = -1
-	DEL_DEFAULT = 0
-	DEL_LONG    = 3
+	DEL_NEVER      = -1
+	DEL_DEFAULT    = 0
+	DEL_LONG       = 3
+	DEL_EXTRA_LONG = 10
 )
 
 const max_message_size = 2000
