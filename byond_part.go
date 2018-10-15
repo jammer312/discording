@@ -67,7 +67,7 @@ func Byond_query(srvname, request string, authed bool) Byond_response {
 }
 
 func Byond_query_fast(srvname, request string, authed bool) Byond_response {
-	return Byond_query_adv(srvname, request, authed, byond_request_timeout, byond_fastresponse_timeout)
+	return Byond_query_adv(srvname, request, authed, byond_fastrequest_timeout, byond_fastresponse_timeout)
 }
 
 func Byond_query_adv(srvname, request string, authed bool, req_to, res_to int) Byond_response {
