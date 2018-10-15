@@ -213,9 +213,7 @@ func (ss *server_status) global_update() {
 	if ss.status_table == nil {
 		ss.status_table = make(map[string]string)
 	}
-	log.Println("here1 " + ss.server_name)
 	resp := Byond_query_fast(ss.server_name, "status", true)
-	log.Println("here2 " + ss.server_name)
 	stat := resp.String()
 	if stat == "NULL" {
 		//probably timeout
@@ -229,9 +227,7 @@ func (ss *server_status) global_update() {
 			ss.status_table[tmp[0]] = tmp[1]
 		}
 	}
-	log.Println("here3 " + ss.server_name)
 	ss.update_embeds()
-	log.Println("here4 " + ss.server_name)
 }
 
 func (ss *server_status) update_embeds() {
