@@ -18,7 +18,7 @@ func log_line_runtime(in string) {
 }
 
 func log_line(in, ch string) {
-	if strings.HasSuffix(in, "connect: connection refused") {
+	if strings.HasSuffix(in, "connect: connection refused") || strings.HasSuffix(in, "i/o timeout") || strings.HasSuffix(in, "timed out") {
 		return //don't want to log it
 	}
 	if discord_up {
