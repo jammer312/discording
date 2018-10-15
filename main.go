@@ -163,12 +163,17 @@ func stop_ticker(ch chan int) {
 
 func main() {
 	db_init()
+	log.Println("DB inited")
 	init_time()
+	log.Println("time inited")
 	discord_init()
+	log.Println("discord inited")
 	populate_servers()
 	populate_server_embeds()
 	launch_ss_tickers()
+	log.Println("discord prestart")
 	Dopen() //start discord
+	log.Println("discord up")
 	discord_up = true
 	srv := Http_server() //start web server
 	sc := make(chan os.Signal, 1)
