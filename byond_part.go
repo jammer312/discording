@@ -26,6 +26,7 @@ const (
 	byond_response_timeout     int = 60
 	byond_fastrequest_timeout  int = 1
 	byond_fastresponse_timeout int = 1
+	byond_dial_timeout         int = 1
 )
 
 type Byond_response struct {
@@ -76,7 +77,7 @@ func Byond_query_adv(srvname, request string, authed bool, req_to, res_to int) B
 	if !ok {
 		panic("failed to find server '" + srvname + "'")
 	}
-	conn, err := net.Dial("tcp", srv.addr)
+	conn, err := net.DialTimeout("tcp", srv.addr, time.Duration(byond_dial_timeout)*time.Second)
 	if err != nil {
 		panic(err)
 	}
