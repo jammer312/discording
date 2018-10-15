@@ -169,9 +169,11 @@ func main() {
 	discord_init()
 	log.Println("discord inited")
 	populate_servers()
+	log.Println("servers populated")
 	populate_server_embeds()
+	log.Println("server embeds populated")
 	launch_ss_tickers()
-	log.Println("discord prestart")
+	log.Println("ss tickers started")
 	Dopen() //start discord
 	log.Println("discord up")
 	discord_up = true
