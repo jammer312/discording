@@ -207,6 +207,7 @@ var embed_teplate = [...]embed_ft{
 var global_update_mutex sync.Mutex
 
 func (ss *server_status) global_update() {
+	log.Println("global updating " + ss.server_name)
 	global_update_mutex.Lock()
 	defer global_update_mutex.Unlock()
 	if ss.status_table == nil {
