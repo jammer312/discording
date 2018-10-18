@@ -280,7 +280,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		args := strings.Fields(mcontent[1:])
 		command := strings.ToLower(args[0])
 		if check_bans(message.Author, server, BANTYPE_COMMANDS) && command != "baninfo" {
-			reply(session, message, "you're banned from this action. Try !baninfo", DEL_DEFAULT)
+			reply(session, message, "you're banned from this action. Try !baninfo.\nHead here -> "+config_entries["ban_unban_place"]+" <- if you feel you should be unbanned and **can prove it**", DEL_DEFAULT)
 			return
 		}
 		if len(args) > 1 {
