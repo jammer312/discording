@@ -227,16 +227,25 @@ func Load_admins_for_server(server string) {
 	body, err := ioutil.ReadAll(response.Body)
 	bodyraw := string(body)
 
-	admins := make(map[string][]string)
-	if err := json.Unmarshal([]byte(bodyraw), &admins); err != nil {
-		panic(err)
+	admins_zlo := make(map[string][]string)
+	admins_dobro := make(map[string]string)
+	if err := json.Unmarshal([]byte(bodyraw), &admins_zlo); err != nil {
+		if err2 := json.Unmarshal([]byte(bodyraw), &admins_dobro); err2 != nil {
+			panic(fmt.Sprintf("Both unmarshals failed:\n\t`%v`\n\t\t`%v`", err, err2))
+		}
 	}
 	adminssl := make([]string, 0)
-	for k, v := range admins {
+	for k, v := range admins_zlo {
 		if k == "Removed" {
 			continue
 		}
 		adminssl = append(adminssl, v...)
+	}
+	for k, v := range admins_dobro {
+		if v == "Removed" {
+			continue
+		}
+		adminssl = append(adminssl, k)
 	}
 	Known_admins[server] = adminssl
 	log.Println(adminssl)
