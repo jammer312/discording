@@ -250,7 +250,7 @@ func Load_admins_for_server(server string) {
 		if v.Rank == "Removed" {
 			continue
 		}
-		adminssl = append(adminssl, v.Rank)
+		adminssl = append(adminssl, v.Ckey)
 	}
 	Known_admins[server] = adminssl
 	log.Println(adminssl)
