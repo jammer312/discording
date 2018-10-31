@@ -213,6 +213,11 @@ func Load_admins() {
 	}
 }
 
+type admin_data struct {
+	Ckey string
+	Rank string
+}
+
 func Load_admins_for_server(server string) {
 	defer logging_recover("ADM " + server)
 	servstruct, ok := known_servers[server]
@@ -228,7 +233,7 @@ func Load_admins_for_server(server string) {
 	bodyraw := string(body)
 
 	admins_zlo := make(map[string][]string)
-	admins_dobro := make(map[string]string)
+	admins_dobro := make([]admin_data, 0)
 	if err := json.Unmarshal([]byte(bodyraw), &admins_zlo); err != nil {
 		if err2 := json.Unmarshal([]byte(bodyraw), &admins_dobro); err2 != nil {
 			panic(fmt.Sprintf("Both unmarshals failed:\n\t`%v`\n\t\t`%v`", err, err2))
@@ -241,11 +246,11 @@ func Load_admins_for_server(server string) {
 		}
 		adminssl = append(adminssl, v...)
 	}
-	for k, v := range admins_dobro {
-		if v == "Removed" {
+	for _, v := range admins_dobro {
+		if v.Rank == "Removed" {
 			continue
 		}
-		adminssl = append(adminssl, k)
+		adminssl = append(adminssl, v.Rank)
 	}
 	Known_admins[server] = adminssl
 	log.Println(adminssl)
