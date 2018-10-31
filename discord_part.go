@@ -416,7 +416,9 @@ func send_message(channel, message string) {
 				log.Println("DISCORD ERROR: failed to send message to discord: ", err)
 			}
 		}
+		send_message_mutex.Lock()
 		channel_message_send_loops_online[channel] = false
+		send_message_mutex.Unlock()
 	}()
 }
 
