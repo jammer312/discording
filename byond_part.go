@@ -37,13 +37,15 @@ type Byond_response struct {
 
 func DecodeWindows1251(s string) string {
 	dec := charmap.Windows1251.NewDecoder()
-	out, _ := dec.String(s)
+	out, err := dec.String(s)
+	maybeerror(err)
 	return out
 }
 
 func EncodeWindows1251(s string) string {
 	enc := charmap.Windows1251.NewEncoder()
-	out, _ := enc.String(s)
+	out, err := enc.String(s)
+	maybeerror(err)
 	return out
 }
 
@@ -136,10 +138,12 @@ func Bquery_convert(s string) string {
 }
 
 func Bquery_deconvert(s string) string {
-	ret, err := url.QueryUnescape(DecodeWindows1251(s))
+	ret, err := url.QueryUnescape(s)
 	if err != nil {
 		log.Println("ERROR: Query unescape error: ", err)
+		return ret
 	}
+	ret = DecodeWindows1251(ret)
 	return ret
 }
 

@@ -73,6 +73,12 @@ func noerror(err error) {
 	}
 }
 
+func maybeerror(err error) {
+	if err != nil {
+		log_line_runtime(fmt.Sprintf("MERR: %v", err))
+	}
+}
+
 var known_servers map[string]server //server name -> server struct
 
 type server struct {
