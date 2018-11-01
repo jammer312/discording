@@ -78,7 +78,7 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "No command handling without password")
 		return
 	}
-	json_data := []byte(Bquery_deconvert(safe_param(form, "data")))
+	json_data := []byte(safe_param(form, "data")) //Bquery_deconvert(safe_param(form, "data")))
 	defer rise_error(servername)
 	defer rise_error(string(json_data))
 	var parsed universal_parse
