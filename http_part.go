@@ -78,13 +78,13 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "No command handling without password")
 		return
 	}
-	json_data := []byte(safe_param(form, "data")) //Bquery_deconvert(safe_param(form, "data")))
+	json_data := []byte(unfuck_byond_json(safe_param(form, "data"))) //Bquery_deconvert(safe_param(form, "data")))
 	defer rise_error(servername)
 	defer rise_error(string(json_data))
 	var parsed universal_parse
 	err := json.Unmarshal(json_data, &parsed)
 	if err != nil {
-		panic(fmt.Sprintf("%v (`%v`) (`'%v'` <- `'%v'`)", err, json_data, Bquery_deconvert(safe_param(form, "data")), safe_param(form, "data")))
+		panic(fmt.Sprintf("%v (`'%v'` <- `'%v'`)", err, unfuck_byond_json(safe_param(form, "data")), safe_param(form, "data")))
 	}
 	switch safe_param(form, "method") {
 	case "oocmessage":

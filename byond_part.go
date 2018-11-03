@@ -10,6 +10,7 @@ import (
 	"log"
 	"net"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -424,4 +425,13 @@ func unbind_server_embed(srv, chn string) bool {
 	}
 	delete(ss.associated_embeds, chn)
 	return db_template("remove_dynembed").exec(srv, chn).count() > 0
+}
+
+var json_unfucker *regexp.Regexp
+
+func unfuck_byond_json(s string) string {
+	if json_unfucker == nil {
+		json_unfucker = regexp.MustCompile("\\\\u044f.")
+	}
+	return json_unfucker.ReplaceAllString(s, "")
 }
