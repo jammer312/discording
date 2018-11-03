@@ -431,7 +431,7 @@ var json_unfucker *regexp.Regexp
 
 func unfuck_byond_json(s string) string {
 	if json_unfucker == nil {
-		json_unfucker = regexp.MustCompile("\\\\u044f.")
+		json_unfucker = regexp.MustCompile("\\\\u044f[\\x12\\x16]")
 	}
 	return json_unfucker.ReplaceAllString(s, "")
 }
