@@ -749,7 +749,7 @@ func init() {
 					bantype = append(bantype, BANSTRING_COMMANDS)
 				}
 				bantypestring := strings.Join(bantype, ", ")
-				ret += fmt.Sprintf("Banned from %v by %v with reason `%v`\n", ckey, bantypestring, admin, reason)
+				ret += fmt.Sprintf("Banned from %v by %v with reason `%v`\n", bantypestring, admin, reason)
 			}
 			db_template("select_bans_ckey").query(ckey).parse(closure_callback, &bt, &admin, &reason)
 			return ret
