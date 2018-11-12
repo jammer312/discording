@@ -1204,16 +1204,13 @@ func init() {
 	Register_command(&Dcommand{
 		Command:         "st_d_update",
 		Minargs:         2,
-		Permlevel:       PERMISSIONS_SPECIAL,
+		Permlevel:       PERMISSIONS_ADMIN,
 		Server_specific: true,
 		Usage:           "[!key] [!time] [?time_format]",
-		Desc:            "gives/takes donated time from player; time format is **s**econds, **m**inutes,**h**ours **d**ays, seconds by default, **integer**",
+		Desc:            "gives/takes donated time from player; time format is **s**econds, **m**inutes,**h**ours, **d**ays, seconds by default, **integer**",
 		Categories:      []string{"donatery"},
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) (ret string) {
 			defer logging_recover("st_d_update")
-			if key, ok := local_users[message.Author.ID]; !ok || (key != "Jammer312" && key != "NoName14881337") {
-				return "nope"
-			}
 			ckey := ckey_simplifier(args[0])
 			dur, err := strconv.Atoi(args[1])
 			if err != nil {
@@ -1243,7 +1240,7 @@ func init() {
 		Server_specific: true,
 		Temporary:       DEL_LONG,
 		Usage:           "",
-		Desc:            "gives/takes donated time from player; time format is **s**econds, **m**inutes,**h**ours **d**ays, seconds by default, **integer**",
+		Desc:            "lists donatery list",
 		Categories:      []string{"donatery"},
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) (ret string) {
 			return "\n" + list_donators(server)
