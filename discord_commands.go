@@ -736,6 +736,22 @@ func init() {
 			if ret == "" {
 				return "you have no active bans here"
 			}
+			ret += "\nApplying bans:\n"
+			ckey := local_users[message.Author.ID]
+			var admin, reason string
+			var bt int
+			closure_callback := func() {
+				bantype := make([]string, 0)
+				if bt&BANTYPE_OOC != 0 {
+					bantype = append(bantype, BANSTRING_OOC)
+				}
+				if bt&BANTYPE_COMMANDS != 0 {
+					bantype = append(bantype, BANSTRING_COMMANDS)
+				}
+				bantypestring := strings.Join(bantype, ", ")
+				ret += fmt.Sprintf("Banned from %v by %v with reason `%v`\n", ckey, bantypestring, admin, reason)
+			}
+			db_template("select_bans_ckey").query(ckey).parse(closure_callback, &bt, &admin, &reason)
 			return ret
 		},
 	})
