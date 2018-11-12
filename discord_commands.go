@@ -737,7 +737,7 @@ func init() {
 				return "you have no active bans here"
 			}
 			ret += "\nApplying bans:\n"
-			ckey := local_users[message.Author.ID]
+			ckey := ckey_simplifier(local_users[message.Author.ID])
 			var admin, reason string
 			var bt int
 			closure_callback := func() {
