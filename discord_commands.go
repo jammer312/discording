@@ -1234,12 +1234,12 @@ func init() {
 			}
 			if len(args) > 2 {
 				switch args[2] {
-				case "s":
-				case "m":
+				case "s","sec","second","seconds":
+				case "m","min","minute","minutes":
 					dur *= 60
-				case "h":
+				case "h","hour","hours":
 					dur *= 60 * 60
-				case "d":
+				case "d","day","days":
 					dur *= 60 * 60 * 24
 				}
 			}
