@@ -1229,21 +1229,27 @@ func init() {
 			defer logging_recover("st_d_update")
 			ckey := ckey_simplifier(args[0])
 			dur, err := strconv.Atoi(args[1])
+			olddur := dur
+			spec := "seconds"
 			if err != nil {
 				return "failed to parse time"
 			}
 			if len(args) > 2 {
+				spec = args[2]
 				switch args[2] {
-				case "s","sec","second","seconds":
-				case "m","min","minute","minutes":
+				case "s", "sec", "second", "seconds":
+				case "m", "min", "minute", "minutes":
 					dur *= 60
-				case "h","hour","hours":
+				case "h", "hour", "hours":
 					dur *= 60 * 60
-				case "d","day","days":
+				case "d", "day", "days":
 					dur *= 60 * 60 * 24
+				default:
+					spec = "seconds"
 				}
 			}
 			update_sdonator(server, ckey, time.Duration(dur)*time.Second)
+			log_line(fmt.Sprintf("%v added %v %v to %v", local_users[message.Author.ID], olddur, spec, ckey), "shitspawn_debug")
 			return "OK"
 		},
 	})
