@@ -364,13 +364,13 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			reply(session, message, "OOC is globally muted", DEL_DEFAULT)
 			return
 		}
-		Discord_message_send(srv.server, "ooc", "DISCORD OOC:", shown_nick, strip.StripTags(mcontent))
+		Discord_message_send(srv.server, "ooc", "DISCORD OOC: "+shown_nick, strip.StripTags(mcontent))
 	case "admin":
 		if !isadminhere {
 			reply(session, message, "You have no privilegies to write here", DEL_DEFAULT)
 		}
 		Byond_query(srv.server, "admin="+Bquery_convert(shown_nick)+"&asay="+Bquery_convert(byondmcontent), true)
-		Discord_message_send(srv.server, "admin", "DISCORD ASAY:", shown_nick, strip.StripTags(mcontent))
+		Discord_message_send(srv.server, "admin", "DISCORD ASAY: "+shown_nick, strip.StripTags(mcontent))
 	default:
 	}
 }
@@ -467,7 +467,7 @@ func Discord_subsriber_message_send(servername, channel, message string) {
 		send_message(id, rid+subs+Dsanitize(message))
 	}
 }
-func Discord_message_send(servername, channel, prefix, ckey, message string) {
+func Discord_message_send(servername, channel, boldprefix, message string) {
 	defer logging_recover("Dms")
 	srvchans, ok := known_channels_s_t_id_m[servername]
 	if !ok {
@@ -477,12 +477,8 @@ func Discord_message_send(servername, channel, prefix, ckey, message string) {
 	if !ok || len(channels) < 1 {
 		return //no bound channels
 	}
-	var delim string
-	if prefix != "" && ckey != "" {
-		delim = " "
-	}
 	for _, id := range channels {
-		send_message(id, "**"+Dsanitize(prefix+delim+ckey)+":** "+Dsanitize(message))
+		send_message(id, "**"+Dsanitize(boldprefix)+":** "+Dsanitize(message))
 	}
 }
 func Discord_message_send_raw(servername, channel, message string) {
@@ -1259,7 +1255,7 @@ func Dopen() {
 	dsession.AddHandler(messageCreate)
 	dsession.AddHandler(nickchange_guard)
 	for _, srv := range known_servers {
-		Discord_message_send(srv.name, "bot_status", "BOT", "STATUS UPDATE", "now running.")
+		Discord_message_send(srv.name, "bot_status", "BOT STATUS UPDATE", "now running.")
 	}
 	update_roles()
 	updateticker = start_ticker(30, func() {
@@ -1270,7 +1266,7 @@ func Dopen() {
 func Dclose() {
 	defer logging_crash("Dc")
 	for _, srv := range known_servers {
-		Discord_message_send(srv.name, "bot_status", "BOT", "STATUS UPDATE", "shutting down due to host request.")
+		Discord_message_send(srv.name, "bot_status", "BOT STATUS UPDATE", "shutting down due to host request.")
 	}
 	stop_ticker(spamticker)
 	stop_ticker(updateticker)

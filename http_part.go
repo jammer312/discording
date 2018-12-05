@@ -88,25 +88,25 @@ func webhook_handler(w http.ResponseWriter, r *http.Request) {
 	}
 	switch safe_param(form, "method") {
 	case "oocmessage":
-		Discord_message_send(servername, "ooc", "OOC:", parsed.Ckey, html.UnescapeString(parsed.Message))
+		Discord_message_send(servername, "ooc", "OOC: "+parsed.Ckey, html.UnescapeString(parsed.Message))
 	case "asaymessage":
-		Discord_message_send(servername, "admin", "ASAY:", parsed.Ckey, html.UnescapeString(parsed.Message))
+		Discord_message_send(servername, "admin", "ASAY: "+parsed.Ckey, html.UnescapeString(parsed.Message))
 	case "ahelpmessage":
 		if parsed.Ckey != "" && strings.Index(parsed.Ckey, "->") == -1 { //because ADMINPM is AHELP too for some wicked reason
 			last_ahelp[servername] = parsed.Ckey
 		}
-		Discord_message_send(servername, "admin", "AHELP:", parsed.Ckey, html.UnescapeString(parsed.Message))
+		Discord_message_send(servername, "admin", "AHELP: "+parsed.Ckey, html.UnescapeString(parsed.Message))
 	case "memessage":
 		if parsed.Message == "" {
 			return //probably got hit by stunbaton, idk why it sends it
 		}
-		Discord_message_send(servername, "me", "EMOTE:", parsed.Ckey, html.UnescapeString(parsed.Message))
+		Discord_message_send(servername, "me", "EMOTE: "+parsed.Ckey, html.UnescapeString(parsed.Message))
 	case "garbage":
-		Discord_message_send(servername, "garbage", "", parsed.Ckey, strip.StripTags(html.UnescapeString(parsed.Message)))
+		Discord_message_send(servername, "garbage", parsed.Ckey, strip.StripTags(html.UnescapeString(parsed.Message)))
 	case "token":
 		Discord_process_token(html.UnescapeString(parsed.Token), parsed.Ckey)
 	case "runtimemessage":
-		Discord_message_send(servername, "debug", "DEBUG", "", html.UnescapeString(parsed.Message))
+		Discord_message_send(servername, "debug", "DEBUG", html.UnescapeString(parsed.Message))
 	case "roundstatus":
 		color := known_servers[servername].color
 		embed := &discordgo.MessageEmbed{
