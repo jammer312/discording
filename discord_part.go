@@ -365,13 +365,13 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			reply(session, message, "OOC is globally muted", DEL_DEFAULT)
 			return
 		}
-		Discord_message_send(srv.server, "ooc", "DISCORD OOC: "+shown_nick, strip.StripTags(mcontent))
+		Discord_message_send(srv.server, "ooc", "DOOC: "+shown_nick, strip.StripTags(mcontent))
 	case "admin":
 		if !isadminhere {
 			reply(session, message, "You have no privilegies to write here", DEL_DEFAULT)
 		}
 		Byond_query(srv.server, "admin="+Bquery_convert(shown_nick)+"&asay="+Bquery_convert(byondmcontent), true)
-		Discord_message_send(srv.server, "admin", "DISCORD ASAY: "+shown_nick, strip.StripTags(mcontent))
+		Discord_message_send(srv.server, "admin", "DASAY: "+shown_nick, strip.StripTags(mcontent))
 	default:
 	}
 }
@@ -415,7 +415,7 @@ func send_message(channel, message string) {
 			send_message_mutex.Unlock()
 			_, err := dsession.ChannelMessageSend(channel, chunk)
 			if err != nil {
-				log.Println("DISCORD ERROR: failed to send message to discord: ", err)
+				log.Println("DERR: failed to send message to discord: ", err)
 			}
 		}
 		send_message_mutex.Lock()
@@ -511,7 +511,7 @@ func Discord_send_embed(servername, channel string, embed *discordgo.MessageEmbe
 	for _, id := range channels {
 		_, err := dsession.ChannelMessageSendEmbed(id, embed)
 		if err != nil {
-			log.Println("DISCORD ERROR: failed to send embed to discord: ", err)
+			log.Println("DERR: failed to send embed to discord: ", err)
 		}
 	}
 }
