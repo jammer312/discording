@@ -64,7 +64,7 @@ func (c *command) run(u user, input string) (err string) {
 				case bool:
 					params[param.name] = true
 				default:
-					receivers = append(receivers, param)
+					receivers = append(receivers, param.name)
 				}
 			} else {
 				for i := 1; i < len(chunks[i]); i++ {
@@ -77,7 +77,7 @@ func (c *command) run(u user, input string) (err string) {
 					case bool:
 						params[param.name] = true
 					default:
-						receivers = append(receivers, param)
+						receivers = append(receivers, param.name)
 					}
 				}
 			}
@@ -98,6 +98,7 @@ func (c *command) run(u user, input string) (err string) {
 			}
 		}
 	}
+	return err
 }
 
 func new_command(name, desc string, _r_check_func cmd_rights_check, _func cmd_func, params ...param) command {
