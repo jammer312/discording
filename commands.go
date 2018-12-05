@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -28,7 +29,7 @@ func new_flag(name, desc string) param {
 }
 
 type cmd_rights_check func(u user) (bool, string)
-type cmd_func func(params map[string]param, args ...string)
+type cmd_func func(params map[string]param, args string)
 type command struct {
 	name          string
 	desc          string
@@ -37,16 +38,19 @@ type command struct {
 	_func         cmd_func
 }
 
-func (c *command) run(u user, input string) string {
+func (c *command) run(u user, input string) (err string) {
+	defer recover()
 	if ok, reason := c._r_check_func(u); !ok {
 		return reason
 	}
-	receivers
+	receivers := make([]string, 0)
+	lastr := 0
 	params := make(param_map)
 	for pn, p := range c.params {
 		params[pn] = p.def
 	}
 	chunks := strings.Fields(input)
+	cmdarg := ""
 	for i := 0; i < len(chunks); i++ {
 		if chunks[i][0] == '-' {
 			//flag or option
@@ -60,7 +64,37 @@ func (c *command) run(u user, input string) string {
 				case bool:
 					params[param.name] = true
 				default:
+					receivers = append(receivers, param)
 				}
+			} else {
+				for i := 1; i < len(chunks[i]); i++ {
+					//flag
+					param, ok := c.params[chunks[i][i:i+1]]
+					if !ok {
+						return fmt.Sprintf("no such flag '%v'", chunks[i][2:])
+					}
+					switch param.def.(type) {
+					case bool:
+						params[param.name] = true
+					default:
+						receivers = append(receivers, param)
+					}
+				}
+			}
+		} else {
+			if len(receivers) > lastr {
+				curr := c.params[receivers[lastr]]
+				lastr++
+				var err error
+				switch curr.def.(type) {
+				case string:
+					params[curr.name] = chunks[i]
+				case int:
+					params[curr.name], err = strconv.Atoi(chunks[i])
+					noerror(err)
+				}
+			} else {
+				cmdarg += chunks[i]
 			}
 		}
 	}
