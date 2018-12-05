@@ -381,6 +381,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 var send_message_mutex sync.Mutex
 
 func send_message(channel, message string) {
+	message = fmt.Sprintf("[%v] %v", get_time, message)
 	send_message_mutex.Lock()
 	if channel_buffers[channel] == nil {
 		channel_buffers[channel] = make([]string, 1)
