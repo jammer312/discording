@@ -8,6 +8,7 @@ import (
 	"html"
 	"log"
 	"math"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -1254,8 +1255,10 @@ func Dopen() {
 	})
 	dsession.AddHandler(messageCreate)
 	dsession.AddHandler(nickchange_guard)
+	ver := os.Getenv("HEROKU_RELEASE_VERSION")
+	com := os.Getenv("HEROKU_SLUG_COMMIT")
 	for _, srv := range known_servers {
-		Discord_message_send(srv.name, "bot_status", "BOT STATUS UPDATE", "now running.")
+		Discord_message_send(srv.name, "bot_status", "BOT", fmt.Sprintf("now running %v `%v`", ver, com))
 	}
 	update_roles()
 	updateticker = start_ticker(30, func() {
@@ -1266,7 +1269,7 @@ func Dopen() {
 func Dclose() {
 	defer logging_crash("Dc")
 	for _, srv := range known_servers {
-		Discord_message_send(srv.name, "bot_status", "BOT STATUS UPDATE", "shutting down due to host request.")
+		Discord_message_send(srv.name, "bot_status", "BOT", "shutting down (soft)")
 	}
 	stop_ticker(spamticker)
 	stop_ticker(updateticker)
