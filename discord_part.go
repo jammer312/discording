@@ -1258,7 +1258,7 @@ func Dopen() {
 	ver := os.Getenv("HEROKU_RELEASE_VERSION")
 	com := os.Getenv("HEROKU_SLUG_COMMIT")
 	for _, srv := range known_servers {
-		Discord_message_send(srv.name, "bot_status", "BOT", fmt.Sprintf("now running %v `%v`", ver, com))
+		Discord_message_send_raw(srv.name, "bot_status", fmt.Sprintf("**BOT:** now running %v `%v`", ver, com))
 	}
 	update_roles()
 	updateticker = start_ticker(30, func() {
