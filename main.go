@@ -53,6 +53,12 @@ func recovering_callback(callback func()) {
 		callback()
 	}
 }
+func onerror(callback func()) {
+	if r := recover(); r != nil {
+		callback()
+		panic(r)
+	}
+}
 
 func logging_pass(ctx string) {
 	if r := recover(); r != nil {
@@ -70,6 +76,12 @@ func rise_error(app string) {
 func noerror(err error) {
 	if err != nil {
 		panic(err)
+	}
+}
+
+func assert(st bool, message string) {
+	if !st {
+		panic(message)
 	}
 }
 

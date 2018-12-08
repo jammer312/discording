@@ -93,3 +93,31 @@ func list_donators(server string) string {
 	db_template("list_station_donators").query(server).parse(closure_callback, &ckey, &uptotime, &next_round)
 	return ret
 }
+
+func get_donator(server, key string) string {
+	defer logging_recover("get_donator")
+	cleanup_sdonators()
+	ret := ""
+	key = ckey_simplifier(key)
+	var ckey string
+	var uptotime int64
+	var next_round int
+	closure_callback := func() {
+		if key != ckey {
+			return
+		}
+		time_secs := uptotime - time.Now().Unix()
+		time_minutes := time_secs / 60
+		time_hours := time_minutes / 60
+		time_days := time_hours / 24
+		time_secs %= 60
+		time_minutes %= 60
+		time_hours %= 24
+		ret += fmt.Sprintf("`%v` -> **%vd %vh %vm %vs** *%v*\n", ckey, time_days, time_hours, time_minutes, time_secs, next_round)
+	}
+	db_template("list_station_donators").query(server).parse(closure_callback, &ckey, &uptotime, &next_round)
+	if ret == "" {
+		ret = "no active sdonators"
+	}
+	return ret
+}
