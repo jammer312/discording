@@ -313,7 +313,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		}
 		reply(session, message, ret, dcomm.Temporary)
 		return
-	} else if get_config("discord_shell_character") != "" && mcontent[:1] == Discord_shell_character {
+	} else if dsch := get_config("discord_shell_character"); dsch != "" && mcontent[:1] == dsch {
 		if !spam_check(message.Author.ID) {
 			delete_in(session, message.Message, 1)
 			return
