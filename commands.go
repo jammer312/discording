@@ -107,7 +107,7 @@ func (c *command) run(u userdata, args ...string) (err string) {
 	if l > 0 {
 		cmdarg = cmdarg[:l-1]
 	}
-	c._func(params, cmdarg)
+	err = c._func(params, cmdarg)
 	return err
 }
 
