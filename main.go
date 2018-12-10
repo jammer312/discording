@@ -195,6 +195,7 @@ func main() {
 	Dopen() //start discord
 	log.Println("discord up")
 	discord_up = true
+	shell_repo_init()
 	srv := Http_server() //start web server
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)

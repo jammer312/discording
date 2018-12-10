@@ -124,6 +124,7 @@ type shell_repo struct {
 	params          map[string]*param
 	checkfuncs      map[string]cmd_rights_check
 	checkfuncs_desc map[string]string
+	__initialised   bool
 }
 
 var shr shell_repo
@@ -360,7 +361,7 @@ func shell_repo_init() {
 			}
 			return ret
 		}, uparam("server"), new_param("ckey", "filter bans, users or sdonators list by supplied ckey", ""), uparam("verbose"))
-
+	shr.__initialised = true
 }
 
 //str without prefixing '$'
