@@ -342,7 +342,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		}
 		inpsplit := strings.Split(mcontent, "\n")
 		inpjoined := strings.Join(inpsplit, "\n>	")
-		send_message(message.ChannelID, fmt.Sprintf("```%s[%s]@%s:%s\n%s", udata.key, message.Author.Username, udata.server, inpjoined, ret))
+		send_message(message.ChannelID, fmt.Sprintf("```%s[%s]@%s:%s\n%s```", udata.key, message.Author.Username, udata.server, inpjoined, ret))
 	}
 
 	if known_channels_id_t[message.ChannelID].generic_type != "ooc" && known_channels_id_t[message.ChannelID].generic_type != "admin" {
