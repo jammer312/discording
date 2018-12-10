@@ -11,10 +11,9 @@ import (
 )
 
 type userdata struct {
-	key, server  string
-	discord_user *discordgo.User
-	message      *discordgo.MessageCreate
-	session      *discordgo.Session
+	key, server string
+	message     *discordgo.MessageCreate
+	session     *discordgo.Session
 }
 
 type param_map map[string]interface{}
@@ -158,13 +157,13 @@ func shell_repo_init() {
 	//----------ucfuncs-----------//
 	//----------------------------//
 	add_ucfunc("p_root", "requires root permissions", func(u userdata) (bool, string) {
-		if !Permissions_check(u.discord_user, PERMISSIONS_SUPERUSER, u.server) {
+		if !Permissions_check(u.message.Author, PERMISSIONS_SUPERUSER, u.server) {
 			return false, "permission denied"
 		}
 		return true, ""
 	})
 	add_ucfunc("p_admin", "requires admin permissions", func(u userdata) (bool, string) {
-		if !Permissions_check(u.discord_user, PERMISSIONS_ADMIN, u.server) {
+		if !Permissions_check(u.message.Author, PERMISSIONS_ADMIN, u.server) {
 			return false, "permission denied"
 		}
 		return true, ""
@@ -185,49 +184,68 @@ func shell_repo_init() {
 	//----------------------------//
 	//----------commands----------//
 	//----------------------------//
-	add_command("list", "prints specified LIST (candidates: admins, bans, users, roles, moderators, sdonators, commands)", "LIST", ucfunc("p_any"), func(params param_map, args string) (ret string) {
-		switch args {
-		case "bans", "users":
-			ok, ret := ucfunc("p_admin")(params["userdata"].(userdata))
-			if !ok {
-				return ret
-			}
-		}
-		_userdata := params["userdata"].(userdata)
-		server := _userdata.server
-		if params["server"].(string) != "NOOVERRIDE" {
-			server = params["server"].(string)
-		}
-		if server == "" {
-			server = "ALL"
-		}
-		_ckey := params["ckey"].(string)
-		switch args {
-		case "admins":
-			ret = "known admins:\n"
-			if server == "ALL" {
-				for s, a := range Known_admins {
-					ret += "**" + s + "**: " + strings.Join(a, ", ") + "\n"
-				}
-			} else {
-				a, ok := Known_admins[server]
+	add_command("list",
+		"prints specified LIST (candidates: admins, bans, users, roles, moderators, sdonators, commands)",
+		"LIST", ucfunc("p_any"), func(params param_map, args string) (ret string) {
+			switch args {
+			case "bans", "users":
+				ok, ret := ucfunc("p_admin")(params["userdata"].(userdata))
 				if !ok {
-					return "no entry for this server: " + server
+					return ret
 				}
-				ret += strings.Join(a, ", ")
 			}
-			return ret
-		case "bans":
-			defer logging_recover("list bans")
-			defer onerror(func() {
-				ret = "ERROR"
-			})
-			{
-				ret = "\n"
-				var ckey, admin, reason string
-				var bt int
-				if _ckey != "" {
-					ckey = ckey_simplifier(_ckey)
+			_userdata := params["userdata"].(userdata)
+			server := _userdata.server
+			if params["server"].(string) != "NOOVERRIDE" {
+				server = params["server"].(string)
+			}
+			if server == "" {
+				server = "ALL"
+			}
+			_ckey := params["ckey"].(string)
+			switch args {
+			case "admins":
+				ret = "known admins:\n"
+				if server == "ALL" {
+					for s, a := range Known_admins {
+						ret += "[" + s + "]: " + strings.Join(a, ", ") + "\n"
+					}
+				} else {
+					a, ok := Known_admins[server]
+					if !ok {
+						return "no entry for this server: " + server
+					}
+					ret += strings.Join(a, ", ")
+				}
+				return ret
+			case "bans":
+				defer logging_recover("list bans")
+				defer onerror(func() {
+					ret = "ERROR"
+				})
+				{
+					ret = "\n"
+					var ckey, admin, reason string
+					var bt int
+					if _ckey != "" {
+						ckey = ckey_simplifier(_ckey)
+						closure_callback := func() {
+							bantype := make([]string, 0)
+							if bt&BANTYPE_OOC != 0 {
+								bantype = append(bantype, BANSTRING_OOC)
+							}
+							if bt&BANTYPE_COMMANDS != 0 {
+								bantype = append(bantype, BANSTRING_COMMANDS)
+							}
+							bantypestring := strings.Join(bantype, ", ")
+							ret += fmt.Sprintf("%v banned from %v by %v with reason \"%v\"\n", ckey, bantypestring, admin, reason)
+						}
+						db_template("select_bans_ckey").query(ckey).parse(closure_callback, &bt, &admin, &reason)
+						if ret == "\n" {
+							ret = "no bans currently active"
+						}
+						return ret
+					}
 					closure_callback := func() {
 						bantype := make([]string, 0)
 						if bt&BANTYPE_OOC != 0 {
@@ -237,124 +255,111 @@ func shell_repo_init() {
 							bantype = append(bantype, BANSTRING_COMMANDS)
 						}
 						bantypestring := strings.Join(bantype, ", ")
-						ret += fmt.Sprintf("%v banned from %v by %v with reason `%v`\n", ckey, bantypestring, admin, reason)
+						ret += fmt.Sprintf("%v banned from %v by %v with reason \"%v\"\n", ckey, bantypestring, admin, reason)
 					}
-					db_template("select_bans_ckey").query(ckey).parse(closure_callback, &bt, &admin, &reason)
+					db_template("select_bans").query().parse(closure_callback, &ckey, &bt, &admin, &reason)
 					if ret == "\n" {
 						ret = "no bans currently active"
 					}
 					return ret
 				}
-				closure_callback := func() {
-					bantype := make([]string, 0)
-					if bt&BANTYPE_OOC != 0 {
-						bantype = append(bantype, BANSTRING_OOC)
+			case "users":
+				if _ckey == "" {
+					rep := "registered users:\n"
+					for login, ckey := range local_users {
+						rep += fmt.Sprintf("<@!%s> -> %s\n", login, ckey)
 					}
-					if bt&BANTYPE_COMMANDS != 0 {
-						bantype = append(bantype, BANSTRING_COMMANDS)
+					Discord_private_message_send(_userdata.message.Author, rep)
+					return "sent to PM"
+				} else {
+					for login, ckey := range local_users {
+						if ckey == _ckey {
+							user, err := _userdata.session.User(login)
+							if err != nil {
+								return fmt.Sprintf("Failed to find user, showing ID instead: %s -> %s", login, ckey)
+							}
+							return fmt.Sprintf("%s -> %s", user.String(), ckey)
+						}
 					}
-					bantypestring := strings.Join(bantype, ", ")
-					ret += fmt.Sprintf("%v banned from %v by %v with reason `%v`\n", ckey, bantypestring, admin, reason)
+					return "not found"
 				}
-				db_template("select_bans").query().parse(closure_callback, &ckey, &bt, &admin, &reason)
-				if ret == "\n" {
-					ret = "no bans currently active"
+			case "roles":
+				guild := Get_guild(_userdata.session, _userdata.message)
+				if guild == "" {
+					return "failed to retrieve guild"
 				}
-				return ret
-			}
-		case "users":
-			if _ckey == "" {
-				rep := "registered users:\n"
-				for login, ckey := range local_users {
-					rep += fmt.Sprintf("<@!%s> -> %s\n", login, ckey)
+				groles, err := _userdata.session.GuildRoles(guild)
+				if err != nil {
+					return "failed to retrieve rolelist"
 				}
-				Discord_private_message_send(_userdata.discord_user, rep)
-				return "sent to PM"
-			} else {
-				for login, ckey := range local_users {
-					if ckey == _ckey {
-						return fmt.Sprintf("<@!%s> -> %s\n", login, ckey)
-					}
-				}
-				return "not found"
-			}
-		case "roles":
-			guild := Get_guild(_userdata.session, _userdata.message)
-			if guild == "" {
-				return "failed to retrieve guild"
-			}
-			groles, err := _userdata.session.GuildRoles(guild)
-			if err != nil {
-				return "failed to retrieve rolelist"
-			}
-			plr, ok := discord_player_roles[guild]
-			if !ok {
-				plr = "NONE"
-			} else {
-				for _, k := range groles {
-					if k.ID == plr {
-						plr = k.Name
-						break
-					}
-				}
-			}
-			adm := ""
-			adms, ok := discord_admin_roles[guild]
-			if !ok {
-				adm = "\nNONE"
-			} else {
-				for srv, ar := range adms {
+				plr, ok := discord_player_roles[guild]
+				if !ok {
+					plr = "NONE"
+				} else {
 					for _, k := range groles {
-						if k.ID == ar {
-							adm += "\n" + srv + " admin -> " + k.Name
+						if k.ID == plr {
+							plr = k.Name
 							break
 						}
 					}
 				}
-			}
-			sub := ""
-			subs, ok := discord_subscriber_roles[guild]
-			if !ok {
-				sub = "\nNONE"
-			} else {
-				for srv, sr := range subs {
-					for _, k := range groles {
-						if k.ID == sr {
-							sub += "\n" + srv + " subscriber -> " + k.Name
-							break
+				adm := ""
+				adms, ok := discord_admin_roles[guild]
+				if !ok {
+					adm = "\nNONE"
+				} else {
+					for srv, ar := range adms {
+						for _, k := range groles {
+							if k.ID == ar {
+								adm += "\n" + srv + " admin -> " + k.Name
+								break
+							}
 						}
 					}
 				}
-			}
-			return "\nplayer -> " + plr + adm + sub
-		case "moderators":
-			defer onerror(func() { ret = "db request failed" })
-			var ckey string
-			db_template("select_moderators").query().parse(func() { ret += " `" + ckey + "`" }, &ckey)
-			return "Current moderators: " + ret
-		case "sdonators":
-			if _ckey == "" {
-				return "\n" + list_donators(server)
-			} else {
-				return "\n" + get_donator(server, _ckey)
-			}
-		case "commands":
-			ret = ""
-			verbose := params["verbose"].(bool)
-			cmdsl := make([]string, 0)
-			for c := range shr.commands {
-				cmdsl = append(cmdsl, c)
-			}
-			sort.Strings(cmdsl)
-			for _, c := range cmdsl {
-				ret += "\n**" + c + "**"
-				if !verbose {
-					ret += ": " + shr.commands[c].desc
+				sub := ""
+				subs, ok := discord_subscriber_roles[guild]
+				if !ok {
+					sub = "\nNONE"
+				} else {
+					for srv, sr := range subs {
+						for _, k := range groles {
+							if k.ID == sr {
+								sub += "\n" + srv + " subscriber -> " + k.Name
+								break
+							}
+						}
+					}
+				}
+				return "\nplayer -> " + plr + adm + sub
+			case "moderators":
+				defer onerror(func() { ret = "db request failed" })
+				var ckey string
+				db_template("select_moderators").query().parse(func() { ret += " `" + ckey + "`" }, &ckey)
+				return "Current moderators: " + ret
+			case "sdonators":
+				if _ckey == "" {
+					return "\n" + list_donators(server)
+				} else {
+					return "\n" + get_donator(server, _ckey)
+				}
+			case "commands":
+				ret = ""
+				verbose := params["verbose"].(bool)
+				cmdsl := make([]string, 0)
+				for c := range shr.commands {
+					cmdsl = append(cmdsl, c)
+				}
+				sort.Strings(cmdsl)
+				for _, c := range cmdsl {
+					ret += "\n" + c + ""
+					if !verbose {
+						ret += ": " + shr.commands[c].desc
+					}
 				}
 			}
-		}
-		return ret
-	}, uparam("server"), new_param("ckey", "filter bans, users or sdonators list by supplied ckey", ""), uparam("verbose"))
+			return ret
+		}, uparam("server"), new_param("ckey", "filter bans, users or sdonators list by supplied ckey", ""), uparam("verbose"))
 
 }
 
