@@ -21,7 +21,6 @@ var (
 	discord_bot_user_id       string //for permchecks
 	discord_bot_token         string
 	Discord_command_character string
-	Discord_shell_character   string
 	discord_superuser_id      string
 	local_users               map[string]string  //user id -> ckey
 	local_moderators          []string           //ckeys
@@ -107,7 +106,6 @@ func discord_init() {
 	dsession.Token = discord_bot_token
 
 	Discord_command_character = get_config_must("discord_command_character")
-	Discord_command_character = get_config("discord_shell_character")
 	discord_superuser_id = get_config_must("discord_superuser_id")
 	discord_spam_prot_limit_str := get_config_must("discord_spam_prot_limit")
 	var err error
@@ -315,7 +313,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		}
 		reply(session, message, ret, dcomm.Temporary)
 		return
-	} else if Discord_shell_character != "" && mcontent[:1] == Discord_shell_character {
+	} else if get_config("discord_shell_character") != "" && mcontent[:1] == Discord_shell_character {
 		if !spam_check(message.Author.ID) {
 			delete_in(session, message.Message, 1)
 			return
