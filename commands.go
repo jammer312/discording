@@ -358,6 +358,10 @@ func shell_repo_init() {
 						ret += ": " + shr.commands[c].desc
 					}
 				}
+			case "":
+				ret = "no list specified"
+			default:
+				ret = "no such list"
 			}
 			return ret
 		}, uparam("server"), new_param("ckey", "filter bans, users or sdonators list by supplied ckey", ""), uparam("verbose"))
