@@ -342,7 +342,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 		}
 		inpsplit := strings.Split(mcontent, "\n")
 		inpjoined := strings.Join(inpsplit, "\n>	")
-		send_message(message.ChannelID, fmt.Sprintf("```%s[%s]@%s:%s\n%s```", udata.key, message.Author.Username, udata.server, inpjoined, ret))
+		send_message(message.ChannelID, fmt.Sprintf("```%s[%s]@%s:%s```\n%s", udata.key, message.Author.Username, udata.server, inpjoined, ret))
 	}
 
 	if known_channels_id_t[message.ChannelID].generic_type != "ooc" && known_channels_id_t[message.ChannelID].generic_type != "admin" {
@@ -399,6 +399,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 	case "admin":
 		if !isadminhere {
 			reply(session, message, "You have no privilegies to write here", DEL_DEFAULT)
+			return //not today
 		}
 		Byond_query(srv.server, "admin="+Bquery_convert(shown_nick)+"&asay="+Bquery_convert(byondmcontent), true)
 		Discord_message_send(srv.server, "admin", "DASAY: "+shown_nick, strip.StripTags(mcontent))
