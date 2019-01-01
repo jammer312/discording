@@ -201,7 +201,7 @@ func Get_guild(session *discordgo.Session, message *discordgo.MessageCreate) str
 }
 
 func ckey_simplifier(s string) string {
-	return strings.ToLower(strings.Replace(s, "_", "", -1))
+	return strings.ToLower(strings.Replace(strings.Replace(s, ".", "", -1), "_", "", -1))
 }
 
 func get_permission_level_ckey(ckey, server string) int {
