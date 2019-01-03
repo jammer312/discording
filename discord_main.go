@@ -437,11 +437,15 @@ func send_message(channel, message string) {
 			} else {
 				li := strings.LastIndexByte(condensed[:max_message_size], '\n')
 				if li < 0 {
-					channel_message_send_loops_online[channel] = false
-					panic("send message WTF li<0: `" + condensed[:max_message_size] + "`")
+					//channel_message_send_loops_online[channel] = false
+					//panic("send message WTF li<0: `" + condensed[:max_message_size] + "`")
+					//some shitter sent VERY long line from server, force cut it
+					li = max_message_size - 5
+					chunk = condensed[:li] + "**#**"
+				} else {
+					chunk = condensed[:li]
 				}
-				chunk = condensed[:li]
-				channel_buffers[channel] = []string{condensed[li+1:]}
+				channel_buffers[channel] = []string{"**#**" + condensed[li+1:]}
 			}
 			send_message_mutex.Unlock()
 			_, err := dsession.ChannelMessageSend(channel, chunk)
