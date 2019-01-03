@@ -442,10 +442,11 @@ func send_message(channel, message string) {
 					//some shitter sent VERY long line from server, force cut it
 					li = max_message_size - 5
 					chunk = condensed[:li] + "**#**"
+					channel_buffers[channel] = []string{"**#**" + condensed[li+1:]}
 				} else {
 					chunk = condensed[:li]
+					channel_buffers[channel] = []string{condensed[li+1:]}
 				}
-				channel_buffers[channel] = []string{"**#**" + condensed[li+1:]}
 			}
 			send_message_mutex.Unlock()
 			_, err := dsession.ChannelMessageSend(channel, chunk)
