@@ -2,12 +2,13 @@ package database
 
 import (
 	"database/sql"
+	"github.com/jammer312/discording/errors"
 	_ "github.com/lib/pq"
 )
 
 func Open(db_url string) (worker func(name string) *db_query_template, closer func()) {
 	db, err := sql.Open("postgres", db_url)
-	noerror(err)
+	errors.Deny(err)
 	schema := schema_init()
 	schema.deploy(db)
 	templates := templates_init(db)
@@ -20,6 +21,6 @@ func Open(db_url string) (worker func(name string) *db_query_template, closer fu
 	}
 	return worker, func() {
 		templates_deinit(templates)
-		noerror(db.Close()) //that way closure keeps reference to db so it stays alive until closer finishes
+		errors.Deny(db.Close()) //that way closure keeps reference to db so it stays alive until closer finishes
 	}
 }

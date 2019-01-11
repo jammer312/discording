@@ -2,15 +2,16 @@ package database
 
 import (
 	"database/sql"
+	"github.com/jammer312/discording/errors"
 )
 
 func templates_init(db *sql.DB) map[string]db_query_template {
-	defer logging_crash("database templates_init()")
+	defer errors.LogCrash("database templates_init()")
 	db_templates := make(map[string]db_query_template)
 	prepare_template := func(name, query string) {
-		defer rise_error(name)
+		defer errors.Rise(name)
 		stmt, err := db.Prepare(query)
-		noerror(err)
+		errors.Deny(err)
 		db_templates[name] = db_query_template{stmt}
 	}
 	prepare_template("select_known_channels", "select CHANTYPE, CHANID, SRVNAME from DISCORD_CHANNELS;")
@@ -63,6 +64,7 @@ func templates_init(db *sql.DB) map[string]db_query_template {
 	prepare_template("update_station_donators", "update station_donators set uptotime=(uptotime+$3) where server=$1 and ckey=$2;")
 	prepare_template("insert_station_donators", "insert into station_donators values($1,$2,$3,-1);")
 	prepare_template("list_station_donators", "select ckey,uptotime,next_round from station_donators where server=$1;")
+	return db_templates
 }
 
 //cleanup
