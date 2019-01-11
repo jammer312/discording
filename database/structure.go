@@ -19,7 +19,7 @@ type db_schema struct {
 	tables []table_schema
 }
 
-type db_query_template struct {
+type Db_query_template struct {
 	stmt *sql.Stmt
 }
 
@@ -35,7 +35,7 @@ type db_query_rows struct {
 	rows *sql.Rows
 }
 
-func (dbqt *db_query_template) Exec(values ...interface{}) *db_query_result {
+func (dbqt *Db_query_template) Exec(values ...interface{}) *db_query_result {
 	res, err := dbqt.stmt.Exec(values...)
 	errors.Deny(err)
 	return &db_query_result{res}
@@ -47,7 +47,7 @@ func (dbqr *db_query_result) Count() int64 {
 	return affected
 }
 
-func (dbqt *db_query_template) Row(values ...interface{}) *db_query_row {
+func (dbqt *Db_query_template) Row(values ...interface{}) *db_query_row {
 	return &db_query_row{dbqt.stmt.QueryRow(values...)}
 }
 
@@ -56,7 +56,7 @@ func (dbqr *db_query_row) Parse(refs ...interface{}) {
 	errors.Deny(err)
 }
 
-func (dbqt *db_query_template) Query(values ...interface{}) *db_query_rows {
+func (dbqt *Db_query_template) Query(values ...interface{}) *db_query_rows {
 	rows, err := dbqt.stmt.Query(values...)
 	errors.Deny(err)
 	return &db_query_rows{rows}

@@ -5,14 +5,14 @@ import (
 	"github.com/jammer312/discording/errors"
 )
 
-func templates_init(db *sql.DB) map[string]db_query_template {
+func templates_init(db *sql.DB) map[string]Db_query_template {
 	defer errors.LogCrash("database templates_init()")
-	db_templates := make(map[string]db_query_template)
+	db_templates := make(map[string]Db_query_template)
 	prepare_template := func(name, query string) {
 		defer errors.Rise(name)
 		stmt, err := db.Prepare(query)
 		errors.Deny(err)
-		db_templates[name] = db_query_template{stmt}
+		db_templates[name] = Db_query_template{stmt}
 	}
 	prepare_template("select_known_channels", "select CHANTYPE, CHANID, SRVNAME from DISCORD_CHANNELS;")
 	prepare_template("add_known_channel", "insert into DISCORD_CHANNELS values ($1, $2, $3, $4);")
@@ -68,7 +68,7 @@ func templates_init(db *sql.DB) map[string]db_query_template {
 }
 
 //cleanup
-func templates_deinit(db_templates map[string]db_query_template) {
+func templates_deinit(db_templates map[string]Db_query_template) {
 	for k, t := range db_templates {
 		t.stmt.Close()
 		delete(db_templates, k)

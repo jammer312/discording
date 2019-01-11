@@ -6,13 +6,13 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func Open(db_url string) (worker func(name string) *db_query_template, closer func()) {
+func Open(db_url string) (worker func(name string) *Db_query_template, closer func()) {
 	db, err := sql.Open("postgres", db_url)
 	errors.Deny(err)
 	schema := schema_init()
 	schema.deploy(db)
 	templates := templates_init(db)
-	worker = func(name string) *db_query_template {
+	worker = func(name string) *Db_query_template {
 		template, ok := templates[name]
 		if !ok {
 			panic("no template named '" + name + "'")
