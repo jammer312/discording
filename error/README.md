@@ -1,0 +1,1 @@
+Collection of helpers for error handling

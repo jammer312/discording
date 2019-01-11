@@ -1,0 +1,1 @@
+Collection of helper functions, allows additional logging through filter somewhere else than stdout.
