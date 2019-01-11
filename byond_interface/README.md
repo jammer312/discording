@@ -1,0 +1,1 @@
+Contains black magic used to send data to byond server wrapped in convenient functions.
