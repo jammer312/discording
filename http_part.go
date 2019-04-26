@@ -19,6 +19,7 @@ import (
 var (
 	port                 string
 	admin_retrieval_page string
+	client http.Client //for http requests timeouts
 )
 
 func index_handler(w http.ResponseWriter, r *http.Request) {
@@ -205,6 +206,10 @@ func init() {
 	if port == "" {
 		log.Fatalln("Failed to retrieve $PORT")
 	}
+	timeout := time.Duration(5 * time.Second)
+	client = http.Client{
+	    Timeout: timeout,
+	}
 }
 
 func Load_admins() {
@@ -224,7 +229,7 @@ func Load_admins_for_server(server string) {
 	if !ok {
 		panic("can't find server")
 	}
-	response, err := http.Get(servstruct.admins_page)
+	response, err := client.Get(servstruct.admins_page)
 	if err != nil {
 		panic(err)
 	}
@@ -276,7 +281,7 @@ func Http_server() *http.Server {
 				http_server_ticker.Stop()
 				return
 			case <-http_server_ticker.C:
-				_, _ = http.Get("http://discording312.herokuapp.com")
+				_, _ = client.Get("http://discording312.herokuapp.com")
 			}
 		}
 	}()
