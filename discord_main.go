@@ -143,6 +143,7 @@ func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg str
 	rep, err := session.ChannelMessageSend(message.ChannelID, "<@!"+message.Author.ID+">, "+msg)
 	if err != nil {
 		log.Println("NON-PANIC ERROR: failed to send reply message to discord: ", err)
+		return rep, err
 	}
 	if temporary < 0 {
 		return rep, err
