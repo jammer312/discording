@@ -139,13 +139,13 @@ func discord_init() {
 	channel_buffers = make(map[string][]string)
 }
 
-func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg string, temporary int) *discordgo.Message {
+func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg string, temporary int) (*discordgo.Message, error) {
 	rep, err := session.ChannelMessageSend(message.ChannelID, "<@!"+message.Author.ID+">, "+msg)
 	if err != nil {
 		log.Println("NON-PANIC ERROR: failed to send reply message to discord: ", err)
 	}
 	if temporary < 0 {
-		return rep
+		return rep, err
 	}
 	if temporary == DEL_DEFAULT {
 		temporary = 1
@@ -154,7 +154,7 @@ func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg str
 	if !is_in_private_channel(session, message) {
 		go delete_in(session, rep, temporary)
 	}
-	return rep
+	return rep, err
 }
 
 func is_in_private_channel(session *discordgo.Session, message *discordgo.MessageCreate) bool {
