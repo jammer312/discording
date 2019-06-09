@@ -139,23 +139,19 @@ func discord_init() {
 	channel_buffers = make(map[string][]string)
 }
 
-func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg string, temporary int) (*discordgo.Message, error) {
-	rep, err := session.ChannelMessageSend(message.ChannelID, "<@!"+message.Author.ID+">, "+msg)
-	if err != nil {
-		log.Println("NON-PANIC ERROR: failed to send reply message to discord: ", err)
-		return rep, err
-	}
+func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg string, temporary int) []*discordgo.Message {
+	rep := send_message_big(message.ChannelID, "<@!"+message.Author.ID+">, "+msg)
 	if temporary < 0 {
-		return rep, err
+		return rep
 	}
 	if temporary == DEL_DEFAULT {
 		temporary = 1
 	}
 	temporary = temporary * int(math.Ceil(math.Sqrt(2+float64(len(msg))/10)))
 	if !is_in_private_channel(session, message) {
-		go delete_in(session, rep, temporary)
+		batch_delete_in(session, rep, temporary)
 	}
-	return rep, err
+	return rep
 }
 
 func is_in_private_channel(session *discordgo.Session, message *discordgo.MessageCreate) bool {
@@ -172,6 +168,16 @@ func delete_in(session *discordgo.Session, message *discordgo.Message, seconds i
 	err := session.ChannelMessageDelete(message.ChannelID, message.ID)
 	if err != nil {
 		log.Println("NON-PANIC ERROR: failed to delete reply message in discord: ", err)
+	}
+}
+
+func batch_delete_in(session *discordgo.Session, messages []*discordgo.Message, seconds int) {
+	time.Sleep(time.Duration(seconds) * time.Second)
+	for _, message := range(messages) {
+		err := session.ChannelMessageDelete(message.ChannelID, message.ID)
+		if err != nil {
+			log.Println("NON-PANIC ERROR: failed to delete reply message in discord: ", err)
+		}
 	}
 }
 
@@ -443,7 +449,7 @@ func send_message(channel, message string) {
 					//some shitter sent VERY long line from server, force cut it
 					li = max_message_size - 5
 					chunk = condensed[:li] + "**#**"
-					channel_buffers[channel] = []string{"**#**" + condensed[li+1:]}
+					channel_buffers[channel] = []string{"**#**" + condensed[li:]}
 				} else {
 					chunk = condensed[:li]
 					channel_buffers[channel] = []string{condensed[li+1:]}
@@ -459,6 +465,35 @@ func send_message(channel, message string) {
 		channel_message_send_loops_online[channel] = false
 		send_message_mutex.Unlock()
 	}()
+}
+
+func send_message_big(channel, message string) []*discordgo.Message {
+	ret := make([]*discordgo.Message,0)
+	for len(message) > 0 {
+		var tosend string
+		if len(message)>max_message_size {
+			li := strings.LastIndexByte(message[:max_message_size],'\n')
+			if li < 0 {
+				li = max_message_size-5
+				tosend=message[:li]+"**#**"
+				message="**#**"+message[li:]
+			} else {
+				tosend=message[:li]
+				message=message[li:]
+			}
+		} else {
+			tosend=message
+			message=""
+		}
+		rep, err := dsession.ChannelMessageSend(channel, tosend)
+		if err != nil {
+			log.Println("DERR: failed to send message to discord: ", err)
+			break
+		} else {
+			ret=append(ret, rep)
+		}
+	}
+	return ret
 }
 
 func Discord_subsriber_message_send(servername, channel, message string) {

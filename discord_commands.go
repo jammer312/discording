@@ -1038,11 +1038,12 @@ func init() {
 		Categories: []string{"configuration"},
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			srv := args[0]
-			repmsg, err := reply(session, message, "here be embed", DEL_NEVER)
-			if err!=nil {
+			repmsgs := reply(session, message, "here be embed", DEL_NEVER)
+			if len(repmsgs)<1 {
 				Discord_private_message_send(message.Author, "failed to create message in requested channel");
 				return "failed to create message"
 			}
+			repmsg:=repmsgs[0]
 			chn := message.ChannelID
 			msg := repmsg.ID
 			_, ok := known_servers[srv]
