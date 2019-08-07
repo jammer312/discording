@@ -434,8 +434,12 @@ func send_message(channel, message string) {
 	channel_message_send_loops_online[channel] = true
 	send_message_mutex.Unlock() //lol
 	go func() {
-		for len(channel_buffers[channel]) > 0 {
+		for {
 			send_message_mutex.Lock()
+			if len(channel_buffers[channel]) <= 0 {
+				send_message_mutex.Unlock()
+				break
+			}
 			condensed := strings.Join(channel_buffers[channel], "\n")
 			var chunk string
 			if len(condensed) <= max_message_size {
