@@ -49,6 +49,7 @@ const (
 	PERMISSIONS_NONE = iota - 1
 	PERMISSIONS_REGISTERED
 	PERMISSIONS_ADMIN
+	PERMISSIONS_MODERATOR
 	PERMISSIONS_SUPERUSER
 )
 
@@ -212,6 +213,9 @@ func ckey_simplifier(s string) string {
 }
 
 func get_permission_level_ckey(ckey, server string) int {
+	if check_moderator(ckey) {
+		return PERMISSIONS_MODERATOR;
+	}
 	if server != "" {
 		asl, ok := Known_admins[server]
 		if !ok {
@@ -910,9 +914,6 @@ func update_ban(ckey, reason string, user *discordgo.User, tp int) (succ bool, m
 	} else {
 		admin = local_users[user.ID]
 	}
-	if admin != "" && check_moderator(admin) {
-		permissions = MODERATOR_BAN_PERMISSION
-	}
 	if permissions < PERMISSIONS_ADMIN {
 		return false, "missing permissions (how the fuck did you get there?)"
 	}
@@ -939,9 +940,6 @@ func remove_ban(ckey string, tp int, user *discordgo.User) (succ bool, msg strin
 	ckey = ckey_simplifier(ckey)
 	permissions := get_permission_level(user, "")
 	admin := local_users[user.ID]
-	if admin != "" && check_moderator(admin) {
-		permissions = MODERATOR_BAN_PERMISSION
-	}
 	if permissions < PERMISSIONS_ADMIN {
 		return false, "missing permissions (how the fuck did you get there?)"
 	}

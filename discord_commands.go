@@ -113,7 +113,7 @@ func init() {
 	Register_command(&Dcommand{
 		Command:    "check_permissions",
 		Minargs:    1,
-		Permlevel:  PERMISSIONS_SUPERUSER,
+		Permlevel:  PERMISSIONS_MODERATOR,
 		Usage:      "[!id]",
 		Desc:       "check permissions for given id",
 		Categories: []string{"debug"},
@@ -129,6 +129,8 @@ func init() {
 				return "registered"
 			case PERMISSIONS_ADMIN:
 				return "admin"
+			case PERMISSIONS_MODERATOR:
+				return "moderator"
 			case PERMISSIONS_SUPERUSER:
 				return "superuser"
 			default:
@@ -278,7 +280,7 @@ func init() {
 	Register_command(&Dcommand{
 		Command:    "channel_here",
 		Minargs:    2,
-		Permlevel:  PERMISSIONS_SUPERUSER,
+		Permlevel:  PERMISSIONS_MODERATOR,
 		Usage:      "[!server] [!channel type]",
 		Desc:       "create and/or bind provided channel type to discord channel",
 		Categories: []string{"configuration"},
@@ -300,7 +302,7 @@ func init() {
 	Register_command(&Dcommand{
 		Command:    "channel_list",
 		Minargs:    0,
-		Permlevel:  PERMISSIONS_ADMIN,
+		Permlevel:  PERMISSIONS_MODERATOR,
 		Usage:      "",
 		Desc:       "list known channel types and channels they're bound to",
 		Categories: []string{"configuration", "debug"},
@@ -314,7 +316,7 @@ func init() {
 	Register_command(&Dcommand{
 		Command:    "channel_remove",
 		Minargs:    0,
-		Permlevel:  PERMISSIONS_SUPERUSER,
+		Permlevel:  PERMISSIONS_MODERATOR,
 		Usage:      "[?server] [?channel_type]",
 		Desc:       "unbind either provided channel type or else one bound to receiving discord channel and forget about it",
 		Categories: []string{"configuration"},
@@ -577,7 +579,7 @@ func init() {
 	Register_command(&Dcommand{
 		Command:    "role_update",
 		Minargs:    2,
-		Permlevel:  PERMISSIONS_SUPERUSER,
+		Permlevel:  PERMISSIONS_MODERATOR,
 		Usage:      "[!type] [!role_slap] [?server]",
 		Desc:       "adds/updates [!role_slap] role of [!type] type; correct roles are '" + ROLE_PLAYER + "' and '" + ROLE_ADMIN + "'",
 		Categories: []string{"configuration"},
@@ -607,7 +609,7 @@ func init() {
 	Register_command(&Dcommand{
 		Command:    "role_remove",
 		Minargs:    1,
-		Permlevel:  PERMISSIONS_SUPERUSER,
+		Permlevel:  PERMISSIONS_MODERATOR,
 		Usage:      "[!type] [?server]",
 		Desc:       "removes role of [!type] type",
 		Categories: []string{"configuration"},
@@ -637,7 +639,7 @@ func init() {
 	Register_command(&Dcommand{
 		Command:    "role_list",
 		Minargs:    0,
-		Permlevel:  PERMISSIONS_SUPERUSER,
+		Permlevel:  PERMISSIONS_MODERATOR,
 		Usage:      "",
 		Desc:       "lists known roles for this guild",
 		Categories: []string{"configuration", "debug"},
@@ -1032,7 +1034,7 @@ func init() {
 	Register_command(&Dcommand{
 		Command:    "status_bind",
 		Minargs:    1,
-		Permlevel:  PERMISSIONS_SUPERUSER,
+		Permlevel:  PERMISSIONS_MODERATOR,
 		Usage:      "[!server]",
 		Desc:       "bind dynamic embed for server status to this channel",
 		Categories: []string{"configuration"},
@@ -1062,7 +1064,7 @@ func init() {
 	Register_command(&Dcommand{
 		Command:    "status_unbind",
 		Minargs:    1,
-		Permlevel:  PERMISSIONS_SUPERUSER,
+		Permlevel:  PERMISSIONS_MODERATOR,
 		Usage:      "[!server]",
 		Desc:       "unbind dynamic embed for server status from this channel",
 		Categories: []string{"configuration"},
@@ -1169,7 +1171,7 @@ func init() {
 	Register_command(&Dcommand{
 		Command:    "bot_rename",
 		Minargs:    1,
-		Permlevel:  PERMISSIONS_SUPERUSER,
+		Permlevel:  PERMISSIONS_MODERATOR,
 		Usage:      "[!nickname]",
 		Desc:       "renames bot in given guild",
 		Categories: []string{"debug", "configuration"},
@@ -1199,7 +1201,7 @@ func init() {
 	Register_command(&Dcommand{
 		Command:    "channels_autopurge",
 		Minargs:    0,
-		Permlevel:  PERMISSIONS_SUPERUSER,
+		Permlevel:  PERMISSIONS_MODERATOR,
 		Usage:      "",
 		Desc:       "autodeletes broken channel links",
 		Categories: []string{"configuration"},
@@ -1278,7 +1280,7 @@ func init() {
 	Register_command(&Dcommand{
 		Command:    "deregister",
 		Minargs:    1,
-		Permlevel:  PERMISSIONS_SUPERUSER,
+		Permlevel:  PERMISSIONS_MODERATOR,
 		Usage:      "[!ckey]",
 		Desc:       "deregisters specified user",
 		Categories: []string{"account"},
