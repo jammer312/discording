@@ -229,6 +229,12 @@ func Load_admins_for_server(server string) {
 	if !ok {
 		panic("can't find server")
 	}
+	if(servstruct.admins_page=="") {
+		adminssl := make([]string, 0)
+		Known_admins[server] = adminssl
+		log.Println("no admins for "+server)
+		return
+	}
 	response, err := client.Get(servstruct.admins_page)
 	if err != nil {
 		panic(err)

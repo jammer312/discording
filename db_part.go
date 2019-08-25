@@ -129,7 +129,7 @@ func templates_init() {
 	prepare_template("create_onetime_sub", "insert into DISCORD_ONETIME_SUBSCRIPTIONS values($1,$2,$3);")
 	prepare_template("remove_onetime_subs", "delete from DISCORD_ONETIME_SUBSCRIPTIONS where SRVNAME = $1;")
 	prepare_template("select_configs", "select KEY, VALUE from app_config;")
-	prepare_template("update_config", "update app_config set value=$1 where key=$2;")
+	prepare_template("update_config", "update app_config set value=$2 where key=$1;")
 	prepare_template("add_config", "insert into app_config values($1,$2);")
 	prepare_template("remove_config", "delete from app_config where key=$1;")
 	prepare_template("select_dynembeds", "select server, channelid, messageid from dynamic_embeds;")
