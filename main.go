@@ -100,6 +100,7 @@ type server struct {
 	webhook_key string //password for bot
 	admins_page string //where to get admins from
 	color       int    //for embeds
+	mode 		int    //encoding
 }
 
 func add_server(server server) {
@@ -120,14 +121,14 @@ func populate_servers() {
 		delete(known_servers, k)
 	}
 	defer logging_recover("DB PS ERR:")
-	rows, err := Database.Query("select SRVNAME, SRVADDR, COMMKEY, WEBKEY, ADMINS_PAGE, COLOR from STATION_SERVERS ;")
+	rows, err := Database.Query("select SRVNAME, SRVADDR, COMMKEY, WEBKEY, ADMINS_PAGE, COLOR, MODE from STATION_SERVERS ;")
 	if err != nil {
 		panic(err)
 	}
 	for rows.Next() {
 		var srvname, srvaddr, commkey, webkey, admp string
-		var clr int
-		if terr := rows.Scan(&srvname, &srvaddr, &commkey, &webkey, &admp, &clr); terr != nil {
+		var clr, encmode int
+		if terr := rows.Scan(&srvname, &srvaddr, &commkey, &webkey, &admp, &clr, &encmode); terr != nil {
 			panic(terr)
 		}
 		srvname = trim(srvname)
@@ -142,6 +143,7 @@ func populate_servers() {
 			webhook_key: webkey,
 			admins_page: admp,
 			color:       clr,
+			mode:		 encmode,
 		})
 	}
 }

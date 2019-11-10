@@ -397,7 +397,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			reply(session, message, "you're banned from this action. Try !baninfo", DEL_DEFAULT)
 			return
 		}
-		br := Byond_query(srv.server, "ckey="+Bquery_convert(shown_nick)+"&ooc="+Bquery_convert(byondmcontent)+addstr, true)
+		br := Byond_query(srv.server, "ckey="+Bquery_convert(shown_nick, srv.server)+"&ooc="+Bquery_convert(byondmcontent, srv.server)+addstr, true)
 		if br.String() == "muted" {
 			reply(session, message, "your ckey is muted from OOC", DEL_DEFAULT)
 			return
@@ -412,7 +412,7 @@ func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate)
 			reply(session, message, "You have no privilegies to write here", DEL_DEFAULT)
 			return //not today
 		}
-		Byond_query(srv.server, "admin="+Bquery_convert(shown_nick)+"&asay="+Bquery_convert(byondmcontent), true)
+		Byond_query(srv.server, "admin="+Bquery_convert(shown_nick, srv.server)+"&asay="+Bquery_convert(byondmcontent, srv.server), true)
 		Discord_message_send(srv.server, "admin", "DASAY: "+shown_nick, strip.StripTags(mcontent))
 	default:
 	}

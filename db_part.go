@@ -236,6 +236,7 @@ func schema_init() {
 			"webkey":      text_db_type,
 			"admins_page": text_db_type,
 			"color":       int_bd_type,
+			"conv_mode":   int_bd_type,
 		}})
 
 	add_table(table_schema{

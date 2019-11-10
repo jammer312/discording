@@ -351,7 +351,7 @@ func init() {
 		Categories:      []string{"admin"},
 		Server_specific: true,
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
-			Byond_query(server, "adminhelp&admin="+Bquery_convert(local_users[message.Author.ID])+"&ckey="+Bquery_convert(args[0])+"&response="+Bquery_convert(strings.Join(args[1:], " ")), true)
+			Byond_query(server, "adminhelp&admin="+Bquery_convert(local_users[message.Author.ID], server)+"&ckey="+Bquery_convert(args[0], server)+"&response="+Bquery_convert(strings.Join(args[1:], " "), server), true)
 			return ""
 		},
 	})
@@ -369,7 +369,7 @@ func init() {
 			if last_ahelp[server] == "" {
 				return ""
 			}
-			Byond_query(server, "adminhelp&admin="+Bquery_convert(local_users[message.Author.ID])+"&ckey="+Bquery_convert(last_ahelp[server])+"&response="+Bquery_convert(strings.Join(args, " ")), true)
+			Byond_query(server, "adminhelp&admin="+Bquery_convert(local_users[message.Author.ID], server)+"&ckey="+Bquery_convert(last_ahelp[server], server)+"&response="+Bquery_convert(strings.Join(args, " "), server), true)
 			return ""
 		},
 	})
@@ -433,7 +433,7 @@ func init() {
 			if lock == "" {
 				return "no active lock"
 			}
-			Byond_query(server, "adminhelp&admin="+Bquery_convert(local_users[message.Author.ID])+"&ckey="+lock+"&response="+Bquery_convert(strings.Join(args, " ")), true)
+			Byond_query(server, "adminhelp&admin="+Bquery_convert(local_users[message.Author.ID], server)+"&ckey="+lock+"&response="+Bquery_convert(strings.Join(args, " "), server), true)
 			return ""
 		},
 	})

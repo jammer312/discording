@@ -23,18 +23,7 @@ var (
 )
 
 func index_handler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "" && r.Method != "GET" {
-		return
-	} //no POST and other shit
-	//no input params, simply prints out various info
-	br := Byond_query("white", "status", false)
-	out := br.String()
-	out = strings.Replace(out, "&", "\n", -1)
-	out = strings.Replace(out, "=", ": ", -1)
-	out = Bquery_deconvert(out)
-	fmt.Fprintln(w, out)
-	br = Byond_query("white", "who", false)
-	fmt.Fprintln(w, br.String())
+	fmt.Fprintln(w, "It works despite not looking so")
 }
 
 func safe_param(m *url.Values, param string) string {

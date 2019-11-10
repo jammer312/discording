@@ -36,6 +36,11 @@ type Byond_response struct {
 	data  []byte
 }
 
+const (
+	Byond_NOCONV = iota
+	Byond_DEFCONV
+)
+
 func DecodeWindows1251(s string) string {
 	dec := charmap.Windows1251.NewDecoder()
 	out, err := dec.String(s)
@@ -134,17 +139,22 @@ func (Br *Byond_response) Float() float32 {
 	return ret
 }
 
-func Bquery_convert(s string) string {
-	return url.QueryEscape(EncodeWindows1251(s))
+func Bquery_convert(msg, server string) string {
+	if srv, ok := known_servers[server]; ok && srv.mode == Byond_DEFCONV {
+		msg = EncodeWindows1251(msg)
+	}
+	return url.QueryEscape(msg)
 }
 
-func Bquery_deconvert(s string) string {
-	ret, err := url.QueryUnescape(s)
+func Bquery_deconvert(msg, server string) string {
+	ret, err := url.QueryUnescape(msg)
 	if err != nil {
 		log.Println("ERROR: Query unescape error: ", err)
 		return ret
 	}
-	ret = DecodeWindows1251(ret)
+	if srv, ok := known_servers[server]; ok && srv.mode == Byond_DEFCONV {
+		ret = DecodeWindows1251(ret)
+	}
 	return ret
 }
 
@@ -224,7 +234,7 @@ func (ss *server_status) global_update() {
 		//probably timeout
 		return
 	}
-	stat = Bquery_deconvert(stat)
+	stat = Bquery_deconvert(stat, ss.server_name)
 	stat_split := strings.Split(stat, "&")
 	for i := 0; i < len(stat_split); i++ {
 		tmp := strings.Split(stat_split[i], "=")
