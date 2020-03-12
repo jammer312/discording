@@ -951,11 +951,11 @@ func init() {
 		Categories: []string{"info"},
 		Temporary:  DEL_LONG,
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
-			ret := "opensource golang bot for ss13<->discord\n"
-			ret += "github repo: https://github.com/jammer312/discording\n"
-			ret += "main discord guild: https://discord.gg/T3kZZNR\n"
-			ret += "try typing `!register` , `!help` and `!usage`\n"
-			ret += "or maybe check out https://forum.ss13.ru/index.php?showtopic=18451"
+			ret := "I am opensource Golang bot for communication SS13 ↔ Discord\n"
+			ret += "My GitHub repository: https://github.com/jammer312/discording\n"
+			ret += "Main Discord guild: https://discord.gg/T3kZZNR\n"
+			ret += "Try typing `!register`, `!help` and `!usage`\n"
+			ret += "Forum topic about me (rus): <https://forum.ss13.ru/index.php?showtopic=18451>"
 			return ret
 		},
 	})
