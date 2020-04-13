@@ -581,7 +581,7 @@ func init() {
 		Minargs:    2,
 		Permlevel:  PERMISSIONS_MODERATOR,
 		Usage:      "[!type] [!role_slap] [?server]",
-		Desc:       "adds/updates [!role_slap] role of [!type] type; correct roles are '" + strings.Join([]string{ROLE_ADMIN, ROLE_PLAYER, ROLE_SUBSCRIBER}, ", ") + "'",
+		Desc:       "adds/updates [!role_slap] role of [!type] type; correct roles are " + strings.Join([]string{ROLE_ADMIN, ROLE_PLAYER, ROLE_SUBSCRIBER}, ", "),
 		Categories: []string{"configuration"},
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			tp, slap := args[0], args[1]
