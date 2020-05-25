@@ -901,7 +901,7 @@ func init() {
 	Register_command(&Dcommand{
 		Command:         "sub_once",
 		Minargs:         0,
-		Permlevel:       PERMISSIONS_REGISTERED,
+		Permlevel:       PERMISSIONS_NONE,
 		Usage:           "",
 		Desc:            "tells bot to notify you next time round is about to start",
 		Categories:      []string{"account"},
