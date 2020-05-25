@@ -991,11 +991,6 @@ func check_bans_readable(user *discordgo.User, server string, tp int) string {
 }
 
 func subscribe_user(guildid, userid, srv string) bool {
-	ckey := update_local_user(userid)
-	if ckey == "" {
-		return false
-	}
-	ckey = strings.ToLower(ckey)
 	var subscriber_role string
 	var ok bool
 	gsubs, ok := discord_subscriber_roles[guildid]

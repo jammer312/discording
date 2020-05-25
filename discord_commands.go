@@ -879,7 +879,7 @@ func init() {
 	Register_command(&Dcommand{
 		Command:         "sub",
 		Minargs:         0,
-		Permlevel:       PERMISSIONS_REGISTERED,
+		Permlevel:       PERMISSIONS_NONE,
 		Usage:           "",
 		Desc:            "assigns you 'subscriber' role that gets notification each time round is about to start",
 		Categories:      []string{"account"},
