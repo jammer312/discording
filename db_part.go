@@ -150,9 +150,9 @@ func templates_init() {
 	prepare_template("list_station_donators", "select ckey,uptotime,next_round from station_donators where server=$1;")
 
 	//ban overrides
-	prepare_template("fetch_ban_overrides", "select * from discord_ban_overrides;")
+	prepare_template("fetch_ban_overrides", "select server, ckey, type, permission from discord_ban_overrides;")
 	prepare_template("add_ban_override", "insert into discord_ban_overrides (server, ckey, type, permission) values($1, $2, $3, $4);")
-	prepare_template("check_ban_override", "SELECT * from discord_ban_overrides where server = $1 and ckey = $2 and type = $3 and permission >= $4::numeric;")
+	prepare_template("check_ban_override", "SELECT server, ckey, type, permission from discord_ban_overrides where server = $1 and ckey = $2 and type = $3 and permission >= $4::numeric;")
 	prepare_template("promote_ban_override", "update discord_ban_overrides set permission = $4 where server = $1 and ckey = $2 and type = $3 and permission < $4::numeric;")
 	prepare_template("wipe_ban_overrides", "delete from discord_ban_overrides where server = $1 and ckey = $2 and permission <= $3::numeric;")
 
