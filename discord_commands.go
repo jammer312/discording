@@ -800,8 +800,8 @@ func init() {
 		Desc:       "ban override stuff, valid types are " + BANSTRING_OOC + " and " + BANSTRING_COMMANDS,
 		Categories: []string{"moderation"},
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
-			ckey := args[2]
-			bantypestr := args[3]
+			ckey := args[1]
+			bantypestr := args[2]
 			bantype := 0
 			switch bantypestr {
 			case BANSTRING_OOC:
@@ -864,11 +864,11 @@ func init() {
 		Desc:       "remove existing ban overrides issued by same- or lower-ranked person, if any; use @ instead of server to apply to current server",
 		Categories: []string{"moderation"},
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
-			srv := args[1]
+			srv := args[0]
 			if srv == "@" {
 				srv = server
 			}
-			ckey := strings.ToLower(args[2])
+			ckey := strings.ToLower(args[1])
 			succ, st := wipe_ban_overrides(srv, ckey, message.Author)
 			if succ {
 				return "OK " + st
