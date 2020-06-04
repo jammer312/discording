@@ -980,7 +980,7 @@ func update_ban_override(server, ckey string, user *discordgo.User, tp int) (suc
 		populate_ban_overrides()
 		return true, "promoted existing override"
 	}
-	succ = db_template("add_ban_override").exec(server, ckey, permissions).count() > 0
+	succ = db_template("add_ban_override").exec(server, ckey, tp, permissions).count() > 0
 	if succ {
 		msg = "added new override"
 	}

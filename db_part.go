@@ -151,10 +151,10 @@ func templates_init() {
 
 	//ban overrides
 	prepare_template("fetch_ban_overrides", "select * from discord_ban_overrides;")
-	prepare_template("add_ban_override", "insert into discord_ban_overrides values($1,$2,$3,$4);")
+	prepare_template("add_ban_override", "insert into discord_ban_overrides (server, ckey, type, permission) values($1, $2, $3, $4);")
 	prepare_template("check_ban_override", "SELECT * from discord_ban_overrides where server = $1 and ckey = $2 and type = $3 and permission >= $4::numeric;")
 	prepare_template("promote_ban_override", "update discord_ban_overrides set permission = $4 where server = $1 and ckey = $2 and type = $3 and permission < $4::numeric;")
-	prepare_template("wipe_ban_overrides", "delete from discord_ban_overrides where  server = $1 and ckey = $2 and permission <= $3::numeric;")
+	prepare_template("wipe_ban_overrides", "delete from discord_ban_overrides where server = $1 and ckey = $2 and permission <= $3::numeric;")
 
 }
 
@@ -295,6 +295,7 @@ func schema_init() {
 
 //create missing tables
 //TODO: add automatic db alteration
+//TODO: fix it (map don't guarantee order, which can screw stuff up badly)
 func (dbs *db_schema) deploy_db() {
 	for _, v := range dbs.tables {
 		tps := v.typestring()
