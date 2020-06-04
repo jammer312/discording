@@ -1391,6 +1391,7 @@ func Dopen() {
 	update_local_users()
 	populate_known_roles()
 	populate_bans()
+	populate_ban_overrides()
 	Load_admins()
 	initial_update_moderators()
 	spamticker = start_ticker(discord_spam_prot_tick, func() {
