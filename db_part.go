@@ -148,6 +148,14 @@ func templates_init() {
 	prepare_template("update_station_donators", "update station_donators set uptotime=(uptotime+$3) where server=$1 and ckey=$2;")
 	prepare_template("insert_station_donators", "insert into station_donators values($1,$2,$3,-1);")
 	prepare_template("list_station_donators", "select ckey,uptotime,next_round from station_donators where server=$1;")
+
+	//ban overrides
+	prepare_template("fetch_ban_overrides", "select * from discord_ban_overrides;")
+	prepare_template("add_ban_override", "insert into discord_ban_overrides values($1,$2,$3,$4);")
+	prepare_template("check_ban_override", "SELECT * from discord_ban_overrides where server = $1 and ckey = $2 and type = $3 and permission >= $4::numeric;")
+	prepare_template("promote_ban_override", "update discord_ban_overrides set permission = $5 where server = $1 and ckey = $2 and type = $3 and permission < $4::numeric;")
+	prepare_template("wipe_ban_overrides", "delete from discord_ban_overrides where  server = $1 and ckey = $2 and permission <= $3::numeric;")
+
 }
 
 func prepare_template(name, query string) {
@@ -267,6 +275,14 @@ func schema_init() {
 			"uptotime":   int_bd_type,
 			"next_round": int_bd_type,
 		}})
+	add_table(table_schema{
+		name:"discord_ban_overrides",
+		fields: map[string]string{
+			"server": text_db_type,
+			"ckey": text_db_type,
+			"type": int_bd_type,
+			"permission": int_bd_type,
+		},})
 	/*
 		add_table(table_schema{
 			name:"",

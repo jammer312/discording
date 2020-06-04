@@ -793,6 +793,38 @@ func init() {
 	// ------------
 	// ------------
 	Register_command(&Dcommand{
+		Command:    "ban_override_apply",
+		Minargs:    3,
+		Permlevel:  PERMISSIONS_ADMIN,
+		Usage:      "[!server] [!ckey] [!type]",
+		Desc:       "ban override stuff, valid types are " + BANSTRING_OOC + " and " + BANSTRING_COMMANDS,
+		Categories: []string{"moderation"},
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
+			ckey := args[2]
+			bantypestr := args[3]
+			bantype := 0
+			switch bantypestr {
+			case BANSTRING_OOC:
+				bantype = BANTYPE_OOC
+			case BANSTRING_COMMANDS:
+				bantype = BANTYPE_COMMANDS
+			default:
+				num, err := strconv.Atoi(bantypestr)
+				if err != nil {
+					return "incorrect type"
+				}
+				bantype = num
+			}
+			succ, st := update_ban_override(server, ckey, message.Author, bantype)
+			if succ {
+				return "OK " + st
+			}
+			return "FAIL " + st
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(&Dcommand{
 		Command:    "ban_lift",
 		Minargs:    2,
 		Permlevel:  PERMISSIONS_ADMIN,
@@ -816,6 +848,28 @@ func init() {
 				bantype = num
 			}
 			succ, st := remove_ban(ckey, bantype, message.Author)
+			if succ {
+				return "OK " + st
+			}
+			return "FAIL " + st
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(&Dcommand{
+		Command:    "ban_override_wipe",
+		Minargs:    2,
+		Permlevel:  PERMISSIONS_ADMIN,
+		Usage:      "[!server] [!ckey]",
+		Desc:       "remove existing ban overrides issued by same- or lower-ranked person, if any; use @ instead of server to apply to current server",
+		Categories: []string{"moderation"},
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
+			srv := args[1]
+			if srv == "@" {
+				srv = server
+			}
+			ckey := strings.ToLower(args[2])
+			succ, st := wipe_ban_overrides(srv, ckey, message.Author)
 			if succ {
 				return "OK " + st
 			}

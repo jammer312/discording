@@ -92,6 +92,7 @@ type dban struct {
 }
 
 var known_bans_summary map[string]map[int]int
+var known_ban_overrides map[string]map[string]map[int]int //server->ckey->permission->type 
 
 var dsession, _ = discordgo.New()
 var last_ahelp map[string]string
@@ -131,6 +132,7 @@ func discord_init() {
 	discord_admin_roles = make(map[string]map[string]string)
 	discord_onetime_subscriptions = make(map[string]map[string]string)
 	known_bans_summary = make(map[string]map[int]int)
+	known_ban_overrides = make(map[string]map[string]map[int]int)
 	last_ahelp = make(map[string]string)
 	discord_spam_prot_checks = make(map[string]int)
 	discord_spam_prot_bans = make(map[string]bool)
@@ -904,6 +906,32 @@ func populate_bans() {
 	db_template("fetch_bans").query().parse(closure_callback, &ckey, &bantype, &permission)
 }
 
+func populate_ban_overrides() {
+	defer logging_recover("pbo")
+	for k := range known_ban_overrides {
+		delete(known_ban_overrides, k)
+	}
+	var server, ckey string
+	var bantype, permission int
+	closure_callback := func() {
+		srv, ok := known_ban_overrides[server]
+		if !ok {
+			srv = make(map[string]map[int]int)
+			known_ban_overrides[server] = srv
+		}
+		usr, ok := known_ban_overrides[server][ckey]
+		if !ok {
+			usr = make(map[int]int)
+			known_ban_overrides[server][ckey] = usr
+		}
+
+		for i := permission - 1; i >= 0; i-- {
+			usr[i] |= bantype
+		}
+	}
+	db_template("fetch_ban_overrides").query().parse(closure_callback, &server, &ckey, &bantype, &permission)
+}
+
 func update_ban(ckey, reason string, user *discordgo.User, tp int) (succ bool, msg string) {
 	defer logging_recover("ub")
 	ckey = ckey_simplifier(ckey)
@@ -935,6 +963,29 @@ func update_ban(ckey, reason string, user *discordgo.User, tp int) (succ bool, m
 	}
 }
 
+func update_ban_override(server, ckey string, user *discordgo.User, tp int) (succ bool, msg string) {
+	defer logging_recover("ubo")
+	ckey = ckey_simplifier(ckey)
+	permissions := get_permission_level(user, server)
+	if permissions < PERMISSIONS_ADMIN {
+		return false, "403 forbidden"
+	}
+	msg = "database failure"
+	if db_template("check_ban_override").exec(server, ckey, tp, permissions).count() > 0 {
+		populate_ban_overrides()
+		return true, "stronger override is in effect"
+	}
+	if db_template("promote_ban_override").exec(server, ckey, tp, permissions).count() > 0 {
+		populate_ban_overrides()
+		return true, "promoted existing override"
+	}
+	succ = db_template("add_ban_override").exec(server, ckey, tp, permissions).count() > 0
+	if succ {
+		msg = "added new override"
+	}
+	return succ, msg
+}
+
 func remove_ban(ckey string, tp int, user *discordgo.User) (succ bool, msg string) {
 	defer logging_recover("rb")
 	ckey = ckey_simplifier(ckey)
@@ -952,6 +1003,21 @@ func remove_ban(ckey string, tp int, user *discordgo.User) (succ bool, msg strin
 	return false, "no bans removed"
 }
 
+func wipe_ban_overrides(server, ckey string, user *discordgo.User) (succ bool, msg string) {
+	defer logging_recover("wbo")
+	ckey = ckey_simplifier(ckey)
+	permissions := get_permission_level(user, "")
+	if permissions < PERMISSIONS_ADMIN {
+		return false, "403 forbidden"
+	}
+	msg = "database failure"
+	if cnt := db_template("wipe_ban_overrides").exec(server, ckey, permissions).count(); cnt > 0 {
+		populate_ban_overrides()
+		return true, fmt.Sprintf("%v bans overrides removed", cnt)
+	}
+	return false, "no ban overrides removed"
+}
+
 func check_bans(user *discordgo.User, server string, tp int) bool {
 	ckey := local_users[user.ID]
 	ckey = ckey_simplifier(ckey)
@@ -964,7 +1030,16 @@ func check_bans(user *discordgo.User, server string, tp int) bool {
 	}
 	ourperms := get_permission_level_ckey_sp(ckey, server)
 	bant := banarr[ourperms]
-	return (bant & tp) != 0
+	banned := (bant & tp) != 0
+	srv_overrides, ok := known_ban_overrides[server]
+	if ok {
+		usr_overrides, ok := srv_overrides[ckey]
+		if ok {
+			unbant := usr_overrides[ourperms]
+			banned = ((bant ^ (bant & unbant)) & tp) != 0
+		}
+	}
+	return banned
 }
 
 func check_bans_readable(user *discordgo.User, server string, tp int) string {
