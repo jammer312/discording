@@ -971,7 +971,6 @@ func update_ban_override(server, ckey string, user *discordgo.User, tp int) (suc
 		return false, "403 forbidden"
 	}
 	msg = "database failure"
-	log.Println(server, ckey, tp, permissions);
 	if db_template("check_ban_override").exec(server, ckey, tp, permissions).count() > 0 {
 		populate_ban_overrides()
 		return true, "stronger override is in effect"
