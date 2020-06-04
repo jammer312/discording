@@ -797,9 +797,13 @@ func init() {
 		Minargs:    3,
 		Permlevel:  PERMISSIONS_ADMIN,
 		Usage:      "[!server] [!ckey] [!type]",
-		Desc:       "ban override stuff, valid types are " + BANSTRING_OOC + " and " + BANSTRING_COMMANDS,
+		Desc:       "ban override stuff, valid types are " + BANSTRING_OOC + " and " + BANSTRING_COMMANDS + "; use @ instead of server to apply to current server",
 		Categories: []string{"moderation"},
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
+			srv := args[0]
+			if srv == "@" {
+				srv = server
+			}
 			ckey := args[1]
 			bantypestr := args[2]
 			bantype := 0
@@ -815,7 +819,7 @@ func init() {
 				}
 				bantype = num
 			}
-			succ, st := update_ban_override(server, ckey, message.Author, bantype)
+			succ, st := update_ban_override(srv, ckey, message.Author, bantype)
 			if succ {
 				return "OK " + st
 			}
