@@ -732,7 +732,7 @@ func init() {
 		Usage:      "[!ckey]",
 		Desc:       "returns slap of user with such ckey",
 		Categories: []string{"info", "debug"},
-		Temporary:  DEL_NEVER_MOD,
+		Temporary:  DEL_FIXED_MOD,
 		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
 			args = strings.Fields(message.Content[1:])
 			ckey := args[1]

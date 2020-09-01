@@ -75,9 +75,9 @@ const (
 	BANSTRING_COMMANDS = "COMMANDS"
 )
 
-//DEL_NEVER_MOD is not spamproof, so should rarely be used
+//DEL_FIXED_MOD is not spamproof, so should rarely be used
 const (
-	DEL_NEVER_MOD  = -2
+	DEL_FIXED_MOD  = -2
 	DEL_NEVER      = -1
 	DEL_DEFAULT    =  0
 	DEL_LONG       =  3
@@ -85,7 +85,8 @@ const (
 )
 
 const max_message_size = 2000
-const message_mod_delay = 1;
+const message_mod_delay = 1
+const message_fixed_delay = 30
 
 type dban struct {
 	reason    string
@@ -146,11 +147,16 @@ func discord_init() {
 }
 
 func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg string, temporary int) []*discordgo.Message {
-	if temporary == DEL_NEVER_MOD {
-		rep, err := dsession.ChannelMessageSend(message.ChannelID, "<@!"+message.Author.ID+">, here will be result of your command")
-		noerror(err)
+	if temporary == DEL_FIXED_MOD {
+		rep, err := session.ChannelMessageSend(message.ChannelID, "<@!"+message.Author.ID+">, here will be result of your command")
+		if err != nil {
+			log.Println("NON-PANIC ERROR: failed to delete reply message in discord: ", err)
+		}
 		time.Sleep(time.Duration(message_mod_delay) * time.Second)
-		dsession.ChannelMessageEdit(rep.ChannelID, rep.ID, "<@!"+message.Author.ID+">, "+msg)
+		session.ChannelMessageEdit(rep.ChannelID, rep.ID, "<@!"+message.Author.ID+">, "+msg)
+		if !is_in_private_channel(session, message) {
+			delete_in(session, rep, message_fixed_delay)
+		}
 		return []*discordgo.Message{rep}
 	}
 	rep := send_message_big(message.ChannelID, "<@!"+message.Author.ID+">, "+msg)
