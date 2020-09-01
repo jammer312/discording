@@ -728,7 +728,7 @@ func init() {
 	Register_command(&Dcommand{
 		Command:    "whois",
 		Minargs:    1,
-		Permlevel:  PERMISSIONS_SUPERUSER,
+		Permlevel:  PERMISSIONS_ADMIN,
 		Usage:      "[!ckey]",
 		Desc:       "returns slap of user with such ckey",
 		Categories: []string{"info", "debug"},
