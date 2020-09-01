@@ -740,8 +740,8 @@ func init() {
 			if ckey == "" {
 				return "incorrect input"
 			}
-			for uid, _ckey := range(local_users) {
-				if (ckey == _ckey) {
+			for uid, key := range(local_users) {
+				if (ckey ==  ckey_simplifier(key)) {
 					return "ckey '" + ckey + "' is bound to <@"+uid+">"
 				}
 			}
