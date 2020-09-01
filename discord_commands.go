@@ -726,6 +726,31 @@ func init() {
 	// ------------
 	// ------------
 	Register_command(&Dcommand{
+		Command:    "whois",
+		Minargs:    1,
+		Permlevel:  PERMISSIONS_SUPERUSER,
+		Usage:      "[!ckey]",
+		Desc:       "returns slap of user with such ckey",
+		Categories: []string{"info", "debug"},
+		Temporary:  DEL_NEVER_MOD,
+		functional: func(session *discordgo.Session, message *discordgo.MessageCreate, args []string, server string) string {
+			args = strings.Fields(message.Content[1:])
+			ckey := args[1]
+			ckey = ckey_simplifier(ckey)
+			if ckey == "" {
+				return "incorrect input"
+			}
+			for uid, _ckey := range(local_users) {
+				if (ckey == _ckey) {
+					return "ckey '" + ckey + "' is bound to <@"+uid+">"
+				}
+			}
+			return "No user with ckey '" + ckey + "' found"
+		},
+	})
+	// ------------
+	// ------------
+	Register_command(&Dcommand{
 		Command:    "baninfo",
 		Minargs:    0,
 		Permlevel:  PERMISSIONS_REGISTERED,

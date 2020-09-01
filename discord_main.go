@@ -75,14 +75,17 @@ const (
 	BANSTRING_COMMANDS = "COMMANDS"
 )
 
+//DEL_NEVER_MOD is not spamproof, so should rarely be used
 const (
+	DEL_NEVER_MOD  = -2
 	DEL_NEVER      = -1
-	DEL_DEFAULT    = 0
-	DEL_LONG       = 3
+	DEL_DEFAULT    =  0
+	DEL_LONG       =  3
 	DEL_EXTRA_LONG = 10
 )
 
 const max_message_size = 2000
+const message_mod_delay = 1;
 
 type dban struct {
 	reason    string
@@ -143,8 +146,15 @@ func discord_init() {
 }
 
 func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg string, temporary int) []*discordgo.Message {
+	if temporary == DEL_NEVER_MOD {
+		rep, err := dsession.ChannelMessageSend(message.ChannelID, "<@!"+message.Author.ID+">, here will be result of your command")
+		noerror(err)
+		time.Sleep(time.Duration(message_mod_delay) * time.Second)
+		dsession.ChannelMessageEdit(rep.ChannelID, rep.ID, "<@!"+message.Author.ID+">, "+msg)
+		return []*discordgo.Message{rep}
+	}
 	rep := send_message_big(message.ChannelID, "<@!"+message.Author.ID+">, "+msg)
-	if temporary < 0 {
+	if temporary == DEL_NEVER {
 		return rep
 	}
 	if temporary == DEL_DEFAULT {
