@@ -38,6 +38,9 @@ var (
 	discord_admin_roles           map[string]map[string]string   //guild id -> server -> role
 	discord_onetime_subscriptions map[string]map[string]string   //guild id -> server -> users slap string
 	discord_ahelp_locks           map[string]map[string]string   //server -> adminid -> ckey
+
+	//discord-specific
+	discord_guild_permission_errors_flap map[string]bool
 )
 
 type channel struct {
@@ -79,8 +82,8 @@ const (
 const (
 	DEL_FIXED_MOD  = -2
 	DEL_NEVER      = -1
-	DEL_DEFAULT    =  0
-	DEL_LONG       =  3
+	DEL_DEFAULT    = 0
+	DEL_LONG       = 3
 	DEL_EXTRA_LONG = 10
 )
 
@@ -96,7 +99,7 @@ type dban struct {
 }
 
 var known_bans_summary map[string]map[int]int
-var known_ban_overrides map[string]map[string]map[int]int //server->ckey->permission->type 
+var known_ban_overrides map[string]map[string]map[int]int //server->ckey->permission->type
 
 var dsession, _ = discordgo.New()
 var last_ahelp map[string]string
@@ -192,7 +195,7 @@ func delete_in(session *discordgo.Session, message *discordgo.Message, seconds i
 
 func batch_delete_in(session *discordgo.Session, messages []*discordgo.Message, seconds int) {
 	time.Sleep(time.Duration(seconds) * time.Second)
-	for _, message := range(messages) {
+	for _, message := range messages {
 		err := session.ChannelMessageDelete(message.ChannelID, message.ID)
 		if err != nil {
 			log.Println("NON-PANIC ERROR: failed to delete reply message in discord: ", err)
@@ -232,7 +235,7 @@ func ckey_simplifier(s string) string {
 
 func get_permission_level_ckey(ckey, server string) int {
 	if check_moderator(ckey) {
-		return PERMISSIONS_MODERATOR;
+		return PERMISSIONS_MODERATOR
 	}
 	if server != "" {
 		asl, ok := Known_admins[server]
@@ -494,29 +497,29 @@ func send_message(channel, message string) {
 }
 
 func send_message_big(channel, message string) []*discordgo.Message {
-	ret := make([]*discordgo.Message,0)
+	ret := make([]*discordgo.Message, 0)
 	for len(message) > 0 {
 		var tosend string
-		if len(message)>max_message_size {
-			li := strings.LastIndexByte(message[:max_message_size],'\n')
+		if len(message) > max_message_size {
+			li := strings.LastIndexByte(message[:max_message_size], '\n')
 			if li < 0 {
-				li = max_message_size-5
-				tosend=message[:li]+"**#**"
-				message="**#**"+message[li:]
+				li = max_message_size - 5
+				tosend = message[:li] + "**#**"
+				message = "**#**" + message[li:]
 			} else {
-				tosend=message[:li]
-				message=message[li:]
+				tosend = message[:li]
+				message = message[li:]
 			}
 		} else {
-			tosend=message
-			message=""
+			tosend = message
+			message = ""
 		}
 		rep, err := dsession.ChannelMessageSend(channel, tosend)
 		if err != nil {
 			log.Println("DERR: failed to send message to discord: ", err)
 			break
 		} else {
-			ret=append(ret, rep)
+			ret = append(ret, rep)
 		}
 	}
 	return ret
@@ -1284,8 +1287,17 @@ func update_roles() {
 		if !(pok || aok) {
 			continue //no such roles here, nothing to strip
 		}
-		users, err := dsession.GuildMembers(guild.ID, "", guildslim)
-		noerror(err)
+		users, err := dsession.GuildMembers(guild.ID, "", userslim)
+		if err != nil {
+			if fmt.Sprint(err) != "HTTP 403 Forbidden, {\"message\": \"Missing Access\", \"code\": 50001}" {
+				panic(fmt.Sprintf("%v (%s)", err, guild.Name))
+			}
+			if !discord_guild_permission_errors_flap[guild.ID] {
+				discord_guild_permission_errors_flap[guild.ID] = true
+				log_line(fmt.Sprintf("Guild %s (%s) disallows role viewing", guild.Name, guild.ID), "permissions")
+			}
+			continue
+		}
 		for _, user := range users {
 			for _, role := range user.Roles {
 				if pok && role == pl_role {
