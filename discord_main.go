@@ -1296,7 +1296,9 @@ func update_roles() {
 			}
 			if !discord_guild_permission_errors_flap[guild.ID] {
 				discord_guild_permission_errors_flap[guild.ID] = true
-				log_line(fmt.Sprintf("Guild %s (%s) disallows role viewing", guild.Name, guild.ID), "permissions")
+				err_msg := fmt.Sprintf("Guild %s (%s) disallows role viewing", guild.Name, guild.ID)
+				log_line(err_msg, "permissions")
+				log.Println(err_msg)
 			}
 			continue
 		}
