@@ -147,6 +147,8 @@ func discord_init() {
 
 	channel_message_send_loops_online = make(map[string]bool)
 	channel_buffers = make(map[string][]string)
+
+	discord_guild_permission_errors_flap = make(map[string]bool)
 }
 
 func reply(session *discordgo.Session, message *discordgo.MessageCreate, msg string, temporary int) []*discordgo.Message {
